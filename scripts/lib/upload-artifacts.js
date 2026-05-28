@@ -149,7 +149,7 @@ export function toUploadPath(filePath, buildTag) {
   return path.join(
     'dist',
     'uploads',
-    addBuildTagToFilename(path.relative(sourceDir, filePath), buildTag),
+    addBuildTagToFilename(path.basename(filePath), buildTag),
   );
 }
 
@@ -258,17 +258,18 @@ export async function copyUploadFiles({ items, getBuildTag }) {
   await fs.mkdir(uploadsDir, { recursive: true });
 
   for (const item of items) {
-    const relativePath = path.relative(sourceDir, item.file);
     const buildTag = getBuildTag(item);
 
     if (!buildTag) {
       continue;
     }
 
-    const versionedPath = addBuildTagToFilename(relativePath, buildTag);
+    const versionedPath = addBuildTagToFilename(
+      path.basename(item.file),
+      buildTag,
+    );
     const destinationPath = path.join(uploadsDir, versionedPath);
 
-    await fs.mkdir(path.dirname(destinationPath), { recursive: true });
     await fs.copyFile(item.file, destinationPath);
   }
 }

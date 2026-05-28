@@ -1,36 +1,48 @@
-# ChatGPT Project Template
+# ChatGPT Project: Film
 
-A lightweight Git-based template for managing long-term ChatGPT Project
-context.
+A deterministic event-driven repository for managing long-term
+spoiler-free movie and television recommendation context for ChatGPT
+Projects.
 
 ## Purpose
 
-This repository is the canonical source of truth for a ChatGPT Project.
+This repository is the canonical source of truth for a spoiler-free
+movie and television recommendation project built around ChatGPT.
 
 The goal is to keep ChatGPT Project Instructions small and stable while
-storing durable factual context in curated source documents that can be
-uploaded to the ChatGPT Project.
+storing append-only event history, canonical machine-readable state, and
+generated retrieval-oriented source documents.
 
 ## Operating Model
 
+- `events/` contains immutable append-only event history.
+- `data/` contains canonical machine-readable materialized state.
+- `sources/manual/` contains human-maintained runtime guidance and
+  architectural reference documents.
+- `sources/generated/` contains generated retrieval-oriented upload
+  views derived from canonical state.
 - `instructions/` contains behavior rules for the ChatGPT Project.
-- `sources/` contains factual context intended for upload.
 - `prompts/` contains reusable maintenance/update prompts.
 - `archive/` contains raw, historical, superseded, or snapshot material.
 - `templates/` contains reusable document templates.
-- `scripts/` contains validation and build helpers.
+- `scripts/` contains validation, ingestion, generation, and build
+  helpers.
+- Conversations generate append-only update events.
+- Scripts ingest events into canonical state.
+- Canonical state generates retrieval-oriented upload views.
+- Build workflows generate deployable upload artifacts.
 
 ## Relationship to ChatGPT
 
 The actual ChatGPT Project should use:
 
-1. `instructions/project-instructions.copyable.md` as the Project
-   Instructions.
-2. Generated files from `dist/uploads/`, created by the build workflow,
-   as uploaded source documents.
+1. `instructions/project-instructions.md` as the Project Instructions.
+2. Generated files from `dist/uploads/`, created from both manual and
+   generated source documents by the build workflow, as uploaded source
+   documents.
 
-Git remains the source of truth. Uploaded ChatGPT files are derived
-runtime context.
+Git event history and canonical state remain the source of truth.
+Uploaded ChatGPT files are generated runtime retrieval context.
 
 ## ⚠️ Upload Client Warning
 
@@ -48,6 +60,17 @@ After uploading files, verify retrieval by asking ChatGPT to quote or
 search for a known unique phrase from one of the uploaded files.
 
 ## Required Workflow
+
+Typical workflow:
+
+```text
+conversation
+  -> append-only event
+  -> canonical state regeneration
+  -> generated source regeneration
+  -> build artifacts
+  -> ChatGPT upload
+```
 
 For normal source updates:
 
@@ -68,14 +91,16 @@ The build workflow:
 
 - requires a clean Git working tree
 - must be run from the repository root
+- assumes generated source files are reproducible from canonical state
 - creates a `build-YYYY-MM-DD-NNNN` Git tag when upload-impacting
   changes are detected
 - skips rebuilding if `HEAD` already has a build tag
 - skips build creation when no upload-impacting files changed
 - copies changed uploadable source files into `dist/uploads/`
+- packages both manual and generated source documents for upload
 - appends build tags to generated upload filenames
-- copies project instructions into `dist/project-instructions.md` when
-  required
+- copies project instructions into `dist/project-instructions.md` for
+  upload/reference workflows
 - generates `dist/upload-instructions.md` describing exactly what must
   be uploaded to ChatGPT
 - generates `dist/chatgpt-upload-bundle.md` for auditing, portability,
@@ -93,7 +118,7 @@ baseball-cards.build-2026-05-17-0003.md
 Git source filenames remain stable:
 
 ```text
-sources/baseball-cards.md
+sources/generated/baseball-cards.md
 ```
 
 When replacing uploaded ChatGPT Project sources:
@@ -119,11 +144,10 @@ template are the deployable/runtime projects.
 - `PROJECT.md`
 - `AGENTS.md`
 - `instructions/project-instructions.md`
-- `instructions/project-instructions.copyable.md`
-- `sources/index.md`
-- `sources/current-state.md`
-- `sources/decisions.md`
-- `sources/glossary.md`
+- `sources/manual/index.md`
+- `sources/manual/current-state.md`
+- `sources/manual/decisions.md`
+- `sources/manual/glossary.md`
 - `prompts/update-source-doc.md`
 - `prompts/prepare-upload-bundle.md`
 - `archive/README.md`
@@ -131,11 +155,21 @@ template are the deployable/runtime projects.
 ## Design Rules
 
 - Keep instructions small.
-- Put facts in source documents.
+- Put durable truth in events and canonical state.
 - Put workflows in prompts.
 - Keep archive material out of default uploads.
 - Prefer boring, explicit, retrieval-friendly Markdown.
 - Preserve dates, uncertainty, and provenance.
+- Do not infer that owned media is liked media.
+- Treat conversational updates as append-only events.
+- Keep recommendation notes spoiler-free.
+- Prefer stable external identifiers such as IMDb IDs.
+- Separate canonical state from generated upload views.
+- Prefer machine-generated source documents over manual editing.
+- Treat `sources/generated/` as generated retrieval projections.
+- Treat `sources/manual/` as durable human-maintained runtime guidance.
+- Treat `dist/` as deployment artifacts.
+- Prefer deterministic rebuilds whenever possible.
 
 ## Template Updates
 

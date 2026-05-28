@@ -8,10 +8,31 @@ ChatGPT Project.
 AI agents should help maintain structure, consistency, clarity, and
 retrieval usefulness.
 
+## Project Domain
+
+This repository focuses on movies, television, streaming media, watch
+history, ratings, reactions, recommendation workflows, and spoiler-free
+discussion.
+
+The repository is designed around a structured-data architecture:
+
+- Conversations generate append-only update events.
+- Scripts ingest update events into canonical data.
+- Canonical data generates ChatGPT upload sources.
+- ChatGPT upload sources are treated as read-only generated views.
+
+AI agents should treat conversational output as proposed updates, not
+authoritative state.
+
 ## Core Rules
 
 - Do not add unverified facts.
 - Do not silently resolve conflicting facts.
+- Do not infer that owning media means liking media.
+- Do not infer that watched media was completed.
+- Do not infer ratings from conversation tone alone.
+- Preserve spoiler-free discussion standards.
+- Treat recommendation reasoning as advisory, not factual.
 - Do not treat archived information as current.
 - Do not put durable factual context in `instructions/`.
 - Do not put canonical project facts in `prompts/`.
@@ -77,6 +98,27 @@ Reusable file patterns.
 
 Do not treat templates as project facts.
 
+### `data/`
+
+Canonical machine-readable project state.
+
+Examples:
+
+- normalized media catalog
+- user ratings
+- user reactions
+- watch history
+- patch logs
+- ingestion queues
+
+Rules:
+
+- Prefer append-only update workflows.
+- Treat patch logs as historical truth.
+- Preserve identifiers when possible.
+- Prefer stable external IDs such as IMDb IDs.
+- Do not manually rewrite generated canonical state.
+
 ### `dist/`
 
 Generated runtime artifacts.
@@ -105,3 +147,8 @@ Rules:
 - Use lowercase kebab-case filenames.
 - Include frontmatter in source documents.
 - Mark source document status clearly.
+
+- Keep recommendation notes concise and retrieval-friendly.
+- Separate factual metadata from subjective reactions.
+- Prefer bullet lists for likes, dislikes, and observations.
+- Avoid spoilers in all repository-maintained documents.
