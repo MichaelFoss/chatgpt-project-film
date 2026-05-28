@@ -41,6 +41,7 @@ The repository intentionally distinguishes between:
 - immutable append-only event history
 - canonical machine-readable state
 - append-only conversational update events
+- human-maintained runtime guidance
 - generated retrieval-oriented upload views
 - prompts and operational workflows
 - historical/archive material
@@ -98,8 +99,8 @@ Use:
 - `instructions/project-instructions.md` as ChatGPT Project
   Instructions.
 - `dist/upload-instructions.md` as the operational upload checklist.
-- `sources/index.md` to determine which source files are eligible for
-  upload.
+- `sources/manual/index.md` to determine which source files are eligible
+  for upload.
 - generated files from `dist/uploads/` as the actual uploaded ChatGPT
   Project runtime sources.
 
@@ -109,8 +110,12 @@ Do not upload repository maintenance files unless explicitly needed.
 
 ## Source Document Standards
 
-Source documents are generated retrieval-oriented projections intended
-for ChatGPT runtime consumption.
+Source documents are intended for ChatGPT runtime consumption.
+
+Some source documents are durable human-maintained runtime guidance.
+
+Other source documents are generated retrieval-oriented projections
+derived from canonical state.
 
 Source documents should:
 
@@ -125,6 +130,7 @@ Source documents should:
 - remain reasonably scoped and maintainable
 - be human-readable
 - preferably be machine-generated rather than manually maintained
+- clearly distinguish manual runtime guidance from generated projections
 
 ## Canonical Data Model
 
@@ -158,6 +164,10 @@ Canonical state is authoritative current materialized state.
 
 Generated Markdown source documents are derived retrieval-oriented
 projections rather than primary state containers.
+
+Human-maintained runtime guidance documents may also exist under
+`sources/manual/` and are not required to be generated from canonical
+state.
 
 Example conceptual workflow:
 
@@ -216,6 +226,8 @@ A successful `yarn build`:
 - skips rebuilding when `HEAD` already has a build tag
 - skips build creation when no upload-impacting files changed
 - copies changed uploadable source files into `dist/uploads/`
+- packages both manual and generated source documents into deployment
+  artifacts
 - appends build tags to generated upload filenames
 - uses immutable generated upload filenames to preserve runtime
   provenance
@@ -241,7 +253,7 @@ baseball-cards.build-2026-05-17-0003.md
 Stable Git source filename:
 
 ```text
-sources/baseball-cards.md
+sources/generated/baseball-cards.md
 ```
 
 When updating uploaded ChatGPT Project source files:

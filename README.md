@@ -1,7 +1,8 @@
 # ChatGPT Project: Film
 
-A lightweight Git-based template for managing long-term ChatGPT Project
-context.
+A deterministic event-driven repository for managing long-term
+spoiler-free movie and television recommendation context for ChatGPT
+Projects.
 
 ## Purpose
 
@@ -16,7 +17,10 @@ generated retrieval-oriented source documents.
 
 - `events/` contains immutable append-only event history.
 - `data/` contains canonical machine-readable materialized state.
-- `sources/` contains generated retrieval-oriented upload views.
+- `sources/manual/` contains human-maintained runtime guidance and
+  architectural reference documents.
+- `sources/generated/` contains generated retrieval-oriented upload
+  views derived from canonical state.
 - `instructions/` contains behavior rules for the ChatGPT Project.
 - `prompts/` contains reusable maintenance/update prompts.
 - `archive/` contains raw, historical, superseded, or snapshot material.
@@ -33,8 +37,9 @@ generated retrieval-oriented source documents.
 The actual ChatGPT Project should use:
 
 1. `instructions/project-instructions.md` as the Project Instructions.
-2. Generated files from `dist/uploads/`, created by the build workflow,
-   as uploaded source documents.
+2. Generated files from `dist/uploads/`, created from both manual and
+   generated source documents by the build workflow, as uploaded source
+   documents.
 
 Git event history and canonical state remain the source of truth.
 Uploaded ChatGPT files are generated runtime retrieval context.
@@ -62,7 +67,7 @@ Typical workflow:
 conversation
   -> append-only event
   -> canonical state regeneration
-  -> source generation
+  -> generated source regeneration
   -> build artifacts
   -> ChatGPT upload
 ```
@@ -92,6 +97,7 @@ The build workflow:
 - skips rebuilding if `HEAD` already has a build tag
 - skips build creation when no upload-impacting files changed
 - copies changed uploadable source files into `dist/uploads/`
+- packages both manual and generated source documents for upload
 - appends build tags to generated upload filenames
 - copies project instructions into `dist/project-instructions.md` for
   upload/reference workflows
@@ -112,7 +118,7 @@ baseball-cards.build-2026-05-17-0003.md
 Git source filenames remain stable:
 
 ```text
-sources/baseball-cards.md
+sources/generated/baseball-cards.md
 ```
 
 When replacing uploaded ChatGPT Project sources:
@@ -138,10 +144,10 @@ template are the deployable/runtime projects.
 - `PROJECT.md`
 - `AGENTS.md`
 - `instructions/project-instructions.md`
-- `sources/index.md`
-- `sources/current-state.md`
-- `sources/decisions.md`
-- `sources/glossary.md`
+- `sources/manual/index.md`
+- `sources/manual/current-state.md`
+- `sources/manual/decisions.md`
+- `sources/manual/glossary.md`
 - `prompts/update-source-doc.md`
 - `prompts/prepare-upload-bundle.md`
 - `archive/README.md`
@@ -160,7 +166,8 @@ template are the deployable/runtime projects.
 - Prefer stable external identifiers such as IMDb IDs.
 - Separate canonical state from generated upload views.
 - Prefer machine-generated source documents over manual editing.
-- Treat `sources/` as generated retrieval projections.
+- Treat `sources/generated/` as generated retrieval projections.
+- Treat `sources/manual/` as durable human-maintained runtime guidance.
 - Treat `dist/` as deployment artifacts.
 - Prefer deterministic rebuilds whenever possible.
 
