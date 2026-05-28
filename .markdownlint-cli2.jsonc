@@ -1,0 +1,18 @@
+{
+  "config": {
+    "MD013": {
+      "line_length": 72,
+      "heading_line_length": 72,
+      "code_blocks": false,
+      "tables": false
+    },
+    "MD024": {
+      "siblings_only": true
+    },
+    "MD025": {
+      "front_matter_title": ""
+    },
+    "MD033": false,
+    "MD041": false
+  }
+}
