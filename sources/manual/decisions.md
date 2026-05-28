@@ -1,39 +1,247 @@
 ---
 title: Decisions
 status: current
-last_updated: 2026-05-16
+last_updated: 2026-05-27
 upload_to_chatgpt: false
 ---
 
 # Decisions
 
-This document records durable project decisions.
+## Purpose
+
+Record durable architectural, operational, and workflow decisions for
+this repository.
+
+This file should contain:
+
+- stable repository decisions
+- workflow decisions
+- architectural philosophy decisions
+- operational policy decisions
+
+Avoid recording:
+
+- temporary experiments
+- abandoned ideas
+- conversational brainstorming
+- rapidly changing implementation details
 
 ## Decision Log
 
-### 2026-05-16: Use Git as Canonical Source of Truth
+### 2026-05-27: Use Git as Canonical Source of Truth
 
-The Git repository is the maintained source of truth.
+The Git repository is the authoritative long-term source of truth.
 
-The ChatGPT Project consumes selected files from this repository, but
-uploaded files are treated as derived runtime context.
+ChatGPT Project uploads are derived runtime artifacts rather than
+canonical state.
 
-### 2026-05-16: Keep Project Instructions Small
+### 2026-05-27: Use Event-Driven Repository Architecture
 
-ChatGPT Project Instructions should define behavior only.
+The repository uses an append-only event-driven architecture.
 
-Durable factual context belongs in `sources/`.
+The intended flow is:
 
-### 2026-05-16: Use Markdown Source Documents
+```text
+conversation or import
+  -> append-only events
+  -> canonical machine-readable state
+  -> generated retrieval-oriented projections
+  -> upload artifacts
+```
 
-Markdown is the default format for curated project context because it is
-diffable, readable, and easy to maintain.
+Historical events are durable truth.
 
-### 2026-05-16: Use JavaScript Scripts with ES Modules
+Materialized state and generated sources are derived projections.
 
-Repository automation should use `.js` files with ES modules instead of
-shell scripts.
+### 2026-05-27: Separate Events, Data, and Sources
 
-### 2026-05-16: Use Yarn
+The repository intentionally separates:
+
+- `events/`
+- `data/`
+- `sources/manual/`
+- `sources/generated/`
+- `dist/`
+
+Each layer has a distinct responsibility.
+
+Generated retrieval-oriented Markdown is not canonical state.
+
+### 2026-05-27: Distinguish Manual and Generated Sources
+
+The repository distinguishes between:
+
+- durable human-maintained runtime guidance
+- generated retrieval-oriented runtime projections
+
+Manual runtime guidance exists under:
+
+```text
+sources/manual/
+```
+
+Generated retrieval-oriented projections exist under:
+
+```text
+sources/generated/
+```
+
+Generated files should preferably be machine-generated rather than
+manually maintained.
+
+### 2026-05-27: Use NDJSON for Event Storage
+
+Append-only event history should use NDJSON.
+
+Rationale:
+
+- deterministic replay
+- append-friendly workflow
+- Git-friendly diffs
+- streaming compatibility
+- simple ingestion semantics
+
+One JSON object should exist per line.
+
+### 2026-05-27: Preserve Stable External IDs
+
+The repository should preserve stable external identifiers whenever
+possible.
+
+Preferred format:
+
+```text
+imdb:tt1234567
+```
+
+External identifiers improve:
+
+- deterministic regeneration
+- metadata normalization
+- future migration flexibility
+- cross-platform reconciliation
+
+### 2026-05-27: Prioritize Spoiler Safety
+
+Spoiler prevention is considered a core project requirement.
+
+Recommendation quality should never come at the expense of spoiler
+safety.
+
+When uncertainty exists:
+
+```text
+prefer revealing less information
+```
+
+The default runtime assumption should be:
+
+```text
+the user has not seen the media
+```
+
+### 2026-05-27: Optimize for Viewing Value Rather Than Popularity
+
+The recommendation system should optimize for:
+
+- enjoyment
+- viewing satisfaction
+- time value
+- confidence-aware recommendations
+- long-term viewing strategy
+
+The project should avoid behaving like:
+
+- a popularity feed
+- a hype engine
+- a trending-content algorithm
+
+### 2026-05-27: Respect Viewing Commitment
+
+Long runtimes and large series commitments should justify themselves.
+
+The project should:
+
+- acknowledge viewing commitment
+- avoid weak long-form recommendations
+- avoid obligation viewing
+- avoid sunk-cost reasoning
+
+Stopping a series is considered acceptable.
+
+### 2026-05-27: Treat Plex Primarily as Catalog Source
+
+Plex metadata is considered partially unreliable historically because of
+server migration and incomplete retained state.
+
+Plex should primarily be treated as:
+
+- catalog source
+- title inventory source
+- identifier source
+
+Plex metadata should not automatically imply:
+
+- watched status
+- completion
+- preference
+- recommendation strength
+
+### 2026-05-27: Keep Project Instructions Small
+
+Project Instructions should remain relatively small and
+behavior-focused.
+
+Durable runtime context should primarily live in:
+
+```text
+sources/manual/
+```
+
+Generated retrieval-oriented context should primarily live in:
+
+```text
+sources/generated/
+```
+
+### 2026-05-27: Prefer Deterministic Build Workflows
+
+The repository should prefer deterministic workflows whenever practical.
+
+Given:
+
+- identical events
+- identical canonical state
+- identical scripts
+
+build outputs should remain reproducible.
+
+### 2026-05-27: Use JavaScript with Node.js for Repository Tooling
+
+Repository automation should primarily use JavaScript running on
+Node.js.
+
+Short-lived helper scripts should also generally prefer Node.js over
+Python unless Python is specifically justified.
+
+### 2026-05-27: Use Yarn
 
 Yarn is the package manager for this repository.
+
+### 2026-05-27: Validate Only Staged Sources During Pre-Commit
+
+Pre-commit hooks should validate the staged snapshot rather than failing
+because of unrelated unstaged source drafts.
+
+Rationale:
+
+- safer Git behavior
+- avoids hidden stash workflows
+- supports iterative source drafting
+- preserves explicit full-repository validation via manual commands
+
+Full validation should still remain available through:
+
+```bash
+yarn validate:sources
+```
