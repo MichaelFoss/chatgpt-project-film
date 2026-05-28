@@ -139,8 +139,31 @@ template are the deployable/runtime projects.
 
 ## Template Updates
 
-Projects created from this template are independent repositories.
+Projects created from this template are copied, not linked. They do not
+automatically receive later changes from this repository.
 
-This template provides a starting structure, not an ongoing inheritance
-model. If the template improves later, copy or cherry-pick useful
-changes manually.
+Derived repositories can opt into specific template updates by
+cherry-picking small atomic refs from this repository:
+
+```bash
+yarn apply-template-update <template-ref> [description]
+```
+
+The helper ensures a `template` remote exists, fetches it, cherry-picks
+the requested ref, and records the applied update in
+`template-updates.md`.
+
+### Initial Rollout
+
+Existing derived repositories need a one-time manual bootstrap because
+they do not yet contain the `apply-template-update` helper.
+
+After that bootstrap, future template updates can use:
+
+```bash
+yarn apply-template-update <template-ref>
+```
+
+Skipping template updates is OK. Updates are intentionally opt-in and
+atomic so each derived repository can decide which changes are worth
+applying.
