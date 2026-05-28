@@ -1,7 +1,7 @@
 ---
 title: Current State
 status: current
-last_updated: 2026-05-16
+last_updated: 2026-05-27
 upload_to_chatgpt: true
 ---
 
@@ -9,34 +9,203 @@ upload_to_chatgpt: true
 
 ## Purpose
 
-This living document summarizes the current state of the project.
+Summarize the current operational, architectural, and repository state
+of the Film project.
 
-For a new project created from this template, replace this content with
-the current durable context that ChatGPT should know.
+This document should remain concise and focused on durable current
+context rather than historical detail.
 
-## Current Summary
+## Current Repository State
 
-This repository is a reusable template for managing long-term ChatGPT
-Project context using Git, Markdown, curated source documents, reusable
-prompts, and small stable project instructions.
+The Film project is currently in early repository bootstrap and
+architecture-definition phase.
 
-## Current Operating Model
+The repository architecture is intentionally deterministic and
+event-driven.
 
-- Git is the canonical source of truth.
-- ChatGPT Project Instructions are intentionally small.
-- Uploaded source documents provide factual context.
-- Prompts support repeatable maintenance workflows.
-- Archive material is historical unless explicitly referenced.
+The intended workflow is:
+
+```text
+conversation or import
+  -> append-only events
+  -> canonical machine-readable state
+  -> generated retrieval-oriented sources
+  -> build artifacts
+  -> ChatGPT Project uploads
+```
+
+## Current Architecture
+
+The repository currently distinguishes between:
+
+- append-only historical events
+- canonical machine-readable state
+- manual runtime guidance
+- generated retrieval-oriented runtime projections
+- deployment/upload artifacts
+
+Primary directories:
+
+| Directory            | Purpose                                             |
+| -------------------- | --------------------------------------------------- |
+| `events/`            | Append-only historical event log.                   |
+| `data/`              | Canonical machine-readable materialized state.      |
+| `sources/manual/`    | Human-maintained runtime guidance and architecture. |
+| `sources/generated/` | Generated retrieval-oriented runtime projections.   |
+| `dist/`              | Deployment-ready upload artifacts.                  |
+
+## Current Recommendation Philosophy
+
+The Film project is designed to:
+
+- optimize for enjoyment and time value
+- preserve spoiler-free first-view experiences
+- provide confidence-aware recommendations
+- avoid hype-driven recommendation behavior
+- support long-term curated viewing strategy
+
+The recommendation system should behave more like:
+
+- a trusted curator
+- a thoughtful advisor
+- a practical strategist
+
+and less like:
+
+- a popularity algorithm
+- a trending-content feed
+- a marketing system
+
+## Current Spoiler Philosophy
+
+Spoiler prevention is considered a core project requirement.
+
+The default runtime assumption should be:
+
+```text
+The user has not seen the media being discussed.
+```
+
+The project intentionally avoids:
+
+- trailer-style recommendation behavior
+- twist framing
+- future-event hints
+- payoff spoilers
+- “it gets better later” spoiler patterns
+
+## Current Platform Context
+
+Primary viewing platforms:
+
+- Plex
+- Netflix
+
+Platform context assumptions:
+
+- Plex metadata may be incomplete or unreliable historically.
+- Plex primarily acts as catalog and identifier source.
+- Netflix is considered low-friction viewing.
+- Amazon Prime Video has elevated friction due to advertisements.
+- Theater viewing is relatively uncommon.
+
+## Current Data Model State
+
+Current canonical design assumptions:
+
+- events are append-only
+- events use NDJSON
+- state is materialized from events
+- generated sources are deterministic build artifacts
+- source documents are retrieval-oriented projections
+- stable external IDs should be preserved when possible
+
+Preferred ID format:
+
+```text
+imdb:tt1234567
+```
+
+## Current Operational State
+
+The repository currently contains:
+
+- foundational architecture documentation
+- runtime behavioral guidance
+- recommendation policy definitions
+- spoiler handling policy
+- streaming context definitions
+- event schema definitions
+- mid-series guidance rules
+
+The repository does not yet contain:
+
+- ingestion scripts
+- generated source builders
+- Plex import tooling
+- canonical materialized media state
+- generated runtime projections
+- event ingestion automation
+
+## Current Workflow Philosophy
+
+The intended operational workflow is:
+
+```text
+conversation
+  -> generated event patch
+  -> append-only event history
+  -> deterministic regeneration
+  -> updated runtime projections
+  -> ChatGPT Project refresh
+```
+
+Manual editing should generally focus on:
+
+- runtime guidance
+- architecture documents
+- operational policy
+- debugging
+- migrations
+
+Generated runtime projections should preferably be machine-generated.
 
 ## Current Open Questions
 
-- Which domain will this template be instantiated for?
-- Which source documents should be uploaded by default?
-- Which project-specific privacy rules are required?
+Known unresolved areas include:
+
+- exact generated source structure
+- event ingestion batching strategy
+- Plex import normalization details
+- long-term generated preference-profile design
+- generated watch queue projection format
+- future season-level or episode-level modeling
+
+These should evolve incrementally rather than being over-designed
+upfront.
+
+## Current Non-Goals
+
+The repository is intentionally not attempting to become:
+
+- a social recommendation platform
+- a public review system
+- a streaming aggregation engine
+- a ratings-optimization engine
+- a spoiler-heavy fandom wiki
+- a fully automated recommendation AI pipeline
+
+The focus remains:
+
+```text
+high-quality spoiler-safe viewing guidance
+```
 
 ## Do Not Assume
 
-- Do not assume archived material is current.
-- Do not assume prompts contain canonical facts.
-- Do not assume ChatGPT Project uploads are newer than the Git
-  repository.
+- Do not assume Plex watched history is authoritative.
+- Do not assume catalog presence implies watched status.
+- Do not assume generated source projections are canonical state.
+- Do not assume recommendation confidence when evidence is weak.
+- Do not assume popularity implies recommendation quality.
+- Do not assume unfinished architectural details are finalized.
