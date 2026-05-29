@@ -106,7 +106,7 @@ function buildUploadInstructions({
     `Generated build tag: \`${buildTag}\``,
     '',
     isFirstBuild
-      ? 'This is the first build. Upload the full generated upload set.'
+      ? 'This is the first build (yay! 🎉). Upload the full generated upload set.'
       : 'This build includes only files that changed since the previous build tag.',
     '',
     '## Required Human Action',
@@ -141,6 +141,7 @@ function buildUploadInstructions({
     '- If instructions changed, paste `dist/project-instructions.md` into the ChatGPT Project Instructions field.',
     '- For a major source refresh, start a new ChatGPT conversation.',
     '- For minor source refreshes, tell ChatGPT to use the current uploaded files as authoritative.',
+    "- Consider publishing build tags by running 'yarn publish-build-tags'.",
   ]
     .join('\n')
     .trimEnd();
