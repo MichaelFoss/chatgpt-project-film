@@ -143,13 +143,16 @@ Allowed `metadataLookup` values:
 - `auto`
 - `skip`
 
-Use `auto` when provider lookup should be attempted if metadata is
-missing or invalid.
+Use `auto` when provider enrichment may be attempted later if metadata
+is missing or invalid.
 
-Use `skip` when the title is known to require manual metadata.
+Use `skip` when provider enrichment should not be attempted for that
+title.
 
-A `catalog.add` event with `metadataLookup: "skip"` still requires a
-valid metadata-cache entry before it can produce a catalog item.
+`skip` does not allow catalog generation to proceed without valid
+metadata. A `catalog.add` event with `metadataLookup: "skip"` still
+requires a valid `data/metadata-cache.json` entry before a catalog item
+can be generated.
 
 ### Excluded Fields
 
@@ -175,126 +178,6 @@ from catalog-add events.
   "source": "plex",
   "metadataLookup": "auto",
   "occurredAt": "2026-05-27T00:00:00.000Z"
-}
-```
-
-## Replay Semantics
-
-Replay should:
-
-1. read events in file order
-2. treat missing `schemaVersion` as `1`
-3. validate each event shape
-4. fail without writing output when duplicate `eventId` values are found
-5. build a unique catalog inclusion set by `canonicalId`
-6. report and skip duplicate catalog-add actions
-7. use the metadata cache to build catalog records
-8. fetch provider metadata only when allowed and needed
-9. generate deterministic catalog output
-10. print success and failure reports
-
-Duplicate catalog-add actions for the same `canonicalId` should not
-produce duplicate catalog records. They should be reported and skipped
-as redundant inclusion intent.
-
-## Future Events
-
-### `MEDIA_REACTION_RECORDED`
-
-Status: future/planned.
-
-This event is not part of the current ingestion implementation.
-
-Records the user's subjective reaction to a media item.
-
-This event should capture what the user explicitly said, not inferred
-preferences unless the inference is clearly marked as a recommendation
-signal.
-
-### Required Fields
-
-| Field         | Type   | Description                         |
-| ------------- | ------ | ----------------------------------- |
-| `eventType`   | string | Must be `MEDIA_REACTION_RECORDED`.  |
-| `canonicalId` | string | Globally unique canonical title ID. |
-| `occurredAt`  | string | ISO timestamp.                      |
-
-### Optional Fields
-
-| Field                   | Type     | Description                                            |
-| ----------------------- | -------- | ------------------------------------------------------ |
-| `rating`                | number   | Personal enjoyment score from 1 to 10.                 |
-| `status`                | string   | Viewing status.                                        |
-| `liked`                 | string[] | Non-spoiler positive reaction bullets.                 |
-| `disliked`              | string[] | Non-spoiler negative reaction bullets.                 |
-| `interesting`           | string[] | Non-spoiler observations.                              |
-| `recommendationSignals` | string[] | Non-spoiler signals useful for future recommendations. |
-| `source`                | string   | Usually `chatgpt` or `manual`.                         |
-| `notes`                 | string[] | Additional non-spoiler notes.                          |
-
-### Viewing Status Values
-
-Allowed `status` values:
-
-- `watched`
-- `completed`
-- `watching`
-- `paused`
-- `abandoned`
-- `unknown`
-
-Use `completed` when the user explicitly finished the movie, series, or
-available runtime unit being discussed.
-
-Use `watched` only when completion is unclear but the user indicates
-meaningful viewing.
-
-### Rating Semantics
-
-`rating` is a personal enjoyment score.
-
-It is not:
-
-- an objective quality score
-- an IMDb-style community rating
-- a critic score
-- a measure of cultural importance
-
-Suggested interpretation:
-
-| Rating | Meaning                                |
-| -----: | -------------------------------------- |
-|     10 | All-time favorite or elite experience. |
-|      9 | Loved it.                              |
-|      8 | Very good.                             |
-|      7 | Good and worthwhile.                   |
-|      6 | Okay or mixed.                         |
-|      5 | Weak, forgettable, or disappointing.   |
-|    1-4 | Disliked to varying degrees.           |
-
-Ratings are optional.
-
-Reaction bullets are usually more useful than the number.
-
-### Example
-
-```json
-{
-  "eventType": "MEDIA_REACTION_RECORDED",
-  "canonicalId": "imdb:tt0112573",
-  "rating": 9,
-  "status": "completed",
-  "liked": [
-    "emotional weight",
-    "historical atmosphere",
-    "battle scenes"
-  ],
-  "disliked": ["romance subplot pacing"],
-  "interesting": [
-    "large-scale historical epic with strong personal stakes"
-  ],
-  "source": "chatgpt",
-  "occurredAt": "2026-06-01T02:15:00.000Z"
 }
 ```
 

@@ -177,15 +177,18 @@ Duplicate catalog-add actions for the same `canonicalId` should not
 produce duplicate catalog records. They should be reported and skipped
 as redundant inclusion intent.
 
-Use `auto` when provider lookup should be attempted if metadata is
-missing or invalid.
+Use `auto` when provider enrichment may be attempted later if metadata
+is missing or invalid.
 
-Use `skip` when the title is known to require manual metadata.
+Use `skip` when provider enrichment should not be attempted for that
+title.
 
-A `catalog.add` event with `metadataLookup: 'skip'` still requires a
-valid metadata-cache entry before it can produce a catalog item.
+`skip` does not allow catalog generation to proceed without valid
+metadata. A `catalog.add` event with `metadataLookup: 'skip'` still
+requires a valid `data/metadata-cache.json` entry before a catalog item
+can be generated.
 
-### Replay Semantics
+### Catalog Generation Replay Semantics
 
 Event replay should generate catalog state every time it runs.
 
