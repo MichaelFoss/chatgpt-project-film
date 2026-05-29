@@ -1,7 +1,7 @@
 ---
 title: Event Schema
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-05-29
 upload_to_chatgpt: true
 ---
 
@@ -42,17 +42,27 @@ conversation or import
 
 All event types share these fields.
 
-| Field        | Required | Type     | Description                                                |
-| ------------ | -------- | -------- | ---------------------------------------------------------- |
-| `eventType`  | Yes      | string   | Event discriminator.                                       |
-| `id`         | Yes      | string   | Stable media ID, preferably IMDb-formatted.                |
-| `occurredAt` | Yes      | string   | ISO timestamp for when the event occurred or was recorded. |
-| `source`     | No       | string   | Provenance only. Does not imply preference.                |
-| `notes`      | No       | string[] | Optional non-spoiler notes.                                |
+| Field           | Required | Type   | Description                                                |
+| --------------- | -------- | ------ | ---------------------------------------------------------- |
+| `eventType`     | Yes      | string | Event discriminator.                                       |
+| `occurredAt`    | Yes      | string | ISO timestamp for when the event occurred or was recorded. |
+| `eventId`       | No       | string | Globally unique event identifier when present.             |
+| `schemaVersion` | No       | number | Event schema version. Defaults to `1` when omitted.        |
 
-## ID Format
+`eventId` is optional. When present, it must be globally unique across
+the event log.
 
-Prefer stable external identifiers.
+Duplicate `eventId` values indicate a serious event-log data problem and
+should cause processing to fail without writing output.
+
+`schemaVersion` is optional. Missing `schemaVersion` values should be
+treated as version `1`.
+
+## Canonical ID Format
+
+Use `canonicalId` for title identity.
+
+Prefer stable IMDb title identifiers.
 
 Preferred format:
 
@@ -60,68 +70,140 @@ Preferred format:
 imdb:tt0112573
 ```
 
-If an IMDb ID is unavailable, use the best available stable identifier
-and preserve enough provenance to migrate later.
+If an IMDb ID is unavailable, use a stable, human-readable manual
+identifier.
 
 Examples:
 
 ```text
-plex:12345
-tmdb:197
 manual:braveheart-1995
+manual:festival-short-2024
 ```
 
-## `CATALOG_ITEM_ADDED`
+## `catalog.add`
 
-Records that a media item exists in the known catalog.
+Records inclusion intent for a title in the known catalog.
+
+This event means:
+
+```text
+this title belongs in my system
+```
+
+This event does not describe the title.
+
+Title description belongs in:
+
+```text
+data/metadata-cache.json
+```
 
 This event does not imply that the item was watched, completed, liked,
-or intentionally collected.
+owned intentionally, or recommended.
 
 ### Required Fields
 
-| Field        | Type   | Description                   |
-| ------------ | ------ | ----------------------------- |
-| `eventType`  | string | Must be `CATALOG_ITEM_ADDED`. |
-| `id`         | string | Stable media ID.              |
-| `title`      | string | Display title.                |
-| `mediaType`  | string | Media type.                   |
-| `occurredAt` | string | ISO timestamp.                |
+| Field         | Type   | Description                         |
+| ------------- | ------ | ----------------------------------- |
+| `eventType`   | string | Must be `catalog.add`.              |
+| `occurredAt`  | string | ISO timestamp.                      |
+| `source`      | string | Must be `plex` or `manual`.         |
+| `canonicalId` | string | Globally unique canonical title ID. |
 
 ### Optional Fields
 
-| Field         | Type     | Description                                         |
-| ------------- | -------- | --------------------------------------------------- |
-| `year`        | number   | Release year when known.                            |
-| `source`      | string   | Provenance, such as `plex`, `netflix`, or `manual`. |
-| `externalIds` | object   | Additional IDs from Plex, TMDb, or other systems.   |
-| `notes`       | string[] | Non-spoiler notes.                                  |
+| Field            | Type   | Description                                         |
+| ---------------- | ------ | --------------------------------------------------- |
+| `eventId`        | string | Globally unique event identifier when present.      |
+| `schemaVersion`  | number | Event schema version. Defaults to `1` when omitted. |
+| `metadataLookup` | string | Must be `auto` or `skip`. Defaults to `auto`.       |
 
-### Media Types
+### Source Values
 
-Allowed `mediaType` values:
+Allowed `source` values:
 
-- `movie`
-- `series`
-- `miniseries`
-- `special`
-- `unknown`
+- `plex`
+- `manual`
+
+`source` is provenance only.
+
+It does not imply:
+
+- watched
+- completed
+- liked
+- disliked
+- recommended
+- owned intentionally
+
+### Metadata Lookup
+
+Allowed `metadataLookup` values:
+
+- `auto`
+- `skip`
+
+Use `auto` when provider lookup should be attempted if metadata is
+missing or invalid.
+
+Use `skip` when the title is known to require manual metadata.
+
+A `catalog.add` event with `metadataLookup: "skip"` still requires a
+valid metadata-cache entry before it can produce a catalog item.
+
+### Excluded Fields
+
+Do not include descriptive title fields in `catalog.add`.
+
+Excluded fields include:
+
+- `id`
+- `title`
+- `year`
+- `mediaType`
+- `externalIds`
+
+Catalog descriptive fields are derived from valid metadata records, not
+from catalog-add events.
 
 ### Example
 
 ```json
 {
-  "eventType": "CATALOG_ITEM_ADDED",
-  "id": "imdb:tt0112573",
-  "title": "Braveheart",
-  "mediaType": "movie",
-  "year": 1995,
+  "eventType": "catalog.add",
+  "canonicalId": "imdb:tt0112573",
   "source": "plex",
+  "metadataLookup": "auto",
   "occurredAt": "2026-05-27T00:00:00.000Z"
 }
 ```
 
-## `MEDIA_REACTION_RECORDED`
+## Replay Semantics
+
+Replay should:
+
+1. read events in file order
+2. treat missing `schemaVersion` as `1`
+3. validate each event shape
+4. fail without writing output when duplicate `eventId` values are found
+5. build a unique catalog inclusion set by `canonicalId`
+6. report and skip duplicate catalog-add actions
+7. use the metadata cache to build catalog records
+8. fetch provider metadata only when allowed and needed
+9. generate deterministic catalog output
+10. print success and failure reports
+
+Duplicate catalog-add actions for the same `canonicalId` should not
+produce duplicate catalog records. They should be reported and skipped
+as redundant inclusion intent.
+
+## Future Events
+
+### `MEDIA_REACTION_RECORDED`
+
+Status: future/planned.
+
+This event is not part of the current ingestion implementation.
 
 Records the user's subjective reaction to a media item.
 
@@ -131,11 +213,11 @@ signal.
 
 ### Required Fields
 
-| Field        | Type   | Description                        |
-| ------------ | ------ | ---------------------------------- |
-| `eventType`  | string | Must be `MEDIA_REACTION_RECORDED`. |
-| `id`         | string | Stable media ID.                   |
-| `occurredAt` | string | ISO timestamp.                     |
+| Field         | Type   | Description                         |
+| ------------- | ------ | ----------------------------------- |
+| `eventType`   | string | Must be `MEDIA_REACTION_RECORDED`.  |
+| `canonicalId` | string | Globally unique canonical title ID. |
+| `occurredAt`  | string | ISO timestamp.                      |
 
 ### Optional Fields
 
@@ -199,7 +281,7 @@ Reaction bullets are usually more useful than the number.
 ```json
 {
   "eventType": "MEDIA_REACTION_RECORDED",
-  "id": "imdb:tt0112573",
+  "canonicalId": "imdb:tt0112573",
   "rating": 9,
   "status": "completed",
   "liked": [

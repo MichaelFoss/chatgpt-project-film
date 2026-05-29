@@ -1,7 +1,7 @@
 ---
 title: Current State
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-05-29
 upload_to_chatgpt: true
 ---
 
@@ -137,6 +137,7 @@ The repository currently contains:
 - streaming context definitions
 - event schema definitions
 - mid-series guidance rules
+- committed application configuration in `.appconfig.jsonc`
 
 The repository does not yet contain:
 
