@@ -154,6 +154,9 @@ metadata. A `catalog.add` event with `metadataLookup: "skip"` still
 requires a valid `data/metadata-cache.json` entry before a catalog item
 can be generated.
 
+If metadata is missing or invalid for a `skip` item, catalog generation
+should report it and omit the item from generated catalog output.
+
 ### Excluded Fields
 
 Do not include descriptive title fields in `catalog.add`.

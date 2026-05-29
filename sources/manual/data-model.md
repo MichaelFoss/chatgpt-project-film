@@ -202,11 +202,24 @@ Replay should:
 6. report and skip duplicate catalog-add actions
 7. use the metadata cache to build catalog records
 8. fetch provider metadata only when allowed and needed
-9. generate deterministic catalog output
-10. print success and failure reports
+9. omit catalog-add entries that still have missing or invalid metadata
+10. generate deterministic catalog output
+11. print success, missing metadata, and invalid metadata reports
 
 If no provider requests are made and the input files are unchanged,
 repeated runs should produce identical `data/catalog.json` output.
+
+Catalog generation should not emit empty placeholder catalog records. A
+`catalog.add` event whose `canonicalId` has no valid metadata should be
+reported and omitted from `data/catalog.json`.
+
+Missing metadata and invalid metadata should be reported at the end of
+the script. Missing or invalid metadata should not cause the script to
+hard fail by itself.
+
+Fatal failures should be reserved for event-log integrity or parse
+problems, such as invalid NDJSON, invalid event shape, duplicate
+`eventId`, or unreadable required input files.
 
 ## Canonical State Model
 
@@ -236,14 +249,20 @@ Catalog state should be stored under:
 data/catalog.json
 ```
 
+`data/catalog.json` is the generated data provider for the ChatGPT Film
+project.
+
 The file should be keyed by canonical identifier.
 
-Catalog records are derived from:
+Catalog records are generated directly from:
 
-- canonical events
-- valid metadata records
+- `events/media.ndjson`
+- `data/metadata-cache.json`
 
-Catalog records should be provider-independent.
+Do not introduce an intermediate catalog-index layer.
+
+Catalog records should be provider-independent and should only be
+emitted when valid metadata exists for the canonical identifier.
 
 Catalog records should contain information useful for:
 
