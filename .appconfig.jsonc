@@ -1,0 +1,10 @@
+{
+  // Maximum provider metadata requests per run.
+  "maxMetadataRequestsPerRun": 100,
+
+  // Maximum retry attempts before manual intervention is required.
+  "maxMetadataRequestRetries": 3,
+
+  // Delay between provider requests in milliseconds.
+  "metadataRequestDelayMs": 1000
+}

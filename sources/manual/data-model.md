@@ -414,7 +414,7 @@ Repository configuration should live in a committed configuration file.
 Potential examples include:
 
 ```text
-.appconfig.json
+.appconfig.jsonc
 ```
 
 Configuration may include:
