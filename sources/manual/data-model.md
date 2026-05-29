@@ -149,17 +149,33 @@ data/metadata-cache.json
 Conceptual structure:
 
 ```ts
+type EventSource = 'plex' | 'manual';
 type MetadataLookupPolicy = 'auto' | 'skip';
 
 type CatalogAddEvent = {
+  eventId?: string;
+  schemaVersion?: number;
   eventType: 'catalog.add';
   occurredAt: string;
+  source: EventSource;
   canonicalId: string;
   metadataLookup?: MetadataLookupPolicy;
 };
 ```
 
 `metadataLookup` defaults to `auto`.
+
+`schemaVersion` defaults to `1` when omitted.
+
+`eventId` is optional. When present, it should be a true unique
+identifier rather than a stringified event action.
+
+Duplicate `eventId` values indicate a serious event-log data problem and
+should cause processing to fail without writing output.
+
+Duplicate catalog-add actions for the same `canonicalId` should not
+produce duplicate catalog records. They should be reported and skipped
+as redundant inclusion intent.
 
 Use `auto` when provider lookup should be attempted if metadata is
 missing or invalid.
@@ -168,6 +184,26 @@ Use `skip` when the title is known to require manual metadata.
 
 A `catalog.add` event with `metadataLookup: 'skip'` still requires a
 valid metadata-cache entry before it can produce a catalog item.
+
+### Replay Semantics
+
+Event replay should generate catalog state every time it runs.
+
+Replay should:
+
+1. read events in file order
+2. treat missing `schemaVersion` as `1`
+3. validate each event shape
+4. fail without writing output when duplicate `eventId` values are found
+5. build a unique catalog inclusion set by `canonicalId`
+6. report and skip duplicate catalog-add actions
+7. use the metadata cache to build catalog records
+8. fetch provider metadata only when allowed and needed
+9. generate deterministic catalog output
+10. print success and failure reports
+
+If no provider requests are made and the input files are unchanged,
+repeated runs should produce identical `data/catalog.json` output.
 
 ## Canonical State Model
 
