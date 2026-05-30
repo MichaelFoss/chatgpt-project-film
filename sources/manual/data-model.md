@@ -220,6 +220,10 @@ Catalog generation consumes `events/catalog.events.ndjson` and
 `data/metadata-cache.json`. It must not contact metadata providers and
 must not modify `data/metadata-cache.json`.
 
+The sync command may orchestrate metadata enrichment followed by catalog
+generation, but it must not append catalog events or perform catalog
+import/add behavior.
+
 Given the same `events/catalog.events.ndjson` and
 `data/metadata-cache.json`, catalog generation should produce the same
 `data/catalog.json` output. Catalog generation should be possible
@@ -274,6 +278,7 @@ yarn catalog:import <path> --plan
 yarn catalog:import <path> --write
 yarn catalog:add <canonicalId> --source manual --plan
 yarn catalog:add <canonicalId> --source manual --write
+yarn catalog:sync
 ```
 
 Import input is a JSON array. Each item must include `canonicalId` and

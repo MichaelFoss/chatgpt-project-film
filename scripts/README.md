@@ -29,6 +29,12 @@ metadata gaps and planned lookups without contacting providers or
 writing files. `yarn enrich:metadata:write` performs cache-writing
 metadata enrichment.
 
+`yarn catalog:sync` runs `enrich:metadata:write` behavior followed by
+`build:catalog` behavior. It does not append catalog events, perform
+catalog import/add, or replace the standalone enrichment and build
+commands. Fatal enrichment errors skip catalog generation; provider
+lookup failures are reported without blocking catalog generation.
+
 Provider planning and execution report distinct states:
 
 - no supporting provider configured: no registered provider supports the
