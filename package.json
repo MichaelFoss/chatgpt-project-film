@@ -10,6 +10,8 @@
     "check:format": "prettier --check .",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"!node_modules/**\" \"!dist/**\"",
     "validate:sources": "node scripts/validate-sources.js",
+    "catalog:import": "node scripts/catalog-import.js",
+    "catalog:add": "node scripts/catalog-add.js",
     "build:catalog": "node scripts/build-catalog.js",
     "enrich:metadata:plan": "node scripts/enrich-metadata.js plan",
     "enrich:metadata:write": "node scripts/enrich-metadata.js write",

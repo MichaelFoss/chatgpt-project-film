@@ -262,6 +262,35 @@ Fatal failures should be reserved for event-log integrity or parse
 problems, such as invalid NDJSON, invalid event shape, duplicate
 `eventId`, or unreadable required input files.
 
+### Catalog Event Ingestion
+
+Catalog inclusion should be appended as `catalog.add` events through the
+catalog import workflow when possible.
+
+Supported commands:
+
+```bash
+yarn catalog:import <path> --plan
+yarn catalog:import <path> --write
+yarn catalog:add <canonicalId> --source manual --plan
+yarn catalog:add <canonicalId> --source manual --write
+```
+
+Import input is a JSON array. Each item must include `canonicalId` and
+`source`, and may include `metadataLookup` and `occurredAt`. Descriptive
+catalog fields such as title, year, media type, people, ratings, and
+external IDs do not belong in import items.
+
+Plan mode validates and reports only. Write mode appends valid,
+non-duplicate new events to `events/catalog.events.ndjson`. Existing
+catalog IDs and repeated IDs within the import input are reported and
+skipped rather than treated as fatal. Fatal event-log validation errors,
+such as invalid NDJSON or duplicate existing `eventId` values, should
+still stop ingestion.
+
+Catalog event ingestion must not build `data/catalog.json`, mutate
+`data/metadata-cache.json`, or perform provider lookups.
+
 ## Canonical State Model
 
 ### Philosophy
