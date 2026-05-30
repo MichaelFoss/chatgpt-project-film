@@ -2,29 +2,19 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { planMetadataEnrichment } from '../../scripts/enrich-metadata.js';
+import {
+  executeMetadataEnrichment,
+  planMetadataEnrichment,
+  resolveMetadataEnrichmentCommand,
+} from '../../scripts/enrich-metadata.js';
+import { buildCatalog } from '../../scripts/lib/catalog-builder.js';
 import {
   metadataProviders,
   notImplementedProvider,
 } from '../../scripts/lib/metadata-providers/index.js';
+import { createFakeMetadataProvider } from './fake-metadata-provider.js';
 
 const tempDirs = [];
-
-const fakeProvider = {
-  id: 'fake',
-
-  supports(canonicalId) {
-    return canonicalId.startsWith('imdb:');
-  },
-
-  async lookup() {
-    throw new Error('fake provider lookup should not run in dry-run');
-  },
-
-  toMetadataRecord() {
-    throw new Error('fake provider mapping should not run in dry-run');
-  },
-};
 
 async function createTempProject() {
   const rootDir = await fs.mkdtemp(
@@ -102,8 +92,32 @@ afterEach(async () => {
 });
 
 describe('planMetadataEnrichment', () => {
+  it('recognizes explicit CLI commands', () => {
+    expect(
+      resolveMetadataEnrichmentCommand([
+        'node',
+        'scripts/enrich-metadata.js',
+        'plan',
+      ]),
+    ).toBe('plan');
+    expect(
+      resolveMetadataEnrichmentCommand([
+        'node',
+        'scripts/enrich-metadata.js',
+        'write',
+      ]),
+    ).toBe('write');
+    expect(() =>
+      resolveMetadataEnrichmentCommand([
+        'node',
+        'scripts/enrich-metadata.js',
+      ]),
+    ).toThrow('Metadata enrichment command must be "plan" or "write".');
+  });
+
   it('plans missing metadata for lookup', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [catalogAdd()]);
     await writeMetadata(rootDir, {});
 
@@ -121,10 +135,13 @@ describe('planMetadataEnrichment', () => {
         provider: 'fake',
       },
     ]);
+    expect(fakeProvider.calls.lookup).toEqual([]);
+    expect(fakeProvider.calls.toMetadataRecord).toEqual([]);
   });
 
   it('skips valid metadata as already valid', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [catalogAdd()]);
     await writeMetadata(rootDir, {
       'imdb:tt0112573': validMetadata(),
@@ -142,6 +159,7 @@ describe('planMetadataEnrichment', () => {
 
   it('plans invalid metadata for lookup', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [catalogAdd()]);
     await writeMetadata(rootDir, {
       'imdb:tt0112573': {
@@ -173,6 +191,7 @@ describe('planMetadataEnrichment', () => {
 
   it('does not plan metadataLookup skip events for lookup', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [
       catalogAdd({ metadataLookup: 'skip' }),
     ]);
@@ -211,6 +230,7 @@ describe('planMetadataEnrichment', () => {
 
   it('reports duplicate catalog adds as non-fatal', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [
       catalogAdd({ eventId: 'event-1' }),
       catalogAdd({ eventId: 'event-2' }),
@@ -231,6 +251,7 @@ describe('planMetadataEnrichment', () => {
 
   it('dry-run writes no files', async () => {
     const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
     await writeEvents(rootDir, [catalogAdd()]);
     await writeMetadata(rootDir, {});
     const before = await readProjectFiles(rootDir);
@@ -246,6 +267,8 @@ describe('planMetadataEnrichment', () => {
     ).rejects.toThrow();
     expect(report.filesWritten).toEqual([]);
     expect(after).toEqual(before);
+    expect(fakeProvider.calls.lookup).toEqual([]);
+    expect(fakeProvider.calls.toMetadataRecord).toEqual([]);
   });
 
   it('provider stub does not perform network access', async () => {
@@ -256,5 +279,117 @@ describe('planMetadataEnrichment', () => {
     await expect(notImplementedProvider.lookup()).rejects.toThrow(
       'Real metadata provider lookups are not implemented yet.',
     );
+  });
+});
+
+describe('executeMetadataEnrichment', () => {
+  it('writes metadata-cache.json for missing metadata', async () => {
+    const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataEnrichment({
+      rootDir,
+      providers: [fakeProvider],
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+
+    const cache = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'metadata-cache.json'),
+        'utf8',
+      ),
+    );
+
+    expect(report.mode).toBe('execute');
+    expect(report.filesWritten).toEqual([
+      path.join(rootDir, 'data', 'metadata-cache.json'),
+    ]);
+    expect(report.executedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'fake',
+      },
+    ]);
+    expect(report.metadataRecordsCreated).toEqual(['imdb:tt0112573']);
+    expect(fakeProvider.calls.lookup).toEqual(['imdb:tt0112573']);
+    expect(fakeProvider.calls.toMetadataRecord).toEqual([
+      'imdb:tt0112573',
+    ]);
+    expect(cache).toEqual({
+      'imdb:tt0112573': {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'fake',
+        isValid: true,
+        lastUpdatedAt: '2026-05-30T12:00:00.000Z',
+        provenance: {
+          source: 'provider-lookup',
+          provider: 'fake',
+        },
+        metadata: {
+          mediaType: 'movie',
+          title: 'Fixture title for imdb:tt0112573',
+          genres: ['Fixture'],
+        },
+      },
+    });
+  });
+
+  it('preserves existing valid records without invoking providers', async () => {
+    const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
+    const existing = validMetadata();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {
+      'imdb:tt0112573': existing,
+    });
+
+    const before = await readProjectFiles(rootDir);
+    const report = await executeMetadataEnrichment({
+      rootDir,
+      providers: [fakeProvider],
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const after = await readProjectFiles(rootDir);
+
+    expect(report.alreadyValidMetadata).toEqual(['imdb:tt0112573']);
+    expect(report.filesWritten).toEqual([]);
+    expect(after).toEqual(before);
+    expect(fakeProvider.calls.lookup).toEqual([]);
+    expect(fakeProvider.calls.toMetadataRecord).toEqual([]);
+  });
+
+  it('keeps catalog generation independent and offline', async () => {
+    const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    await executeMetadataEnrichment({
+      rootDir,
+      providers: [fakeProvider],
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+
+    const lookupCallsAfterEnrichment = [...fakeProvider.calls.lookup];
+    const report = await buildCatalog({ rootDir });
+    const catalog = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'catalog.json'),
+        'utf8',
+      ),
+    );
+
+    expect(fakeProvider.calls.lookup).toEqual(
+      lookupCallsAfterEnrichment,
+    );
+    expect(report.catalogRecordsWritten).toBe(1);
+    expect(catalog['imdb:tt0112573']).toEqual({
+      canonicalId: 'imdb:tt0112573',
+      mediaType: 'movie',
+      title: 'Fixture title for imdb:tt0112573',
+      genres: ['Fixture'],
+    });
   });
 });

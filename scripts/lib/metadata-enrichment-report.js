@@ -11,6 +11,8 @@ export function createMetadataEnrichmentReport() {
     skippedMetadataLookup: [],
     noSupportingProviderConfigured: [],
     plannedLookups: [],
+    executedLookups: [],
+    metadataRecordsCreated: [],
     fatalErrors: [],
     metadataCacheMissing: false,
     filesWritten: [],
@@ -19,7 +21,7 @@ export function createMetadataEnrichmentReport() {
 
 export function formatMetadataEnrichmentReport(report) {
   const lines = [
-    'Metadata enrichment dry-run report',
+    'Metadata enrichment report',
     `- mode: ${report.mode}`,
     `- events read: ${report.eventsRead}`,
     `- unique catalog adds: ${report.uniqueCatalogAdds}`,
@@ -74,6 +76,22 @@ export function formatMetadataEnrichmentReport(report) {
     lines.push(
       `  - ${plannedLookup.canonicalId} (${plannedLookup.reason}, ${plannedLookup.provider})`,
     );
+  }
+
+  lines.push(`- executed lookups: ${report.executedLookups.length}`);
+
+  for (const executedLookup of report.executedLookups) {
+    lines.push(
+      `  - ${executedLookup.canonicalId} (${executedLookup.provider})`,
+    );
+  }
+
+  lines.push(
+    `- metadata records created: ${report.metadataRecordsCreated.length}`,
+  );
+
+  for (const canonicalId of report.metadataRecordsCreated) {
+    lines.push(`  - ${canonicalId}`);
   }
 
   if (report.fatalErrors.length > 0) {

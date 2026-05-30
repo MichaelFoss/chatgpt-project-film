@@ -196,21 +196,21 @@ Missing titles:
 Proposed commands:
 
 ```bash
-yarn enrich:metadata --dry-run
-yarn enrich:metadata
-yarn enrich:metadata --limit 25
-yarn enrich:metadata --provider omdb
-yarn enrich:metadata --id imdb:tt0112573
-yarn enrich:metadata --refresh imdb:tt0112573
-yarn enrich:metadata --report json
+yarn enrich:metadata:plan
+yarn enrich:metadata:write
+yarn enrich:metadata:write --limit 25
+yarn enrich:metadata:write --provider omdb
+yarn enrich:metadata:write --id imdb:tt0112573
+yarn enrich:metadata:write --refresh imdb:tt0112573
+yarn enrich:metadata:plan --report json
 ```
 
 Recommended workflow:
 
 1. append catalog events
-2. run `yarn enrich:metadata --dry-run`
+2. run `yarn enrich:metadata:plan`
 3. inspect missing/invalid/eligible IDs
-4. run `yarn enrich:metadata --limit N`
+4. run `yarn enrich:metadata:write --limit N`
 5. run `yarn build:catalog`
 6. review catalog report
 7. run normal checks/build workflow
