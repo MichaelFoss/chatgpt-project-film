@@ -1,7 +1,7 @@
 yarn lint-staged
 
-if [ -n "$(git status --porcelain -- sources)" ]; then
-  echo "Skipping full source validation because sources/ has unstaged or untracked changes."
+if ! git diff --quiet -- sources || [ -n "$(git ls-files --others --exclude-standard -- sources)" ]; then
+  echo "Skipping full source validation because sources/ has unstaged changes or untracked files."
   echo "Run 'yarn validate:sources' manually when source drafts are ready."
   exit 0
 fi
