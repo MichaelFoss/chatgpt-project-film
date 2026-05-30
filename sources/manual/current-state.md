@@ -39,17 +39,17 @@ For catalog data, metadata enrichment and catalog generation are
 separate phases:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
   -> identify missing metadata
   -> provider lookups
   -> data/metadata-cache.json
 
-events/media.ndjson + data/metadata-cache.json
+events/catalog.events.ndjson + data/metadata-cache.json
   -> data/catalog.json
 ```
 
-Catalog generation is deterministic from `events/media.ndjson` and
-`data/metadata-cache.json`. It should run offline, must not perform
+Catalog generation is deterministic from `events/catalog.events.ndjson`
+and `data/metadata-cache.json`. It should run offline, must not perform
 provider lookups, and consumes the metadata cache without modifying it.
 
 ## Current Architecture

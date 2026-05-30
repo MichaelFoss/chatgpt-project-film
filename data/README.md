@@ -8,11 +8,11 @@ and, where explicitly documented, durable enrichment artifacts.
 Catalog state is generated in two separate phases:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
   -> metadata enrichment
   -> data/metadata-cache.json
 
-events/media.ndjson + data/metadata-cache.json
+events/catalog.events.ndjson + data/metadata-cache.json
   -> catalog generation
   -> data/catalog.json
 ```
@@ -20,7 +20,7 @@ events/media.ndjson + data/metadata-cache.json
 Metadata enrichment may contact providers and update
 `data/metadata-cache.json`.
 
-Catalog generation consumes `events/media.ndjson` and
+Catalog generation consumes `events/catalog.events.ndjson` and
 `data/metadata-cache.json`, must not contact providers, and must not
 modify the metadata cache.
 

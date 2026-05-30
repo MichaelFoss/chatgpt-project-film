@@ -175,8 +175,8 @@ Example conceptual workflow:
 
 ```text
 conversation
-  -> MEDIA_UPDATE event
-  -> events/media-updates.ndjson
+  -> catalog.add event
+  -> events/catalog.events.ndjson
   -> ingestion script
   -> canonical state update
   -> generated Markdown upload sources
@@ -188,19 +188,19 @@ IDs whenever available.
 Media catalog state uses two independent phases:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
   -> metadata enrichment
   -> provider lookups
   -> data/metadata-cache.json
 
-events/media.ndjson + data/metadata-cache.json
+events/catalog.events.ndjson + data/metadata-cache.json
   -> catalog generation
   -> data/catalog.json
 ```
 
 Metadata enrichment is the only phase that should contact providers.
 Catalog generation should consume the metadata cache, should not modify
-it, and should be deterministic from `events/media.ndjson` and
+it, and should be deterministic from `events/catalog.events.ndjson` and
 `data/metadata-cache.json`.
 
 Owned media should not automatically imply:

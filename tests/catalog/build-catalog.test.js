@@ -50,7 +50,7 @@ async function createTempProject() {
 async function writeEvents(rootDir, events) {
   const lines = events.map((event) => JSON.stringify(event)).join('\n');
   await fs.writeFile(
-    path.join(rootDir, 'events', 'media.ndjson'),
+    path.join(rootDir, 'events', 'catalog.events.ndjson'),
     `${lines}\n`,
     'utf8',
   );
@@ -58,7 +58,7 @@ async function writeEvents(rootDir, events) {
 
 async function writeRawEvents(rootDir, text) {
   await fs.writeFile(
-    path.join(rootDir, 'events', 'media.ndjson'),
+    path.join(rootDir, 'events', 'catalog.events.ndjson'),
     text,
     'utf8',
   );

@@ -28,6 +28,27 @@ Avoid recording:
 
 ## Decision Log
 
+### 2026-05-30: Name Catalog Event Stream Explicitly
+
+The catalog event stream should be stored at:
+
+```text
+events/catalog.events.ndjson
+```
+
+The filename should make the stream's role clear to new readers and keep
+the catalog workflow understandable:
+
+```text
+events/catalog.events.ndjson
+  -> metadata enrichment
+  -> data/metadata-cache.json
+
+events/catalog.events.ndjson + data/metadata-cache.json
+  -> catalog generation
+  -> data/catalog.json
+```
+
 ### 2026-05-27: Use Git as Canonical Source of Truth
 
 The Git repository is the authoritative long-term source of truth.
@@ -230,7 +251,7 @@ data/metadata-cache.json
 Catalog generation should read:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
 data/metadata-cache.json
 ```
 
@@ -241,9 +262,9 @@ data/catalog.json
 ```
 
 Catalog generation must not perform provider lookups and should be
-possible entirely offline. Given unchanged `events/media.ndjson` and
-`data/metadata-cache.json`, repeated catalog generation runs should
-produce the same catalog output.
+possible entirely offline. Given unchanged
+`events/catalog.events.ndjson` and `data/metadata-cache.json`, repeated
+catalog generation runs should produce the same catalog output.
 
 ### 2026-05-27: Use JavaScript with Node.js for Repository Tooling
 

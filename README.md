@@ -77,11 +77,11 @@ For media catalog data, enrichment and catalog generation are separate
 responsibilities:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
   -> provider lookups
   -> data/metadata-cache.json
 
-events/media.ndjson + data/metadata-cache.json
+events/catalog.events.ndjson + data/metadata-cache.json
   -> data/catalog.json
 ```
 

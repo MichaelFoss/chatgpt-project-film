@@ -10,7 +10,7 @@ import { writeGeneratedJsonFile } from './json-file.js';
 
 export async function buildCatalog({
   rootDir = process.cwd(),
-  eventsPath = path.join(rootDir, 'events', 'media.ndjson'),
+  eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
   outputPath = path.join(rootDir, 'data', 'catalog.json'),
 } = {}) {

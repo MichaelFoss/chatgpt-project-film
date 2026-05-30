@@ -120,7 +120,7 @@ Events should be:
 The initial implementation uses:
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
 ```
 
 One JSON object exists per line.
@@ -196,7 +196,7 @@ Metadata enrichment and catalog generation are independent phases.
 Phase 1: Metadata enrichment
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
   -> identify missing metadata
   -> provider lookups
   -> data/metadata-cache.json
@@ -205,7 +205,7 @@ events/media.ndjson
 Phase 2: Catalog generation
 
 ```text
-events/media.ndjson
+events/catalog.events.ndjson
         +
 data/metadata-cache.json
         |
@@ -216,13 +216,14 @@ data/catalog.json
 Metadata enrichment is the only phase that may contact metadata
 providers. It may update `data/metadata-cache.json`.
 
-Catalog generation consumes `events/media.ndjson` and
+Catalog generation consumes `events/catalog.events.ndjson` and
 `data/metadata-cache.json`. It must not contact metadata providers and
 must not modify `data/metadata-cache.json`.
 
-Given the same `events/media.ndjson` and `data/metadata-cache.json`,
-catalog generation should produce the same `data/catalog.json` output.
-Catalog generation should be possible entirely offline.
+Given the same `events/catalog.events.ndjson` and
+`data/metadata-cache.json`, catalog generation should produce the same
+`data/catalog.json` output. Catalog generation should be possible
+entirely offline.
 
 ### Catalog Generation Replay Semantics
 
@@ -245,8 +246,8 @@ Catalog generation must not perform provider lookups. If metadata is
 missing or invalid, catalog generation should report the problem and
 omit the affected catalog item rather than enriching it inline.
 
-If `events/media.ndjson` and `data/metadata-cache.json` are unchanged,
-repeated catalog generation runs should produce identical
+If `events/catalog.events.ndjson` and `data/metadata-cache.json` are
+unchanged, repeated catalog generation runs should produce identical
 `data/catalog.json` output.
 
 Catalog generation should not emit empty placeholder catalog records. A
@@ -296,7 +297,7 @@ The file should be keyed by canonical identifier.
 
 Catalog records are generated directly from:
 
-- `events/media.ndjson`
+- `events/catalog.events.ndjson`
 - `data/metadata-cache.json`
 
 Do not introduce an intermediate catalog-index layer.
