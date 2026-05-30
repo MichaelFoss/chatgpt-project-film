@@ -191,6 +191,28 @@ from catalog-add events.
 }
 ```
 
+### Ingestion Commands
+
+Catalog inclusion events should be appended through the catalog
+ingestion commands when possible:
+
+```bash
+yarn catalog:import <path> --plan
+yarn catalog:import <path> --write
+yarn catalog:add <canonicalId> --source manual --plan
+yarn catalog:add <canonicalId> --source manual --write
+```
+
+The import command accepts a JSON array of items with `canonicalId` and
+`source`, plus optional `metadataLookup` and `occurredAt`. It validates
+and reports invalid rows, duplicate input IDs, and already-existing
+catalog IDs before writing. The add command is a one-item wrapper around
+the same import path.
+
+Catalog ingestion appends valid new `catalog.add` events only. It does
+not build `data/catalog.json`, mutate `data/metadata-cache.json`, or
+perform provider lookups.
+
 ## Spoiler Rules for Events
 
 Events should not contain spoilers unless the user explicitly chooses to

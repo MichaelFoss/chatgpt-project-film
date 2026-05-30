@@ -130,7 +130,7 @@ export async function loadMetadataCache(metadataCachePath) {
   }
 }
 
-function mapManualMetadata(canonicalId, metadata) {
+function mapNormalizedMetadata(canonicalId, metadata) {
   const title = normalizeString(metadata.title);
   const mediaType = normalizeMediaType(metadata.mediaType);
 
@@ -169,46 +169,6 @@ function mapManualMetadata(canonicalId, metadata) {
   });
 }
 
-function mapOmdbMetadata(canonicalId, metadata) {
-  const title = normalizeString(metadata.Title);
-  const mediaType = normalizeMediaType(metadata.Type);
-
-  if (!title || !mediaType) {
-    return null;
-  }
-
-  const rottenTomatoesCritics = Array.isArray(metadata.Ratings)
-    ? metadata.Ratings.find((rating) => {
-        return rating?.Source === 'Rotten Tomatoes';
-      })?.Value
-    : null;
-
-  const people = compactObject({
-    directors: splitPeople(metadata.Director),
-    writers: splitPeople(metadata.Writer),
-    actors: splitPeople(metadata.Actors),
-  });
-
-  const ratings = compactObject({
-    imdb: optionalProviderString(metadata.imdbRating),
-    rottenTomatoes: compactObject({
-      critics: optionalProviderString(rottenTomatoesCritics),
-    }),
-    metacritic: optionalProviderString(metadata.Metascore),
-  });
-
-  return compactCatalogItem({
-    canonicalId,
-    mediaType,
-    title,
-    description: optionalProviderString(metadata.Plot),
-    posterUrl: optionalProviderString(metadata.Poster),
-    genres: normalizeGenres(metadata.Genre),
-    people,
-    ratings,
-  });
-}
-
 export function mapMetadataRecord(canonicalId, record) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
     return null;
@@ -228,9 +188,7 @@ export function mapMetadataRecord(canonicalId, record) {
     return null;
   }
 
-  const mapped =
-    mapManualMetadata(canonicalId, metadata) ??
-    mapOmdbMetadata(canonicalId, metadata);
+  const mapped = mapNormalizedMetadata(canonicalId, metadata);
 
   if (
     !mapped ||

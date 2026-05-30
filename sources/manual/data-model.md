@@ -262,6 +262,35 @@ Fatal failures should be reserved for event-log integrity or parse
 problems, such as invalid NDJSON, invalid event shape, duplicate
 `eventId`, or unreadable required input files.
 
+### Catalog Event Ingestion
+
+Catalog inclusion should be appended as `catalog.add` events through the
+catalog import workflow when possible.
+
+Supported commands:
+
+```bash
+yarn catalog:import <path> --plan
+yarn catalog:import <path> --write
+yarn catalog:add <canonicalId> --source manual --plan
+yarn catalog:add <canonicalId> --source manual --write
+```
+
+Import input is a JSON array. Each item must include `canonicalId` and
+`source`, and may include `metadataLookup` and `occurredAt`. Descriptive
+catalog fields such as title, year, media type, people, ratings, and
+external IDs do not belong in import items.
+
+Plan mode validates and reports only. Write mode appends valid,
+non-duplicate new events to `events/catalog.events.ndjson`. Existing
+catalog IDs and repeated IDs within the import input are reported and
+skipped rather than treated as fatal. Fatal event-log validation errors,
+such as invalid NDJSON or duplicate existing `eventId` values, should
+still stop ingestion.
+
+Catalog event ingestion must not build `data/catalog.json`, mutate
+`data/metadata-cache.json`, or perform provider lookups.
+
 ## Canonical State Model
 
 ### Philosophy
@@ -417,6 +446,10 @@ performing lookups or modifying cache records.
 
 OMDb is the primary metadata enrichment source.
 
+The default provider registry includes OMDb. An `imdb:tt...` canonical
+ID can therefore be provider-supported even when the local OMDb
+credentials are absent.
+
 OMDb responses should be retained after retrieval.
 
 Provider responses are considered durable repository artifacts rather
@@ -428,6 +461,20 @@ active metadata provider changes in the future.
 ### Enrichment Failures
 
 Enrichment failures should be tracked.
+
+Enrichment reporting distinguishes three cases:
+
+- no supporting provider configured: no registered provider supports the
+  canonical ID
+- provider unavailable or misconfigured: a supporting provider exists,
+  but cannot perform the lookup in the current environment, such as when
+  `OMDB_API_KEY` is absent
+- provider lookup failure: a planned lookup was attempted but did not
+  produce usable catalog metadata
+
+Planning should report provider support without contacting providers.
+Write mode may report provider lookup failures without writing cache
+records until failure-state persistence is implemented.
 
 The system should support:
 
@@ -479,6 +526,36 @@ type MetadataRecord = {
     };
   };
 };
+```
+
+Provider-backed `metadata` should keep provider-independent catalog
+fields at the top level and provider-specific raw payloads beneath a
+provider-owned key.
+
+Manual-seeded provider data may use this same normalized metadata shape
+without changing `provenance.source` to `provider-lookup`. The
+provenance should continue to describe how the record entered the
+repository.
+
+Normalized catalog fields:
+
+- `mediaType`
+- `title`
+- `genres`
+
+Provider-specific payload example:
+
+```json
+{
+  "metadata": {
+    "mediaType": "movie",
+    "title": "Example",
+    "genres": ["Drama"],
+    "omdb": {
+      "Response": "True"
+    }
+  }
+}
 ```
 
 ### Metadata Update Rules
