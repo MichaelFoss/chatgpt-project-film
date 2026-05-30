@@ -1,0 +1,53 @@
+{
+  "imdb:tt0112573": {
+    "canonicalId": "imdb:tt0112573",
+    "provider": "omdb",
+    "isValid": true,
+    "lastUpdatedAt": "2026-05-30T00:00:00.000Z",
+    "provenance": {
+      "source": "manual-seed",
+      "provider": "omdb",
+      "note": "OMDb payload manually seeded before automated metadata enrichment existed."
+    },
+    "metadata": {
+      "Title": "Braveheart",
+      "Year": "1995",
+      "Rated": "R",
+      "Released": "24 May 1995",
+      "Runtime": "178 min",
+      "Genre": "Biography, Drama, War",
+      "Director": "Mel Gibson",
+      "Writer": "Randall Wallace",
+      "Actors": "Mel Gibson, Sophie Marceau, Patrick McGoohan",
+      "Plot": "Scottish warrior William Wallace leads his countrymen in a rebellion to free his homeland from the tyranny of King Edward I of England.",
+      "Language": "English, French, Latin, Gaelic, Italian",
+      "Country": "United States",
+      "Awards": "Won 5 Oscars. 34 wins & 34 nominations total",
+      "Poster": "https://m.media-amazon.com/images/M/MV5BNGMxZDBhNGQtYTZlNi00N2UzLWI4NDEtNmUzNWM2NTdmZDA0XkEyXkFqcGc@._V1_SX300.jpg",
+      "Ratings": [
+        {
+          "Source": "Internet Movie Database",
+          "Value": "8.3/10"
+        },
+        {
+          "Source": "Rotten Tomatoes",
+          "Value": "74%"
+        },
+        {
+          "Source": "Metacritic",
+          "Value": "68/100"
+        }
+      ],
+      "Metascore": "68",
+      "imdbRating": "8.3",
+      "imdbVotes": "1,155,463",
+      "imdbID": "tt0112573",
+      "Type": "movie",
+      "DVD": "N/A",
+      "BoxOffice": "$75,609,945",
+      "Production": "N/A",
+      "Website": "N/A",
+      "Response": "True"
+    }
+  }
+}

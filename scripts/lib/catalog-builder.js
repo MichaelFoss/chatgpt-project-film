@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CatalogBuildError } from './catalog-build-error.js';
 import { readEvents, replayCatalogAdds } from './catalog-events.js';
@@ -7,6 +6,7 @@ import {
   loadMetadataCache,
 } from './catalog-metadata.js';
 import { createBaseReport } from './catalog-report.js';
+import { writeGeneratedJsonFile } from './json-file.js';
 
 export async function buildCatalog({
   rootDir = process.cwd(),
@@ -37,12 +37,7 @@ export async function buildCatalog({
     report.invalidMetadata = invalidMetadata;
     report.catalogRecordsWritten = Object.keys(catalog).length;
 
-    await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    await fs.writeFile(
-      outputPath,
-      `${JSON.stringify(catalog, null, 2)}\n`,
-      'utf8',
-    );
+    await writeGeneratedJsonFile(outputPath, catalog);
     report.outputPathWritten = outputPath;
 
     return report;

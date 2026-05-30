@@ -463,6 +463,11 @@ type MetadataRecord = {
   provider: MetadataProvider;
   isValid: boolean;
   lastUpdatedAt: string;
+  provenance?: {
+    source: 'provider-lookup' | 'manual-entry' | 'manual-seed';
+    provider?: MetadataProvider;
+    note?: string;
+  };
   metadata?: unknown;
   request?: {
     retryAttemptsCount: number;
@@ -506,6 +511,10 @@ metadata is complete enough to use.
 Request-specific details belong under `request`.
 
 Manual records may omit `request`.
+
+`provenance` describes how the metadata record entered the cache. It is
+record-level provenance and should not be copied into generated catalog
+records.
 
 ## Configuration
 

@@ -1,12 +1,41 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogBuildError } from '../../scripts/lib/catalog-build-error.js';
 import { buildCatalog } from '../../scripts/lib/catalog-builder.js';
 import { formatReport } from '../../scripts/lib/catalog-report.js';
 
 const tempDirs = [];
+const repositoryRootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+);
+
+const expectedBraveheartCatalogRecord = {
+  canonicalId: 'imdb:tt0112573',
+  mediaType: 'movie',
+  title: 'Braveheart',
+  description:
+    'Scottish warrior William Wallace leads his countrymen in a rebellion to free his homeland from the tyranny of King Edward I of England.',
+  posterUrl:
+    'https://m.media-amazon.com/images/M/MV5BNGMxZDBhNGQtYTZlNi00N2UzLWI4NDEtNmUzNWM2NTdmZDA0XkEyXkFqcGc@._V1_SX300.jpg',
+  genres: ['Biography', 'Drama', 'War'],
+  people: {
+    directors: ['Mel Gibson'],
+    writers: ['Randall Wallace'],
+    actors: ['Mel Gibson', 'Sophie Marceau', 'Patrick McGoohan'],
+  },
+  ratings: {
+    imdb: '8.3',
+    rottenTomatoes: {
+      critics: '74%',
+    },
+    metacritic: '68',
+  },
+};
 
 async function createTempProject() {
   const rootDir = await fs.mkdtemp(
@@ -74,6 +103,44 @@ afterEach(async () => {
 });
 
 describe('buildCatalog', () => {
+  it('repository fixture builds Braveheart from metadata cache', async () => {
+    const outputDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'film-catalog-output-'),
+    );
+    tempDirs.push(outputDir);
+    const outputPath = path.join(outputDir, 'catalog.json');
+
+    const metadataCacheText = await fs.readFile(
+      path.join(repositoryRootDir, 'data', 'metadata-cache.json'),
+      'utf8',
+    );
+    const metadataCache = JSON.parse(metadataCacheText);
+
+    expect(metadataCache['imdb:tt0112573']).toMatchObject({
+      canonicalId: 'imdb:tt0112573',
+      provider: 'omdb',
+      isValid: true,
+      metadata: {
+        Title: 'Braveheart',
+        imdbID: 'tt0112573',
+        Type: 'movie',
+      },
+    });
+
+    const report = await buildCatalog({
+      rootDir: repositoryRootDir,
+      outputPath,
+    });
+    const catalog = JSON.parse(await fs.readFile(outputPath, 'utf8'));
+
+    expect(report.missingMetadata).toEqual([]);
+    expect(report.invalidMetadata).toEqual([]);
+    expect(report.catalogRecordsWritten).toBe(1);
+    expect(catalog).toEqual({
+      'imdb:tt0112573': expectedBraveheartCatalogRecord,
+    });
+  });
+
   it('valid replay writes expected catalog output', async () => {
     const rootDir = await createTempProject();
     await writeEvents(rootDir, [

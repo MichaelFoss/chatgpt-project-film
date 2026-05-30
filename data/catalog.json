@@ -1,0 +1,20 @@
+{
+  "imdb:tt0112573": {
+    "canonicalId": "imdb:tt0112573",
+    "mediaType": "movie",
+    "title": "Braveheart",
+    "description": "Scottish warrior William Wallace leads his countrymen in a rebellion to free his homeland from the tyranny of King Edward I of England.",
+    "posterUrl": "https://m.media-amazon.com/images/M/MV5BNGMxZDBhNGQtYTZlNi00N2UzLWI4NDEtNmUzNWM2NTdmZDA0XkEyXkFqcGc@._V1_SX300.jpg",
+    "genres": ["Biography", "Drama", "War"],
+    "people": {
+      "directors": ["Mel Gibson"],
+      "writers": ["Randall Wallace"],
+      "actors": ["Mel Gibson", "Sophie Marceau", "Patrick McGoohan"]
+    },
+    "ratings": {
+      "imdb": "8.3",
+      "rottenTomatoes": { "critics": "74%" },
+      "metacritic": "68"
+    }
+  }
+}
