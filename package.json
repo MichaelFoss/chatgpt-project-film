@@ -14,6 +14,8 @@
     "restore-build": "node scripts/restore-build.js",
     "publish-build-tags": "node scripts/publish-build-tags.js",
     "apply-template-update": "node scripts/apply-template-update.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check": "yarn check:format && yarn lint:md && yarn validate:sources",
     "prepare": "husky"
   },
@@ -31,6 +33,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
     "markdownlint-cli2": "^0.17.2",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "vitest": "^4.1.7"
   }
 }
