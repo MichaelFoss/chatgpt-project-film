@@ -9,6 +9,7 @@ import {
 } from '../../scripts/enrich-metadata.js';
 import { buildCatalog } from '../../scripts/lib/catalog-builder.js';
 import {
+  createOmdbProvider,
   metadataProviders,
   notImplementedProvider,
 } from '../../scripts/lib/metadata-providers/index.js';
@@ -139,6 +140,27 @@ describe('planMetadataEnrichment', () => {
     expect(fakeProvider.calls.toMetadataRecord).toEqual([]);
   });
 
+  it('plans OMDb-supported missing IMDb metadata with the default registry', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataEnrichment({
+      rootDir,
+      providers: metadataProviders,
+    });
+
+    expect(report.missingMetadata).toEqual(['imdb:tt0112573']);
+    expect(report.noSupportingProviderConfigured).toEqual([]);
+    expect(report.plannedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        provider: 'omdb',
+      },
+    ]);
+  });
+
   it('skips valid metadata as already valid', async () => {
     const rootDir = await createTempProject();
     const fakeProvider = createFakeMetadataProvider();
@@ -208,14 +230,14 @@ describe('planMetadataEnrichment', () => {
     expect(report.plannedLookups).toEqual([]);
   });
 
-  it('reports missing metadata without planning when no provider supports the ID', async () => {
+  it('reports missing metadata without planning when no supporting provider is configured', async () => {
     const rootDir = await createTempProject();
     await writeEvents(rootDir, [catalogAdd()]);
     await writeMetadata(rootDir, {});
 
     const report = await planMetadataEnrichment({
       rootDir,
-      providers: metadataProviders,
+      providers: [notImplementedProvider],
     });
 
     expect(report.missingMetadata).toEqual(['imdb:tt0112573']);
@@ -313,6 +335,7 @@ describe('executeMetadataEnrichment', () => {
       },
     ]);
     expect(report.metadataRecordsCreated).toEqual(['imdb:tt0112573']);
+    expect(report.providerLookupFailures).toEqual([]);
     expect(fakeProvider.calls.lookup).toEqual(['imdb:tt0112573']);
     expect(fakeProvider.calls.toMetadataRecord).toEqual([
       'imdb:tt0112573',
@@ -334,6 +357,119 @@ describe('executeMetadataEnrichment', () => {
         },
       },
     });
+  });
+
+  it('reports provider failures without writing failure-state records yet', async () => {
+    const rootDir = await createTempProject();
+    const unavailableProvider = {
+      id: 'unavailable',
+      supports: () => true,
+      async lookup() {
+        return {
+          status: 'unavailable',
+        };
+      },
+      toMetadataRecord({ canonicalId, fetchedAt }) {
+        return {
+          canonicalId,
+          provider: 'unavailable',
+          isValid: false,
+          lastUpdatedAt: fetchedAt,
+          provenance: {
+            source: 'provider-lookup',
+            provider: 'unavailable',
+          },
+          request: {
+            retryAttemptsCount: 0,
+            error: {
+              source: 'application',
+              message: 'Provider is not configured.',
+            },
+          },
+        };
+      },
+    };
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataEnrichment({
+      rootDir,
+      providers: [unavailableProvider],
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const cache = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'metadata-cache.json'),
+        'utf8',
+      ),
+    );
+
+    expect(report.executedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'unavailable',
+      },
+    ]);
+    expect(report.providerLookupFailures).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'unavailable',
+        reason: 'Provider is not configured.',
+      },
+    ]);
+    expect(report.metadataRecordsCreated).toEqual([]);
+    expect(report.filesWritten).toEqual([]);
+    expect(cache).toEqual({});
+  });
+
+  it('reports unavailable OMDb lookups without writing failure-state records yet', async () => {
+    const rootDir = await createTempProject();
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => undefined,
+      fetchImpl: async () => {
+        throw new Error(
+          'fetch should not be called without an API key',
+        );
+      },
+    });
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataEnrichment({
+      rootDir,
+      providers: [provider],
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const cache = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'metadata-cache.json'),
+        'utf8',
+      ),
+    );
+
+    expect(report.plannedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        provider: 'omdb',
+      },
+    ]);
+    expect(report.executedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'omdb',
+      },
+    ]);
+    expect(report.providerLookupFailures).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'omdb',
+        reason: 'OMDB_API_KEY is not configured.',
+      },
+    ]);
+    expect(report.metadataRecordsCreated).toEqual([]);
+    expect(report.filesWritten).toEqual([]);
+    expect(cache).toEqual({});
   });
 
   it('preserves existing valid records without invoking providers', async () => {

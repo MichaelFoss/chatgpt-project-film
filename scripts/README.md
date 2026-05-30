@@ -17,3 +17,12 @@ provider lookups.
 metadata gaps and planned lookups without contacting providers or
 writing files. `yarn enrich:metadata:write` performs cache-writing
 metadata enrichment.
+
+Provider planning and execution report distinct states:
+
+- no supporting provider configured: no registered provider supports the
+  canonical ID
+- provider unavailable or misconfigured: a supporting provider exists,
+  but cannot run in the current environment
+- provider lookup failure: a planned lookup ran but did not produce
+  usable metadata

@@ -120,10 +120,17 @@ describe('buildCatalog', () => {
       canonicalId: 'imdb:tt0112573',
       provider: 'omdb',
       isValid: true,
+      provenance: {
+        source: 'manual-seed',
+        provider: 'omdb',
+      },
       metadata: {
-        Title: 'Braveheart',
-        imdbID: 'tt0112573',
-        Type: 'movie',
+        title: 'Braveheart',
+        mediaType: 'movie',
+        omdb: {
+          imdbID: 'tt0112573',
+          Type: 'movie',
+        },
       },
     });
 
@@ -138,6 +145,40 @@ describe('buildCatalog', () => {
     expect(report.catalogRecordsWritten).toBe(1);
     expect(catalog).toEqual({
       'imdb:tt0112573': expectedBraveheartCatalogRecord,
+    });
+  });
+
+  it('maps provider-backed records from normalized metadata without provider payloads', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {
+      'imdb:tt0112573': {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'omdb',
+        isValid: true,
+        lastUpdatedAt: '2026-05-29T00:00:00.000Z',
+        provenance: {
+          source: 'manual-seed',
+          provider: 'omdb',
+        },
+        metadata: {
+          mediaType: 'movie',
+          title: 'Normalized Braveheart',
+          genres: ['Drama'],
+        },
+      },
+    });
+
+    const report = await buildCatalog({ rootDir });
+    const catalog = await readCatalog(rootDir);
+
+    expect(report.invalidMetadata).toEqual([]);
+    expect(report.catalogRecordsWritten).toBe(1);
+    expect(catalog['imdb:tt0112573']).toEqual({
+      canonicalId: 'imdb:tt0112573',
+      mediaType: 'movie',
+      title: 'Normalized Braveheart',
+      genres: ['Drama'],
     });
   });
 
@@ -185,22 +226,39 @@ describe('buildCatalog', () => {
         isValid: true,
         lastUpdatedAt: '2026-05-29T00:00:00.000Z',
         metadata: {
-          Title: 'Game of Thrones',
-          Type: 'series',
-          Genre: 'Action, Adventure, Drama',
-          Plot: 'Noble families vie for control.',
-          Poster: 'N/A',
-          Director: 'N/A',
-          Writer: 'David Benioff, D.B. Weiss',
-          Actors: 'Emilia Clarke, Peter Dinklage',
-          imdbRating: '9.2',
-          Metascore: '86',
-          Ratings: [
-            {
-              Source: 'Rotten Tomatoes',
-              Value: '89%',
+          mediaType: 'series',
+          title: 'Game of Thrones',
+          genres: ['Action', 'Adventure', 'Drama'],
+          description: 'Noble families vie for control.',
+          people: {
+            writers: ['David Benioff', 'D.B. Weiss'],
+            actors: ['Emilia Clarke', 'Peter Dinklage'],
+          },
+          ratings: {
+            imdb: '9.2',
+            rottenTomatoes: {
+              critics: '89%',
             },
-          ],
+            metacritic: '86',
+          },
+          omdb: {
+            Title: 'Game of Thrones',
+            Type: 'series',
+            Genre: 'Action, Adventure, Drama',
+            Plot: 'Noble families vie for control.',
+            Poster: 'N/A',
+            Director: 'N/A',
+            Writer: 'David Benioff, D.B. Weiss',
+            Actors: 'Emilia Clarke, Peter Dinklage',
+            imdbRating: '9.2',
+            Metascore: '86',
+            Ratings: [
+              {
+                Source: 'Rotten Tomatoes',
+                Value: '89%',
+              },
+            ],
+          },
         },
       },
     });

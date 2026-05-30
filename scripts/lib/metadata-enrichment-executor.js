@@ -42,6 +42,13 @@ function assertValidCreatedRecord(canonicalId, providerId, record) {
   }
 }
 
+function describeProviderFailure(record) {
+  return (
+    record?.request?.error?.message ??
+    'Provider did not return usable metadata.'
+  );
+}
+
 export async function executeMetadataEnrichment({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
@@ -92,6 +99,19 @@ export async function executeMetadataEnrichment({
         response,
         fetchedAt,
       });
+
+      if (!mapMetadataRecord(canonicalId, record)) {
+        report.executedLookups.push({
+          canonicalId,
+          provider: providerId,
+        });
+        report.providerLookupFailures.push({
+          canonicalId,
+          provider: providerId,
+          reason: describeProviderFailure(record),
+        });
+        continue;
+      }
 
       assertValidCreatedRecord(canonicalId, providerId, record);
       updatedCache[canonicalId] = record;

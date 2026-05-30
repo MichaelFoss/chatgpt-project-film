@@ -12,6 +12,7 @@ export function createMetadataEnrichmentReport() {
     noSupportingProviderConfigured: [],
     plannedLookups: [],
     executedLookups: [],
+    providerLookupFailures: [],
     metadataRecordsCreated: [],
     fatalErrors: [],
     metadataCacheMissing: false,
@@ -83,6 +84,16 @@ export function formatMetadataEnrichmentReport(report) {
   for (const executedLookup of report.executedLookups) {
     lines.push(
       `  - ${executedLookup.canonicalId} (${executedLookup.provider})`,
+    );
+  }
+
+  lines.push(
+    `- provider lookup failures: ${report.providerLookupFailures.length}`,
+  );
+
+  for (const failure of report.providerLookupFailures) {
+    lines.push(
+      `  - ${failure.canonicalId} (${failure.provider}, ${failure.reason})`,
     );
   }
 
