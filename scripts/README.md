@@ -5,3 +5,9 @@ workflows.
 
 Scripts should prefer deterministic, reproducible behavior whenever
 possible.
+
+For media catalog workflows, metadata enrichment and catalog generation
+are separate script responsibilities. Metadata enrichment may contact
+providers and update `data/metadata-cache.json`; catalog generation
+should consume `events/media.ndjson` and `data/metadata-cache.json`
+offline and write `data/catalog.json` without provider lookups.

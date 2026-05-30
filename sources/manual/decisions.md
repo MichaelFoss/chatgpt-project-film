@@ -1,7 +1,7 @@
 ---
 title: Decisions
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-05-30
 upload_to_chatgpt: false
 ---
 
@@ -215,6 +215,35 @@ Given:
 - identical scripts
 
 build outputs should remain reproducible.
+
+### 2026-05-30: Separate Metadata Enrichment from Catalog Generation
+
+Metadata enrichment and catalog generation should be treated as
+independent phases.
+
+Metadata enrichment may contact external providers and update:
+
+```text
+data/metadata-cache.json
+```
+
+Catalog generation should read:
+
+```text
+events/media.ndjson
+data/metadata-cache.json
+```
+
+and write:
+
+```text
+data/catalog.json
+```
+
+Catalog generation must not perform provider lookups and should be
+possible entirely offline. Given unchanged `events/media.ndjson` and
+`data/metadata-cache.json`, repeated catalog generation runs should
+produce the same catalog output.
 
 ### 2026-05-27: Use JavaScript with Node.js for Repository Tooling
 

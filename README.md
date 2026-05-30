@@ -66,11 +66,27 @@ Typical workflow:
 ```text
 conversation
   -> append-only event
+  -> metadata enrichment when needed
   -> canonical state regeneration
   -> generated source regeneration
   -> build artifacts
   -> ChatGPT upload
 ```
+
+For media catalog data, enrichment and catalog generation are separate
+responsibilities:
+
+```text
+events/media.ndjson
+  -> provider lookups
+  -> data/metadata-cache.json
+
+events/media.ndjson + data/metadata-cache.json
+  -> data/catalog.json
+```
+
+Catalog generation should be deterministic from those two input files
+and should not perform provider lookups.
 
 For normal source updates:
 

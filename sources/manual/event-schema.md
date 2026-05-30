@@ -1,7 +1,7 @@
 ---
 title: Event Schema
 status: current
-last_updated: 2026-05-29
+last_updated: 2026-05-30
 upload_to_chatgpt: true
 ---
 
@@ -149,6 +149,9 @@ is missing or invalid.
 Use `skip` when provider enrichment should not be attempted for that
 title.
 
+`metadataLookup` controls metadata enrichment only. Catalog generation
+must not contact providers regardless of this value.
+
 `skip` does not allow catalog generation to proceed without valid
 metadata. A `catalog.add` event with `metadataLookup: "skip"` still
 requires a valid `data/metadata-cache.json` entry before a catalog item
@@ -156,6 +159,10 @@ can be generated.
 
 If metadata is missing or invalid for a `skip` item, catalog generation
 should report it and omit the item from generated catalog output.
+
+If metadata is missing or invalid for an `auto` item, metadata
+enrichment may later update `data/metadata-cache.json`. Catalog
+generation should still only consume the existing metadata cache.
 
 ### Excluded Fields
 

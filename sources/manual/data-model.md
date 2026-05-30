@@ -16,6 +16,7 @@ This document specifies:
 - event storage philosophy
 - canonical identifiers
 - canonical state structure
+- catalog generation strategy
 - metadata enrichment strategy
 - configuration strategy
 
@@ -188,6 +189,41 @@ metadata. A `catalog.add` event with `metadataLookup: 'skip'` still
 requires a valid `data/metadata-cache.json` entry before a catalog item
 can be generated.
 
+### Metadata and Catalog Phase Boundary
+
+Metadata enrichment and catalog generation are independent phases.
+
+Phase 1: Metadata enrichment
+
+```text
+events/media.ndjson
+  -> identify missing metadata
+  -> provider lookups
+  -> data/metadata-cache.json
+```
+
+Phase 2: Catalog generation
+
+```text
+events/media.ndjson
+        +
+data/metadata-cache.json
+        |
+        v
+data/catalog.json
+```
+
+Metadata enrichment is the only phase that may contact metadata
+providers. It may update `data/metadata-cache.json`.
+
+Catalog generation consumes `events/media.ndjson` and
+`data/metadata-cache.json`. It must not contact metadata providers and
+must not modify `data/metadata-cache.json`.
+
+Given the same `events/media.ndjson` and `data/metadata-cache.json`,
+catalog generation should produce the same `data/catalog.json` output.
+Catalog generation should be possible entirely offline.
+
 ### Catalog Generation Replay Semantics
 
 Event replay should generate catalog state every time it runs.
@@ -201,13 +237,17 @@ Replay should:
 5. build a unique catalog inclusion set by `canonicalId`
 6. report and skip duplicate catalog-add actions
 7. use the metadata cache to build catalog records
-8. fetch provider metadata only when allowed and needed
-9. omit catalog-add entries that still have missing or invalid metadata
-10. generate deterministic catalog output
-11. print success, missing metadata, and invalid metadata reports
+8. omit catalog-add entries that still have missing or invalid metadata
+9. generate deterministic catalog output
+10. print success, missing metadata, and invalid metadata reports
 
-If no provider requests are made and the input files are unchanged,
-repeated runs should produce identical `data/catalog.json` output.
+Catalog generation must not perform provider lookups. If metadata is
+missing or invalid, catalog generation should report the problem and
+omit the affected catalog item rather than enriching it inline.
+
+If `events/media.ndjson` and `data/metadata-cache.json` are unchanged,
+repeated catalog generation runs should produce identical
+`data/catalog.json` output.
 
 Catalog generation should not emit empty placeholder catalog records. A
 `catalog.add` event whose `canonicalId` has no valid metadata should be
@@ -361,7 +401,16 @@ included in catalog state.
 The event stream should remain minimal.
 
 Metadata enrichment should populate descriptive fields using external
-sources.
+sources and persist the results in `data/metadata-cache.json`.
+
+Metadata enrichment is separate from catalog generation. It identifies
+catalog-add events whose metadata is missing, invalid, or eligible for
+refresh; performs provider lookups only when allowed by event policy and
+repository workflow; and updates metadata cache records according to the
+metadata update rules.
+
+Catalog generation should consume the resulting metadata cache without
+performing lookups or modifying cache records.
 
 ### OMDb
 

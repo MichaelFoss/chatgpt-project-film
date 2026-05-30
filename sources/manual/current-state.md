@@ -1,7 +1,7 @@
 ---
 title: Current State
 status: current
-last_updated: 2026-05-29
+last_updated: 2026-05-30
 upload_to_chatgpt: true
 ---
 
@@ -28,11 +28,29 @@ The intended workflow is:
 ```text
 conversation or import
   -> append-only events
+  -> metadata enrichment
   -> canonical machine-readable state
   -> generated retrieval-oriented sources
   -> build artifacts
   -> ChatGPT Project uploads
 ```
+
+For catalog data, metadata enrichment and catalog generation are
+separate phases:
+
+```text
+events/media.ndjson
+  -> identify missing metadata
+  -> provider lookups
+  -> data/metadata-cache.json
+
+events/media.ndjson + data/metadata-cache.json
+  -> data/catalog.json
+```
+
+Catalog generation is deterministic from `events/media.ndjson` and
+`data/metadata-cache.json`. It should run offline, must not perform
+provider lookups, and consumes the metadata cache without modifying it.
 
 ## Current Architecture
 
@@ -40,6 +58,7 @@ The repository currently distinguishes between:
 
 - append-only historical events
 - canonical machine-readable state
+- provider-backed metadata enrichment
 - manual runtime guidance
 - generated retrieval-oriented runtime projections
 - deployment/upload artifacts

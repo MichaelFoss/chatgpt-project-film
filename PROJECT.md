@@ -65,7 +65,8 @@ conversation
 
 The append-only event layer is the deepest level of durable truth.
 
-Canonical state is materialized from event history.
+Canonical state is materialized from event history and, where explicitly
+documented, durable enrichment artifacts.
 
 Generated source documents are retrieval-oriented projections derived
 from canonical state.
@@ -75,7 +76,8 @@ Key principles:
 - ChatGPT is not the canonical database.
 - Conversations produce proposed updates.
 - Event history is immutable.
-- Canonical state is materialized from events.
+- Canonical state is materialized from events and documented enrichment
+  artifacts.
 - Canonical state lives in `data/`.
 - Generated upload files are derived views.
 - Human-readable files are preferably machine-generated.
@@ -182,6 +184,24 @@ conversation
 
 Canonical data should prefer stable external identifiers such as IMDb
 IDs whenever available.
+
+Media catalog state uses two independent phases:
+
+```text
+events/media.ndjson
+  -> metadata enrichment
+  -> provider lookups
+  -> data/metadata-cache.json
+
+events/media.ndjson + data/metadata-cache.json
+  -> catalog generation
+  -> data/catalog.json
+```
+
+Metadata enrichment is the only phase that should contact providers.
+Catalog generation should consume the metadata cache, should not modify
+it, and should be deterministic from `events/media.ndjson` and
+`data/metadata-cache.json`.
 
 Owned media should not automatically imply:
 

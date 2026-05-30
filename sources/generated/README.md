@@ -1,7 +1,7 @@
 ---
 title: Generated Sources
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-05-30
 upload_to_chatgpt: false
 ---
 
@@ -11,8 +11,8 @@ This directory contains generated retrieval-oriented source documents
 intended for ChatGPT Project runtime uploads.
 
 Files in this directory are derived from canonical machine-readable
-state under `data/`, which itself is materialized from append-only event
-history under `events/`.
+state under `data/`, which is materialized from append-only event
+history and documented enrichment artifacts.
 
 These files are:
 

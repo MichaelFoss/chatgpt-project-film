@@ -1,7 +1,7 @@
 ---
 title: Glossary
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-05-30
 upload_to_chatgpt: false
 ---
 
@@ -19,7 +19,8 @@ Events are intended to be immutable historical records.
 
 ## Canonical State
 
-Machine-readable materialized state derived from append-only events.
+Machine-readable materialized state derived from append-only events and,
+where explicitly documented, durable enrichment artifacts.
 
 Canonical state exists under:
 
