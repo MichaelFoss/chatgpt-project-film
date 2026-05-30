@@ -105,10 +105,10 @@ export function validateCatalogAddEvent(event, index) {
   };
 }
 
-export function replayCatalogAdds(events) {
+export function replayCatalogAddEvents(events) {
   const seenEventIds = new Set();
   const seenCanonicalIds = new Set();
-  const catalogIds = [];
+  const catalogAdds = [];
   const duplicateCatalogAdds = [];
 
   for (const [index, event] of events.entries()) {
@@ -130,11 +130,25 @@ export function replayCatalogAdds(events) {
     }
 
     seenCanonicalIds.add(validated.canonicalId);
-    catalogIds.push(validated.canonicalId);
+    catalogAdds.push({
+      canonicalId: validated.canonicalId,
+      metadataLookup: validated.metadataLookup,
+    });
   }
 
   return {
-    catalogIds,
+    catalogAdds,
     duplicateCatalogAdds,
+  };
+}
+
+export function replayCatalogAdds(events) {
+  const replay = replayCatalogAddEvents(events);
+
+  return {
+    catalogIds: replay.catalogAdds.map(
+      ({ canonicalId }) => canonicalId,
+    ),
+    duplicateCatalogAdds: replay.duplicateCatalogAdds,
   };
 }

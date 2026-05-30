@@ -12,3 +12,7 @@ providers and update `data/metadata-cache.json`; catalog generation
 should consume `events/catalog.events.ndjson` and
 `data/metadata-cache.json` offline and write `data/catalog.json` without
 provider lookups.
+
+`yarn enrich:metadata` currently runs a dry-run planner only. It reports
+metadata gaps and planned lookups without contacting providers or
+writing files.
