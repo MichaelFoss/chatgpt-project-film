@@ -1,7 +1,7 @@
 ---
 title: Data Model
 status: current
-last_updated: 2026-05-29
+last_updated: 2026-05-30
 upload_to_chatgpt: false
 ---
 
@@ -300,6 +300,37 @@ type CatalogItem = {
   };
 };
 ```
+
+This type defines the minimum generated catalog output contract.
+
+Catalog generation should only emit records that can satisfy the
+required `CatalogItem` fields:
+
+- `canonicalId`
+- `mediaType`
+- `title`
+- `genres`
+
+Optional generated catalog fields are:
+
+- `description`
+- `posterUrl`
+- `people`
+- `ratings`
+
+A metadata record with `isValid: true` is still unusable for catalog
+generation if it cannot be mapped into the required `CatalogItem`
+fields.
+
+Metadata records that are missing required catalog fields should be
+reported as invalid or unusable metadata and omitted from
+`data/catalog.json`.
+
+Empty placeholder catalog records should never be emitted.
+
+`genres` should always be emitted as an array. If valid metadata has no
+useful genre data, catalog generation should emit an empty array rather
+than omitting `genres`.
 
 Ratings should preserve provider-native string formats and should be
 treated as advisory context rather than preference truth.
