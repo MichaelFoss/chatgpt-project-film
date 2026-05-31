@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
+import { createPlexClient } from './lib/plex-client.js';
 
 export function readPlexConfig(env = process.env) {
   return {
@@ -29,9 +30,20 @@ export function validatePlexConfig(config = readPlexConfig()) {
   return config;
 }
 
-export async function planPlexImport({ env = process.env } = {}) {
-  validatePlexConfig(readPlexConfig(env));
-  return 'Plex planning is not implemented yet.';
+export async function planPlexImport({
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const config = validatePlexConfig(readPlexConfig(env));
+  const client = createPlexClient({ ...config, fetchImpl });
+  const movieSummaries = await client.fetchMovieSummaries();
+  const firstMovieSummary = movieSummaries[0] ?? null;
+
+  if (firstMovieSummary) {
+    await client.fetchMovieMetadata(firstMovieSummary.ratingKey);
+  }
+
+  return `Plex movie summaries read: ${movieSummaries.length}.`;
 }
 
 async function main() {

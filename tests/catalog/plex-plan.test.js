@@ -33,14 +33,80 @@ describe('plex:plan scaffolding', () => {
     ).toThrow('Missing required Plex configuration: PLEX_TOKEN.');
   });
 
-  it('prints the placeholder when Plex configuration is present', async () => {
+  it('reads Plex summaries and one full metadata record when configuration is present', async () => {
+    const requestedPaths = [];
+
     await expect(
       planPlexImport({
         env: {
           PLEX_URL: 'http://localhost:32400',
           PLEX_TOKEN: 'token',
         },
+        fetchImpl: async (url) => {
+          requestedPaths.push(url.pathname);
+
+          if (url.pathname === '/library/sections') {
+            return {
+              ok: true,
+              status: 200,
+              async json() {
+                return {
+                  MediaContainer: {
+                    Directory: [
+                      { key: '1', title: 'Movies', type: 'movie' },
+                    ],
+                  },
+                };
+              },
+            };
+          }
+
+          if (url.pathname === '/library/sections/1/all') {
+            return {
+              ok: true,
+              status: 200,
+              async json() {
+                return {
+                  MediaContainer: {
+                    Metadata: [
+                      {
+                        ratingKey: '100',
+                        title: 'Braveheart',
+                        year: 1995,
+                      },
+                    ],
+                  },
+                };
+              },
+            };
+          }
+
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                MediaContainer: {
+                  Metadata: [
+                    {
+                      ratingKey: '100',
+                      title: 'Braveheart',
+                      type: 'movie',
+                      year: 1995,
+                    },
+                  ],
+                },
+              };
+            },
+          };
+        },
       }),
-    ).resolves.toBe('Plex planning is not implemented yet.');
+    ).resolves.toBe('Plex movie summaries read: 1.');
+
+    expect(requestedPaths).toEqual([
+      '/library/sections',
+      '/library/sections/1/all',
+      '/library/metadata/100',
+    ]);
   });
 });

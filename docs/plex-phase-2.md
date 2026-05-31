@@ -4,7 +4,7 @@
 
 - [x] P2-01: Introduce Plex configuration and command scaffolding
       (plex:plan)
-- [ ] P2-02: Implement Plex client capable of reading movie summaries
+- [x] P2-02: Implement Plex client capable of reading movie summaries
       and movie metadata
 - [ ] P2-03: Implement IMDb extraction, normalized Plex planning items,
       and needs-review detection
