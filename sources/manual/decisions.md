@@ -28,6 +28,15 @@ Avoid recording:
 
 ## Decision Log
 
+### 2026-05-30: Add Catalog Sync as Phase Orchestration
+
+`yarn catalog:sync` should run metadata enrichment write behavior before
+catalog generation for the common cache-and-build workflow.
+
+The command should remain orchestration only. It must not append catalog
+events, perform catalog import/add behavior, or replace standalone
+`yarn enrich:metadata:write` and `yarn build:catalog` commands.
+
 ### 2026-05-30: Name Catalog Event Stream Explicitly
 
 The catalog event stream should be stored at:

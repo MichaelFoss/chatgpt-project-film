@@ -48,6 +48,9 @@ events/catalog.events.ndjson + data/metadata-cache.json
   -> data/catalog.json
 ```
 
+`yarn catalog:sync` orchestrates those two phases in order for the
+common write-and-build workflow.
+
 Catalog generation is deterministic from `events/catalog.events.ndjson`
 and `data/metadata-cache.json`. It should run offline, must not perform
 provider lookups, and consumes the metadata cache without modifying it.
