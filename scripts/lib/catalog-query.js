@@ -15,11 +15,48 @@ const filterFlags = new Map([
   ['--actor', 'actor'],
 ]);
 
-const listUsage =
-  'Usage: yarn catalog:list [--id <pattern>] [--title <pattern>] [--type <movie|series>] [--genre <pattern>] [--person <pattern>] [--director <pattern>] [--writer <pattern>] [--actor <pattern>] [--json]';
-const showUsage = 'Usage: yarn catalog:show <canonicalId> [--json]';
-const searchUsage =
-  'Usage: yarn catalog:search [title] [--id <pattern>] [--title <pattern>] [--type <movie|series>] [--genre <pattern>] [--person <pattern>] [--director <pattern>] [--writer <pattern>] [--actor <pattern>] [--json]';
+function buildFilterUsage(usageLines) {
+  return [
+    'Usage:',
+    ...usageLines.map((line) => `  ${line}`),
+    '',
+    'Filters:',
+    '  --id <pattern>',
+    '  --title <pattern>',
+    '  --type <movie|series>',
+    '  --genre <pattern>',
+    '  --person <pattern>',
+    '  --director <pattern>',
+    '  --writer <pattern>',
+    '  --actor <pattern>',
+    '',
+    'Pattern Rules:',
+    '  * matches zero or more characters',
+    '  Matching is case-insensitive',
+    '  Repeated filters of the same type are ORed',
+    '  Different filter types are ANDed',
+    '',
+    'Options:',
+    '  --json',
+  ].join('\n');
+}
+
+export const listUsage = buildFilterUsage([
+  'yarn catalog:list [filters]',
+]);
+
+export const showUsage = [
+  'Usage:',
+  '  yarn catalog:show <canonicalId>',
+  '',
+  'Options:',
+  '  --json',
+].join('\n');
+
+export const searchUsage = buildFilterUsage([
+  'yarn catalog:search <title>',
+  'yarn catalog:search [filters]',
+]);
 
 function createEmptyFilters() {
   return {
@@ -158,7 +195,7 @@ function parseFlagArgument(arg) {
 function parseFilterArgs(
   args,
   usage,
-  { allowTitlePosition = false } = {},
+  { allowTitlePosition = false, requireCriterion = false } = {},
 ) {
   const filters = createEmptyFilters();
   const positional = [];
@@ -208,6 +245,13 @@ function parseFilterArgs(
     throw new CatalogBuildError(usage);
   }
 
+  if (
+    requireCriterion &&
+    Object.values(filters).every((patterns) => patterns.length === 0)
+  ) {
+    throw new CatalogBuildError(usage);
+  }
+
   return { filters, json };
 }
 
@@ -218,6 +262,7 @@ export function parseCatalogListCliArgs(args) {
 export function parseCatalogSearchCliArgs(args) {
   return parseFilterArgs(args, searchUsage, {
     allowTitlePosition: true,
+    requireCriterion: true,
   });
 }
 

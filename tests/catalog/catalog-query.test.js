@@ -9,10 +9,13 @@ import {
   formatCatalogItem,
   formatCatalogItems,
   listCatalog,
+  listUsage,
   parseCatalogListCliArgs,
   parseCatalogSearchCliArgs,
   parseCatalogShowCliArgs,
+  searchUsage,
   searchCatalog,
+  showUsage,
   showCatalogItem,
 } from '../../scripts/lib/catalog-query.js';
 
@@ -135,6 +138,72 @@ afterEach(async () => {
 });
 
 describe('catalog query commands', () => {
+  it('keeps structured usage output stable', () => {
+    expect(listUsage).toBe(
+      [
+        'Usage:',
+        '  yarn catalog:list [filters]',
+        '',
+        'Filters:',
+        '  --id <pattern>',
+        '  --title <pattern>',
+        '  --type <movie|series>',
+        '  --genre <pattern>',
+        '  --person <pattern>',
+        '  --director <pattern>',
+        '  --writer <pattern>',
+        '  --actor <pattern>',
+        '',
+        'Pattern Rules:',
+        '  * matches zero or more characters',
+        '  Matching is case-insensitive',
+        '  Repeated filters of the same type are ORed',
+        '  Different filter types are ANDed',
+        '',
+        'Options:',
+        '  --json',
+      ].join('\n'),
+    );
+    expect(showUsage).toBe(
+      [
+        'Usage:',
+        '  yarn catalog:show <canonicalId>',
+        '',
+        'Options:',
+        '  --json',
+      ].join('\n'),
+    );
+    expect(showUsage).not.toContain('Pattern Rules:');
+    expect(searchUsage).toBe(
+      [
+        'Usage:',
+        '  yarn catalog:search <title>',
+        '  yarn catalog:search [filters]',
+        '',
+        'Filters:',
+        '  --id <pattern>',
+        '  --title <pattern>',
+        '  --type <movie|series>',
+        '  --genre <pattern>',
+        '  --person <pattern>',
+        '  --director <pattern>',
+        '  --writer <pattern>',
+        '  --actor <pattern>',
+        '',
+        'Pattern Rules:',
+        '  * matches zero or more characters',
+        '  Matching is case-insensitive',
+        '  Repeated filters of the same type are ORed',
+        '  Different filter types are ANDed',
+        '',
+        'Options:',
+        '  --json',
+      ].join('\n'),
+    );
+    expect(listUsage).toContain('Pattern Rules:');
+    expect(searchUsage).toContain('Pattern Rules:');
+  });
+
   it('catalog:list reads catalog items in stable title order', async () => {
     const rootDir = await createTempProject();
 
@@ -358,6 +427,114 @@ describe('catalog query commands', () => {
     ]);
   });
 
+  it('catalog:search without criteria fails with usage output', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-search.js',
+    );
+
+    await expect(
+      execFileAsync(process.execPath, [scriptPath], { cwd: rootDir }),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: `${searchUsage}\n`,
+    });
+  });
+
+  it('catalog:search --json without criteria fails with usage output', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-search.js',
+    );
+
+    await expect(
+      execFileAsync(process.execPath, [scriptPath, '--json'], {
+        cwd: rootDir,
+      }),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: `${searchUsage}\n`,
+    });
+  });
+
+  it('catalog:list invalid invocation fails with usage output', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-list.js',
+    );
+
+    await expect(
+      execFileAsync(process.execPath, [scriptPath, 'matrix'], {
+        cwd: rootDir,
+      }),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: `${listUsage}\n`,
+    });
+  });
+
+  it('catalog:show invalid invocation fails with usage output', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-show.js',
+    );
+
+    await expect(
+      execFileAsync(process.execPath, [scriptPath], { cwd: rootDir }),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: `${showUsage}\n`,
+    });
+  });
+
+  it('catalog:search matrix succeeds from the CLI', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-search.js',
+    );
+
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [scriptPath, 'matrix'],
+      { cwd: rootDir },
+    );
+
+    expect(stdout).toContain('imdb:tt0133093 | movie | The Matrix');
+    expect(stdout).toContain(
+      'imdb:tt0234215 | movie | The Matrix Reloaded',
+    );
+  });
+
+  it('catalog:search --genre=Drama succeeds from the CLI', async () => {
+    const rootDir = await createTempProject();
+    const scriptPath = path.join(
+      repositoryRootDir,
+      'scripts',
+      'catalog-search.js',
+    );
+
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [scriptPath, '--genre=Drama'],
+      { cwd: rootDir },
+    );
+
+    expect(stdout).toContain('imdb:tt0112573 | movie | Braveheart');
+    expect(stdout).toContain(
+      'imdb:tt0944947 | series | Game of Thrones',
+    );
+  });
+
   it('catalog:show --json emits null for missing items', async () => {
     const rootDir = await createTempProject();
     const scriptPath = path.join(
@@ -391,18 +568,23 @@ describe('catalog query commands', () => {
   });
 
   it('rejects invalid CLI arguments', () => {
-    expect(() => parseCatalogShowCliArgs([])).toThrow(
-      'Usage: yarn catalog:show',
-    );
+    expect(() => parseCatalogShowCliArgs([])).toThrow(showUsage);
     expect(() =>
       parseCatalogShowCliArgs(['id', '--title', 'x']),
     ).toThrow('Unknown flag: --title');
     expect(() => parseCatalogListCliArgs(['matrix'])).toThrow(
-      'Usage: yarn catalog:list',
+      listUsage,
     );
     expect(() => parseCatalogSearchCliArgs(['--title'])).toThrow(
-      'Usage: yarn catalog:search',
+      searchUsage,
     );
-    expect(parseCatalogSearchCliArgs(['--json']).json).toBe(true);
+    expect(() => parseCatalogSearchCliArgs([])).toThrow(searchUsage);
+    expect(() => parseCatalogSearchCliArgs(['--json'])).toThrow(
+      searchUsage,
+    );
+    expect(parseCatalogSearchCliArgs(['matrix']).json).toBe(false);
+    expect(
+      parseCatalogSearchCliArgs(['--genre=Drama']).filters.genre,
+    ).toEqual(['Drama']);
   });
 });
