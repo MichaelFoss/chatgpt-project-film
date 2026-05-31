@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   planPlexImport,
+  parsePlexPlanCliArgs,
   readPlexConfig,
   validatePlexConfig,
 } from '../../scripts/plex-plan.js';
@@ -58,7 +59,7 @@ describe('plex:plan scaffolding', () => {
     ).toThrow('Missing required Plex configuration: PLEX_TOKEN.');
   });
 
-  it('returns transitional planning output when configuration is present', async () => {
+  it('returns final human planning output when configuration is present', async () => {
     const rootDir = await createTempProject();
     const requestedPaths = [];
 
@@ -142,24 +143,10 @@ describe('plex:plan scaffolding', () => {
         'Already represented: 0',
         'Would add: 1',
         '',
-        JSON.stringify(
-          {
-            moviesScanned: 1,
-            plannedItems: [
-              {
-                canonicalId: 'tt0112573',
-                source: 'plex',
-                title: 'Braveheart',
-                year: 1995,
-                plexRatingKey: '100',
-              },
-            ],
-            needsReviewItems: [],
-            alreadyRepresentedItems: [],
-          },
-          null,
-          2,
-        ),
+        'Would add:',
+        '  tt0112573 | Braveheart (1995)',
+        '',
+        'Needs review:',
       ].join('\n'),
     );
 
@@ -168,5 +155,130 @@ describe('plex:plan scaffolding', () => {
       '/library/sections/1/all',
       '/library/metadata/100',
     ]);
+  });
+
+  it('returns JSON-only planning output when requested', async () => {
+    const rootDir = await createTempProject();
+    const output = await planPlexImport({
+      env: {
+        PLEX_URL: 'http://localhost:32400',
+        PLEX_TOKEN: 'token',
+      },
+      rootDir,
+      json: true,
+      fetchImpl: async (url) => {
+        if (url.pathname === '/library/sections') {
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                MediaContainer: {
+                  Directory: [
+                    { key: '1', title: 'Movies', type: 'movie' },
+                  ],
+                },
+              };
+            },
+          };
+        }
+
+        if (url.pathname === '/library/sections/1/all') {
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                MediaContainer: {
+                  Metadata: [
+                    {
+                      ratingKey: '100',
+                      title: 'Braveheart',
+                      year: 1995,
+                    },
+                    {
+                      ratingKey: '1718',
+                      title: 'Family Guy Presents: Blue Harvest',
+                      year: 2007,
+                    },
+                  ],
+                },
+              };
+            },
+          };
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            if (url.pathname === '/library/metadata/100') {
+              return {
+                MediaContainer: {
+                  Metadata: [
+                    {
+                      ratingKey: '100',
+                      title: 'Braveheart',
+                      type: 'movie',
+                      year: 1995,
+                      Guid: [{ id: 'imdb://tt0112573' }],
+                    },
+                  ],
+                },
+              };
+            }
+
+            return {
+              MediaContainer: {
+                Metadata: [
+                  {
+                    ratingKey: '1718',
+                    title: 'Family Guy Presents: Blue Harvest',
+                    type: 'movie',
+                    year: 2007,
+                    Guid: [{ id: 'tmdb://65334' }],
+                  },
+                ],
+              },
+            };
+          },
+        };
+      },
+    });
+
+    expect(output.startsWith('{')).toBe(true);
+    expect(output).not.toContain('Movies scanned:');
+    expect(JSON.parse(output)).toEqual({
+      moviesScanned: 2,
+      importable: 1,
+      needsReview: 1,
+      alreadyRepresented: 0,
+      wouldAdd: 1,
+      plannedItems: [
+        {
+          canonicalId: 'tt0112573',
+          source: 'plex',
+          title: 'Braveheart',
+          year: 1995,
+          plexRatingKey: '100',
+        },
+      ],
+      needsReviewItems: [
+        {
+          title: 'Family Guy Presents: Blue Harvest',
+          year: 2007,
+          plexRatingKey: '1718',
+          reason: 'Missing IMDb identifier',
+        },
+      ],
+    });
+  });
+
+  it('parses plex:plan CLI argument handling', () => {
+    expect(parsePlexPlanCliArgs([])).toEqual({ json: false });
+    expect(parsePlexPlanCliArgs(['--json'])).toEqual({ json: true });
+    expect(() => parsePlexPlanCliArgs(['--json', '--write'])).toThrow(
+      'Unknown flag: --write',
+    );
   });
 });

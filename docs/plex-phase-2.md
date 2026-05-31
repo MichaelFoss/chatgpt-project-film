@@ -10,7 +10,7 @@
       and needs-review detection
 - [x] P2-04: Reuse existing import planning engine to diff Plex IDs
       against event-stream IDs
-- [ ] P2-05: Build Plex-specific report formatter (text + --json)
+- [x] P2-05: Build Plex-specific report formatter (text + --json)
 - [ ] P2-06: End-to-end validation against real Plex data
 
 ---

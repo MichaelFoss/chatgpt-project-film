@@ -3,6 +3,17 @@ import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
 import { createPlexClient } from './lib/plex-client.js';
 import { planPlexPlanningItems } from './lib/plex-import-planner.js';
+import {
+  formatPlexPlanJsonReport,
+  formatPlexPlanReport,
+  parsePlexPlanCliArgs,
+} from './lib/plex-report.js';
+
+export {
+  formatPlexPlanJsonReport,
+  formatPlexPlanReport,
+  parsePlexPlanCliArgs,
+} from './lib/plex-report.js';
 
 export function readPlexConfig(env = process.env) {
   return {
@@ -36,6 +47,7 @@ export async function planPlexImport({
   fetchImpl = globalThis.fetch,
   rootDir = process.cwd(),
   eventsPath,
+  json = false,
 } = {}) {
   const config = validatePlexConfig(readPlexConfig(env));
   const client = createPlexClient({ ...config, fetchImpl });
@@ -45,24 +57,15 @@ export async function planPlexImport({
     eventsPath,
   });
 
-  return [
-    `Movies scanned: ${report.moviesScanned}`,
-    '',
-    `Importable: ${
-      report.plannedItems.length + report.alreadyRepresentedItems.length
-    }`,
-    `Needs review: ${report.needsReviewItems.length}`,
-    '',
-    `Already represented: ${report.alreadyRepresentedItems.length}`,
-    `Would add: ${report.plannedItems.length}`,
-    '',
-    JSON.stringify(report, null, 2),
-  ].join('\n');
+  return json
+    ? formatPlexPlanJsonReport(report)
+    : formatPlexPlanReport(report);
 }
 
 async function main() {
   try {
-    console.log(await planPlexImport());
+    const { json } = parsePlexPlanCliArgs(process.argv.slice(2));
+    console.log(await planPlexImport({ json }));
   } catch (error) {
     console.error(error.message);
 
