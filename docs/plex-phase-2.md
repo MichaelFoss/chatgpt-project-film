@@ -2,7 +2,7 @@
 
 ## Status
 
-- [ ] P2-01: Introduce Plex configuration and command scaffolding
+- [x] P2-01: Introduce Plex configuration and command scaffolding
       (plex:plan)
 - [ ] P2-02: Implement Plex client capable of reading movie summaries
       and movie metadata
