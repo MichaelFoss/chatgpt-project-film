@@ -6,7 +6,7 @@
       (plex:plan)
 - [x] P2-02: Implement Plex client capable of reading movie summaries
       and movie metadata
-- [ ] P2-03: Implement IMDb extraction, normalized Plex planning items,
+- [x] P2-03: Implement IMDb extraction, normalized Plex planning items,
       and needs-review detection
 - [ ] P2-04: Reuse existing import planning engine to diff Plex IDs
       against event-stream IDs

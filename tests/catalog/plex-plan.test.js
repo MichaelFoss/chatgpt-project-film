@@ -33,7 +33,7 @@ describe('plex:plan scaffolding', () => {
     ).toThrow('Missing required Plex configuration: PLEX_TOKEN.');
   });
 
-  it('reads Plex summaries and one full metadata record when configuration is present', async () => {
+  it('returns transitional planning output when configuration is present', async () => {
     const requestedPaths = [];
 
     await expect(
@@ -93,6 +93,10 @@ describe('plex:plan scaffolding', () => {
                       title: 'Braveheart',
                       type: 'movie',
                       year: 1995,
+                      Guid: [
+                        { id: 'imdb://tt0112573' },
+                        { id: 'tmdb://197' },
+                      ],
                     },
                   ],
                 },
@@ -101,7 +105,32 @@ describe('plex:plan scaffolding', () => {
           };
         },
       }),
-    ).resolves.toBe('Plex movie summaries read: 1.');
+    ).resolves.toBe(
+      [
+        'Movies scanned: 1',
+        '',
+        'Importable: 1',
+        'Needs review: 0',
+        '',
+        JSON.stringify(
+          {
+            moviesScanned: 1,
+            plannedItems: [
+              {
+                canonicalId: 'tt0112573',
+                source: 'plex',
+                title: 'Braveheart',
+                year: 1995,
+                plexRatingKey: '100',
+              },
+            ],
+            needsReviewItems: [],
+          },
+          null,
+          2,
+        ),
+      ].join('\n'),
+    );
 
     expect(requestedPaths).toEqual([
       '/library/sections',

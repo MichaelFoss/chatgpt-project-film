@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
 import { createPlexClient } from './lib/plex-client.js';
+import { planPlexPlanningItems } from './lib/plex-import-planner.js';
 
 export function readPlexConfig(env = process.env) {
   return {
@@ -36,14 +37,16 @@ export async function planPlexImport({
 } = {}) {
   const config = validatePlexConfig(readPlexConfig(env));
   const client = createPlexClient({ ...config, fetchImpl });
-  const movieSummaries = await client.fetchMovieSummaries();
-  const firstMovieSummary = movieSummaries[0] ?? null;
+  const report = await planPlexPlanningItems({ client });
 
-  if (firstMovieSummary) {
-    await client.fetchMovieMetadata(firstMovieSummary.ratingKey);
-  }
-
-  return `Plex movie summaries read: ${movieSummaries.length}.`;
+  return [
+    `Movies scanned: ${report.moviesScanned}`,
+    '',
+    `Importable: ${report.plannedItems.length}`,
+    `Needs review: ${report.needsReviewItems.length}`,
+    '',
+    JSON.stringify(report, null, 2),
+  ].join('\n');
 }
 
 async function main() {
