@@ -1,9 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   planPlexImport,
   readPlexConfig,
   validatePlexConfig,
 } from '../../scripts/plex-plan.js';
+
+const tempDirs = [];
+
+async function createTempProject() {
+  const rootDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'film-plex-cli-'),
+  );
+  tempDirs.push(rootDir);
+  await fs.mkdir(path.join(rootDir, 'events'), { recursive: true });
+  await fs.writeFile(
+    path.join(rootDir, 'events', 'catalog.events.ndjson'),
+    '',
+    'utf8',
+  );
+  return rootDir;
+}
+
+afterEach(async () => {
+  await Promise.all(
+    tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true })),
+  );
+});
 
 describe('plex:plan scaffolding', () => {
   it('reads Plex configuration from the environment', () => {
@@ -34,6 +59,7 @@ describe('plex:plan scaffolding', () => {
   });
 
   it('returns transitional planning output when configuration is present', async () => {
+    const rootDir = await createTempProject();
     const requestedPaths = [];
 
     await expect(
@@ -42,6 +68,7 @@ describe('plex:plan scaffolding', () => {
           PLEX_URL: 'http://localhost:32400',
           PLEX_TOKEN: 'token',
         },
+        rootDir,
         fetchImpl: async (url) => {
           requestedPaths.push(url.pathname);
 
@@ -112,6 +139,9 @@ describe('plex:plan scaffolding', () => {
         'Importable: 1',
         'Needs review: 0',
         '',
+        'Already represented: 0',
+        'Would add: 1',
+        '',
         JSON.stringify(
           {
             moviesScanned: 1,
@@ -125,6 +155,7 @@ describe('plex:plan scaffolding', () => {
               },
             ],
             needsReviewItems: [],
+            alreadyRepresentedItems: [],
           },
           null,
           2,

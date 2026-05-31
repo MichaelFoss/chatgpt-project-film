@@ -8,7 +8,7 @@
       and movie metadata
 - [x] P2-03: Implement IMDb extraction, normalized Plex planning items,
       and needs-review detection
-- [ ] P2-04: Reuse existing import planning engine to diff Plex IDs
+- [x] P2-04: Reuse existing import planning engine to diff Plex IDs
       against event-stream IDs
 - [ ] P2-05: Build Plex-specific report formatter (text + --json)
 - [ ] P2-06: End-to-end validation against real Plex data

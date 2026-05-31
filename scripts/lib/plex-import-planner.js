@@ -1,3 +1,5 @@
+import { importCatalogItems } from './catalog-importer.js';
+
 const imdbGuidPattern = /^imdb:\/\/(tt\d{7,})$/;
 
 function compactYear(item) {
@@ -55,9 +57,20 @@ export function createPlexPlanningItem(item) {
   };
 }
 
-export async function planPlexPlanningItems({ client }) {
+function toCatalogCanonicalId(canonicalId) {
+  return canonicalId.startsWith('imdb:')
+    ? canonicalId
+    : `imdb:${canonicalId}`;
+}
+
+export async function planPlexPlanningItems({
+  client,
+  rootDir = process.cwd(),
+  eventsPath,
+  now,
+}) {
   const movieSummaries = await client.fetchMovieSummaries();
-  const plannedItems = [];
+  const importableItems = [];
   const needsReviewItems = [];
 
   for (const summary of movieSummaries) {
@@ -65,15 +78,41 @@ export async function planPlexPlanningItems({ client }) {
     const planningResult = createPlexPlanningItem(metadata);
 
     if (planningResult.status === 'importable') {
-      plannedItems.push(planningResult.item);
+      importableItems.push(planningResult.item);
     } else {
       needsReviewItems.push(planningResult.item);
     }
   }
 
+  const importReport = await importCatalogItems({
+    rootDir,
+    eventsPath,
+    mode: 'plan',
+    now,
+    items: importableItems.map((item) => ({
+      canonicalId: toCatalogCanonicalId(item.canonicalId),
+      source: item.source,
+    })),
+  });
+  const alreadyRepresentedIndexes = new Set(
+    importReport.alreadyExistingCatalogItems.map(
+      ({ index }) => index - 1,
+    ),
+  );
+  const duplicateIndexes = new Set(
+    importReport.duplicateInputItems.map(({ index }) => index - 1),
+  );
+
   return {
     moviesScanned: movieSummaries.length,
-    plannedItems,
+    plannedItems: importableItems.filter(
+      (_item, index) =>
+        !alreadyRepresentedIndexes.has(index) &&
+        !duplicateIndexes.has(index),
+    ),
     needsReviewItems,
+    alreadyRepresentedItems: importableItems.filter((item, index) =>
+      alreadyRepresentedIndexes.has(index),
+    ),
   };
 }

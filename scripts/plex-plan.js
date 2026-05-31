@@ -34,16 +34,27 @@ export function validatePlexConfig(config = readPlexConfig()) {
 export async function planPlexImport({
   env = process.env,
   fetchImpl = globalThis.fetch,
+  rootDir = process.cwd(),
+  eventsPath,
 } = {}) {
   const config = validatePlexConfig(readPlexConfig(env));
   const client = createPlexClient({ ...config, fetchImpl });
-  const report = await planPlexPlanningItems({ client });
+  const report = await planPlexPlanningItems({
+    client,
+    rootDir,
+    eventsPath,
+  });
 
   return [
     `Movies scanned: ${report.moviesScanned}`,
     '',
-    `Importable: ${report.plannedItems.length}`,
+    `Importable: ${
+      report.plannedItems.length + report.alreadyRepresentedItems.length
+    }`,
     `Needs review: ${report.needsReviewItems.length}`,
+    '',
+    `Already represented: ${report.alreadyRepresentedItems.length}`,
+    `Would add: ${report.plannedItems.length}`,
     '',
     JSON.stringify(report, null, 2),
   ].join('\n');
