@@ -24,6 +24,24 @@ import path with a one-item input. Both catalog ingestion commands
 require exactly one of `--plan` or `--write`; they do not build the
 catalog, touch `data/metadata-cache.json`, or contact providers.
 
+`yarn catalog:list`, `yarn catalog:show <canonicalId>`, and
+`yarn catalog:search [title]` are read-only views over
+`data/catalog.json`. They do not append events, mutate the metadata
+cache, or contact providers. Query commands support `--json` output;
+list and search filters may be repeated to OR values for the same flag,
+while different filter flags are ANDed together.
+
+List and search filters accept either `--flag value` or `--flag=value`.
+Use `--type movie` or `--type=movie` for media type filtering;
+`--media-type` remains supported as a compatibility alias. Quote values
+with spaces, punctuation, or shell wildcards, for example:
+
+```sh
+yarn catalog:search "Guardians of the Galaxy: Vol. 2"
+yarn catalog:list --title="Guardians of the Galaxy: Vol. 2"
+yarn catalog:search --genre='*comedy'
+```
+
 `yarn enrich:metadata:plan` runs the dry-run planner. It reports
 metadata gaps and planned lookups without contacting providers or
 writing files. `yarn enrich:metadata:write` performs cache-writing
