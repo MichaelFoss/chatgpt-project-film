@@ -44,7 +44,7 @@ Rules:
 
 ## Phase 1 - Source Registry
 
-- [ ] Update `sources/manual/index.md` with detailed implementation
+- [x] Update `sources/manual/index.md` with detailed implementation
       requirements:
   - Objective:
     - Establish `index.md` as the authoritative source registry for the

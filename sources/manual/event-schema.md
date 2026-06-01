@@ -1,8 +1,8 @@
 ---
 title: Event Schema
 status: current
-last_updated: 2026-05-30
-upload_to_chatgpt: true
+last_updated: 2026-06-01
+upload_to_chatgpt: false
 ---
 
 # Event Schema
