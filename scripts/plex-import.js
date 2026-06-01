@@ -2,7 +2,11 @@ import 'dotenv/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
-import { planPlexImport } from './plex-plan.js';
+import { importCatalogItems } from './lib/catalog-importer.js';
+import {
+  createPlexImportPlanningReport,
+  planPlexImport,
+} from './plex-plan.js';
 
 export const plexImportUsage = [
   'Usage:',
@@ -57,6 +61,45 @@ export function parsePlexImportCliArgs(args) {
   return { mode, json };
 }
 
+function toCatalogCanonicalId(canonicalId) {
+  return canonicalId.startsWith('imdb:')
+    ? canonicalId
+    : `imdb:${canonicalId}`;
+}
+
+function createPlexWriteJsonReport({ planningReport, importReport }) {
+  return {
+    moviesScanned: planningReport.moviesScanned,
+    eventsAppended: importReport.eventsAppended,
+    previouslyRepresented:
+      planningReport.alreadyRepresentedItems.length,
+    skippedReviewItems: planningReport.needsReviewItems.length,
+  };
+}
+
+export function formatPlexWriteJsonReport({
+  planningReport,
+  importReport,
+}) {
+  return JSON.stringify(
+    createPlexWriteJsonReport({ planningReport, importReport }),
+    null,
+    2,
+  );
+}
+
+export function formatPlexWriteReport({
+  planningReport,
+  importReport,
+}) {
+  return [
+    `Movies scanned: ${planningReport.moviesScanned}`,
+    `Events appended: ${importReport.eventsAppended}`,
+    `Previously represented: ${planningReport.alreadyRepresentedItems.length}`,
+    `Skipped review items: ${planningReport.needsReviewItems.length}`,
+  ].join('\n');
+}
+
 export async function importPlex({
   args = [],
   env = process.env,
@@ -67,9 +110,25 @@ export async function importPlex({
   const { mode, json } = parsePlexImportCliArgs(args);
 
   if (mode === 'write') {
-    throw new CatalogBuildError(
-      'Plex write mode is not yet implemented.',
-    );
+    const planningReport = await createPlexImportPlanningReport({
+      env,
+      fetchImpl,
+      rootDir,
+      eventsPath,
+    });
+    const importReport = await importCatalogItems({
+      rootDir,
+      eventsPath,
+      mode: 'write',
+      items: planningReport.plannedItems.map((item) => ({
+        canonicalId: toCatalogCanonicalId(item.canonicalId),
+        source: 'plex',
+      })),
+    });
+
+    return json
+      ? formatPlexWriteJsonReport({ planningReport, importReport })
+      : formatPlexWriteReport({ planningReport, importReport });
   }
 
   return planPlexImport({

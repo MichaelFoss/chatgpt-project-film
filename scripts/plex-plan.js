@@ -51,15 +51,9 @@ export async function planPlexImport({
   eventsPath,
   json = false,
 } = {}) {
-  const config = validatePlexConfig(readPlexConfig(env));
-  const client = createPlexClient({
-    plexUrl: config.plexUrl,
-    plexToken: config.plexToken,
+  const report = await createPlexImportPlanningReport({
+    env,
     fetchImpl,
-    debug: config.plexDebug,
-  });
-  const report = await planPlexPlanningItems({
-    client,
     rootDir,
     eventsPath,
   });
@@ -67,6 +61,27 @@ export async function planPlexImport({
   return json
     ? formatPlexPlanJsonReport(report)
     : formatPlexPlanReport(report);
+}
+
+export async function createPlexImportPlanningReport({
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+  rootDir = process.cwd(),
+  eventsPath,
+} = {}) {
+  const config = validatePlexConfig(readPlexConfig(env));
+  const client = createPlexClient({
+    plexUrl: config.plexUrl,
+    plexToken: config.plexToken,
+    fetchImpl,
+    debug: config.plexDebug,
+  });
+
+  return planPlexPlanningItems({
+    client,
+    rootDir,
+    eventsPath,
+  });
 }
 
 async function main() {
