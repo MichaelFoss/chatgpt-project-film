@@ -103,6 +103,27 @@ Then follow:
 dist/upload-instructions.md
 ```
 
+## Plex Planning
+
+Create a local environment file before running Plex planning:
+
+```bash
+cp .env.example .env
+```
+
+Set these values in `.env`:
+
+```bash
+PLEX_URL=http://your-plex-server:32400
+PLEX_TOKEN=your-plex-token
+```
+
+Then run:
+
+```bash
+yarn plex:plan
+```
+
 The build workflow:
 
 - requires a clean Git working tree
