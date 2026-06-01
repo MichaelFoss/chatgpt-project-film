@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   planPlexImport,
@@ -32,6 +33,87 @@ afterEach(async () => {
 });
 
 describe('plex:plan scaffolding', () => {
+  it('loads Plex configuration from .env automatically', async () => {
+    const rootDir = await createTempProject();
+    const probePath = path.join(rootDir, 'probe.mjs');
+    const plexPlanPath = path.resolve('scripts/plex-plan.js');
+
+    await fs.writeFile(
+      path.join(rootDir, '.env'),
+      [
+        'PLEX_URL=http://localhost:32400',
+        'PLEX_TOKEN=from-dotenv',
+      ].join('\n'),
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(rootDir, '.env.example'),
+      [
+        'PLEX_URL=http://example.invalid',
+        'PLEX_TOKEN=from-example',
+      ].join('\n'),
+      'utf8',
+    );
+    await fs.writeFile(
+      probePath,
+      [
+        `import { readPlexConfig } from ${JSON.stringify(plexPlanPath)};`,
+        'console.log(JSON.stringify(readPlexConfig(process.env)));',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = spawnSync(process.execPath, [probePath], {
+      cwd: rootDir,
+      env: {},
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      plexUrl: 'http://localhost:32400',
+      plexToken: 'from-dotenv',
+    });
+  });
+
+  it('keeps shell Plex configuration ahead of .env values', async () => {
+    const rootDir = await createTempProject();
+    const probePath = path.join(rootDir, 'probe.mjs');
+    const plexPlanPath = path.resolve('scripts/plex-plan.js');
+
+    await fs.writeFile(
+      path.join(rootDir, '.env'),
+      [
+        'PLEX_URL=http://localhost:32400',
+        'PLEX_TOKEN=from-dotenv',
+      ].join('\n'),
+      'utf8',
+    );
+    await fs.writeFile(
+      probePath,
+      [
+        `import { readPlexConfig } from ${JSON.stringify(plexPlanPath)};`,
+        'console.log(JSON.stringify(readPlexConfig(process.env)));',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = spawnSync(process.execPath, [probePath], {
+      cwd: rootDir,
+      env: {
+        PLEX_URL: 'http://shell.example',
+        PLEX_TOKEN: 'from-shell',
+      },
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      plexUrl: 'http://shell.example',
+      plexToken: 'from-shell',
+    });
+  });
+
   it('reads Plex configuration from the environment', () => {
     expect(
       readPlexConfig({
