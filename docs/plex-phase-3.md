@@ -6,7 +6,7 @@
 - [x] P3-02: Add review-map support
 - [x] P3-03: Add plex:import scaffolding
 - [x] P3-04: Implement plex:import --write
-- [ ] P3-05: Controlled import validation
+- [x] P3-05: Controlled import validation
 - [ ] P3-06: Full import validation
 
 ## Purpose
@@ -145,6 +145,30 @@ Append standard `catalog.add` events for eligible Plex movies.
 Validate write behavior with a controlled import target before a full
 import. Validation must confirm idempotent imports, no provider calls,
 and no Plex metadata in written events.
+
+Controlled validation was added in `tests/catalog/plex-import.test.js`.
+
+It uses fake Plex snapshot data to confirm that `plex:import --write`:
+
+- appends only expected `catalog.add` events
+- appends zero events on a second run
+- skips catalog items already represented in the event stream
+- skips review-map ignored items
+- writes review-map manual mappings
+- does not write needs-review items
+- does not persist Plex metadata in catalog events
+- does not call provider or enrichment fetch paths
+
+Run controlled validation with:
+
+```text
+yarn test tests/catalog/plex-import.test.js
+```
+
+This is not full import validation because it uses controlled snapshot
+fixtures instead of the complete live Plex library. P3-06 remains open
+for validating the full import workflow and repeat-run behavior against
+the full import target.
 
 ### P3-06: Full Import Validation
 
