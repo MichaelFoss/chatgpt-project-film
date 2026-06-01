@@ -4,7 +4,7 @@
 
 - [x] P3-01: Add roadmap document
 - [x] P3-02: Add review-map support
-- [ ] P3-03: Add plex:import scaffolding
+- [x] P3-03: Add plex:import scaffolding
 - [ ] P3-04: Implement plex:import --write
 - [ ] P3-05: Controlled import validation
 - [ ] P3-06: Full import validation
@@ -112,8 +112,7 @@ Phase 3 is complete only when all of the following are true:
 - Plex import must not call OMDb or any future metadata providers.
 - Plex import is an event-generation workflow only.
 - Metadata enrichment remains a separate workflow.
-- Import behavior must be deterministic when operating from a Plex
-  snapshot.
+- Import behavior must be deterministic for the same Plex responses.
 
 ### Review Map Behavior
 
