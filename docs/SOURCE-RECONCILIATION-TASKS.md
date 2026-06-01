@@ -87,7 +87,7 @@ Rules:
 
 ## Phase 2 - Architecture Documents
 
-- [ ] Update `sources/manual/data-model.md` with detailed requirements:
+- [x] Update `sources/manual/data-model.md` with detailed requirements:
   - Catalog membership derives exclusively from
     `events/catalog.events.ndjson`.
   - Repository contains 705 `catalog.add` events.
