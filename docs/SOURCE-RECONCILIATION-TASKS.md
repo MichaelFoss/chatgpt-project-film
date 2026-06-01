@@ -120,7 +120,7 @@ Rules:
 
 ## Phase 3 - Decision Log
 
-- [ ] Update `sources/manual/decisions.md` with a detailed list of
+- [x] Update `sources/manual/decisions.md` with a detailed list of
       recorded decisions:
   - Plex import is the production ingestion mechanism.
   - Import process is replay-safe and idempotent.
