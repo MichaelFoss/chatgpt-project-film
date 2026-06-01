@@ -106,7 +106,7 @@ Rules:
   - Temporary Plex snapshot tooling is not part of production
     architecture.
 
-- [ ] Update `sources/manual/event-schema.md` with detailed
+- [x] Update `sources/manual/event-schema.md` with detailed
       requirements:
   - `catalog.add` event type is implemented.
   - Implemented source values are `plex` and `manual`.

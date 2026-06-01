@@ -82,6 +82,8 @@ manual:festival-short-2024
 
 ## `catalog.add`
 
+Implementation status: implemented.
+
 Records inclusion intent for a title in the known catalog.
 
 This event means:
@@ -90,7 +92,8 @@ This event means:
 this title belongs in my system
 ```
 
-This event does not describe the title.
+This event does not describe the title. Catalog events must not contain
+descriptive metadata.
 
 Title description belongs in:
 
@@ -100,6 +103,9 @@ data/metadata-cache.json
 
 This event does not imply that the item was watched, completed, liked,
 owned intentionally, or recommended.
+
+Plex-imported `catalog.add` events are durable membership records. They
+are not Plex metadata snapshots.
 
 ### Required Fields
 
@@ -125,7 +131,16 @@ Allowed `source` values:
 - `plex`
 - `manual`
 
-`source` is provenance only.
+These are the only implemented source values for `catalog.add`.
+
+`source` is provenance only. It records where the catalog membership
+event came from. It does not contain descriptive metadata and must not
+be used as a title-data source.
+
+For Plex-imported events, `source: "plex"` means the event originated
+from the Plex import workflow. It does not preserve Plex title metadata,
+library metadata, watched state, ratings, view history, or preference
+signals.
 
 It does not imply:
 
@@ -234,16 +249,16 @@ reaction language.
 
 ## Provenance
 
-`source` records where the event came from.
+`source` records where an event came from.
 
-Examples:
+Implemented `catalog.add` source values are:
 
 - `plex`
-- `netflix`
-- `chatgpt`
 - `manual`
 
 Source is provenance only.
+
+Source values do not provide descriptive metadata.
 
 It does not imply:
 
