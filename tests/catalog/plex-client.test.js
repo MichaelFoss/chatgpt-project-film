@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createPlexClient } from '../../scripts/lib/plex-client.js';
 
 function jsonResponse(body, { status = 200 } = {}) {
@@ -91,6 +91,86 @@ describe('plexClient', () => {
       guids: ['imdb://tt0112573', 'tmdb://197'],
       raw: rawMetadata,
     });
+  });
+
+  it('does not log Plex requests by default', async () => {
+    const debugLogger = vi.fn();
+    const client = createPlexClient({
+      plexUrl: 'http://plex.test:32400',
+      plexToken: 'secret-token',
+      debugLogger,
+      fetchImpl: async () =>
+        jsonResponse({
+          MediaContainer: {
+            Metadata: [
+              {
+                ratingKey: '100',
+                title: 'Braveheart',
+                type: 'movie',
+              },
+            ],
+          },
+        }),
+    });
+
+    await client.fetchMovieMetadata('100');
+
+    expect(debugLogger).not.toHaveBeenCalled();
+  });
+
+  it('logs Plex request URLs and response statuses when debug is enabled', async () => {
+    const debugLogger = vi.fn();
+    const client = createPlexClient({
+      plexUrl: 'http://plex.test:32400',
+      plexToken: 'secret-token',
+      debug: true,
+      debugLogger,
+      fetchImpl: async () =>
+        jsonResponse({
+          MediaContainer: {
+            Metadata: [
+              {
+                ratingKey: '100',
+                title: 'Braveheart',
+                type: 'movie',
+              },
+            ],
+          },
+        }),
+    });
+
+    await client.fetchMovieMetadata('100');
+
+    expect(debugLogger.mock.calls.map(([line]) => line)).toEqual([
+      '[Plex] GET http://plex.test:32400/library/metadata/100',
+      '[Plex] Status 200',
+    ]);
+  });
+
+  it('does not include Plex tokens in debug output', async () => {
+    const debugLogger = vi.fn();
+    const client = createPlexClient({
+      plexUrl: 'http://plex.test:32400',
+      plexToken: 'secret-token',
+      debug: true,
+      debugLogger,
+      fetchImpl: async () => jsonResponse({}, { status: 401 }),
+    });
+
+    await expect(client.fetchMovieMetadata('100')).rejects.toThrow(
+      'Plex authentication failed with status 401.',
+    );
+
+    const output = debugLogger.mock.calls
+      .map(([line]) => line)
+      .join('\n');
+
+    expect(output).toContain(
+      '[Plex] GET http://plex.test:32400/library/metadata/100',
+    );
+    expect(output).toContain('[Plex] Status 401');
+    expect(output).not.toContain('secret-token');
+    expect(output).not.toContain('X-Plex-Token');
   });
 
   it('fails fast when Plex cannot be reached', async () => {

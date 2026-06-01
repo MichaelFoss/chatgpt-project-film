@@ -98,9 +98,12 @@ export function createPlexClient({
   plexUrl,
   plexToken,
   fetchImpl = globalThis.fetch,
+  debug = false,
+  debugLogger = console.error,
 } = {}) {
   const normalizedUrl = normalizeString(plexUrl);
   const normalizedToken = normalizeString(plexToken);
+  const shouldDebug = Boolean(debug);
 
   if (!normalizedUrl || !normalizedToken) {
     throw new CatalogBuildError(
@@ -117,12 +120,20 @@ export function createPlexClient({
 
     let response;
     try {
+      if (shouldDebug) {
+        debugLogger(`[Plex] GET ${url.toString()}`);
+      }
+
       response = await fetchImpl(url, {
         headers: {
           Accept: 'application/json',
           'X-Plex-Token': normalizedToken,
         },
       });
+
+      if (shouldDebug) {
+        debugLogger(`[Plex] Status ${response.status}`);
+      }
     } catch (error) {
       throw new CatalogBuildError(
         `Unable to reach Plex server: ${error.message}`,

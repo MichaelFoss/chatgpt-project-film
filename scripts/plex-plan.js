@@ -19,6 +19,7 @@ export function readPlexConfig(env = process.env) {
   return {
     plexUrl: env.PLEX_URL?.trim() ?? '',
     plexToken: env.PLEX_TOKEN?.trim() ?? '',
+    plexDebug: env.PLEX_DEBUG,
   };
 }
 
@@ -50,7 +51,12 @@ export async function planPlexImport({
   json = false,
 } = {}) {
   const config = validatePlexConfig(readPlexConfig(env));
-  const client = createPlexClient({ ...config, fetchImpl });
+  const client = createPlexClient({
+    plexUrl: config.plexUrl,
+    plexToken: config.plexToken,
+    fetchImpl,
+    debug: config.plexDebug,
+  });
   const report = await planPlexPlanningItems({
     client,
     rootDir,

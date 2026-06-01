@@ -41,6 +41,7 @@ describe('plex:plan scaffolding', () => {
     ).toEqual({
       plexUrl: 'http://localhost:32400',
       plexToken: 'token',
+      plexDebug: undefined,
     });
   });
 
