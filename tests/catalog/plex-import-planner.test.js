@@ -7,12 +7,17 @@ import {
   extractImdbIdFromPlexGuids,
   planPlexPlanningItems,
 } from '../../scripts/lib/plex-import-planner.js';
+import {
+  readPlexReviewMap,
+  validatePlexReviewMap,
+} from '../../scripts/lib/plex-review-map.js';
 
 const tempDirs = [];
 
 async function createTempProject({
   events = [],
   metadataCache = {},
+  reviewMap,
 } = {}) {
   const rootDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'film-plex-plan-'),
@@ -40,6 +45,15 @@ async function createTempProject({
     `${JSON.stringify(metadataCache, null, 2)}\n`,
     'utf8',
   );
+
+  if (reviewMap) {
+    await fs.mkdir(path.join(rootDir, 'config'), { recursive: true });
+    await fs.writeFile(
+      path.join(rootDir, 'config', 'plex-review.json'),
+      `${JSON.stringify(reviewMap, null, 2)}\n`,
+      'utf8',
+    );
+  }
 
   return rootDir;
 }
@@ -349,5 +363,265 @@ describe('Plex import planner', () => {
       },
     ]);
     expect(report.alreadyRepresentedItems).toEqual([]);
+  });
+
+  it('treats a missing Plex review map as empty configuration', async () => {
+    const rootDir = await createTempProject();
+
+    await expect(readPlexReviewMap({ rootDir })).resolves.toEqual({
+      ignoredItems: [],
+      manualMappings: [],
+    });
+
+    const report = await planPlexPlanningItems({
+      rootDir,
+      client: {
+        async fetchMovieSummaries() {
+          return [
+            {
+              ratingKey: '1718',
+              title: 'Family Guy Presents: Blue Harvest',
+              year: 2007,
+            },
+          ];
+        },
+        async fetchMovieMetadata() {
+          return {
+            ratingKey: '1718',
+            title: 'Family Guy Presents: Blue Harvest',
+            type: 'movie',
+            year: 2007,
+            guids: ['tmdb://65334'],
+          };
+        },
+      },
+    });
+
+    expect(report.needsReviewItems).toEqual([
+      {
+        title: 'Family Guy Presents: Blue Harvest',
+        year: 2007,
+        plexRatingKey: '1718',
+        reason: 'Missing IMDb identifier',
+      },
+    ]);
+  });
+
+  it('removes ignored Plex review-map items from planning output', async () => {
+    const rootDir = await createTempProject({
+      reviewMap: {
+        ignoredItems: [
+          {
+            plexRatingKey: '1718',
+            title: 'Family Guy Presents: Blue Harvest',
+            year: 2007,
+            reason: 'TV special',
+          },
+        ],
+        manualMappings: [],
+      },
+    });
+
+    const report = await planPlexPlanningItems({
+      rootDir,
+      client: {
+        async fetchMovieSummaries() {
+          return [
+            {
+              ratingKey: '1718',
+              title: 'Family Guy Presents: Blue Harvest',
+              year: 2007,
+            },
+          ];
+        },
+        async fetchMovieMetadata() {
+          return {
+            ratingKey: '1718',
+            title: 'Family Guy Presents: Blue Harvest',
+            type: 'movie',
+            year: 2007,
+            guids: ['tmdb://65334'],
+          };
+        },
+      },
+    });
+
+    expect(report.plannedItems).toEqual([]);
+    expect(report.needsReviewItems).toEqual([]);
+    expect(report.alreadyRepresentedItems).toEqual([]);
+  });
+
+  it('uses manual mappings to make Plex items importable', async () => {
+    const rootDir = await createTempProject({
+      reviewMap: {
+        ignoredItems: [],
+        manualMappings: [
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+            canonicalId: 'tt6951892',
+            reason: 'Missing IMDb GUID in Plex',
+          },
+        ],
+      },
+    });
+
+    const report = await planPlexPlanningItems({
+      rootDir,
+      client: {
+        async fetchMovieSummaries() {
+          return [{ ratingKey: '4292', title: 'Samson', year: 2017 }];
+        },
+        async fetchMovieMetadata() {
+          return {
+            ratingKey: '4292',
+            title: 'Samson',
+            type: 'movie',
+            year: 2017,
+            guids: ['tmdb://4292'],
+          };
+        },
+      },
+    });
+
+    expect(report.plannedItems).toEqual([
+      {
+        canonicalId: 'tt6951892',
+        source: 'plex',
+        title: 'Samson',
+        year: 2017,
+        plexRatingKey: '4292',
+      },
+    ]);
+    expect(report.needsReviewItems).toEqual([]);
+  });
+
+  it('keeps native IMDb GUID precedence over manual mappings', async () => {
+    const rootDir = await createTempProject({
+      reviewMap: {
+        ignoredItems: [],
+        manualMappings: [
+          {
+            plexRatingKey: '200',
+            title: 'The Matrix',
+            year: 1999,
+            canonicalId: 'tt9999999',
+          },
+        ],
+      },
+    });
+
+    const report = await planPlexPlanningItems({
+      rootDir,
+      client: {
+        async fetchMovieSummaries() {
+          return [
+            { ratingKey: '200', title: 'The Matrix', year: 1999 },
+          ];
+        },
+        async fetchMovieMetadata() {
+          return {
+            ratingKey: '200',
+            title: 'The Matrix',
+            type: 'movie',
+            year: 1999,
+            guids: ['imdb://tt0133093'],
+          };
+        },
+      },
+    });
+
+    expect(report.plannedItems[0].canonicalId).toBe('tt0133093');
+  });
+
+  it('rejects duplicate Plex review-map rating keys', () => {
+    expect(() =>
+      validatePlexReviewMap({
+        ignoredItems: [
+          { plexRatingKey: '1718', title: 'Blue Harvest', year: 2007 },
+          { plexRatingKey: '1718', title: 'Blue Harvest', year: 2007 },
+        ],
+        manualMappings: [],
+      }),
+    ).toThrow(
+      'Plex review map ignoredItems contains duplicate plexRatingKey: 1718.',
+    );
+
+    expect(() =>
+      validatePlexReviewMap({
+        ignoredItems: [],
+        manualMappings: [
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+            canonicalId: 'tt6951892',
+          },
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+            canonicalId: 'tt6951892',
+          },
+        ],
+      }),
+    ).toThrow(
+      'Plex review map manualMappings contains duplicate plexRatingKey: 4292.',
+    );
+  });
+
+  it('rejects invalid Plex review-map fields', () => {
+    expect(() =>
+      validatePlexReviewMap({
+        ignoredItems: [
+          {
+            plexRatingKey: '1718',
+            title: 'Blue Harvest',
+          },
+        ],
+        manualMappings: [],
+      }),
+    ).toThrow(
+      'Plex review map ignoredItems[0] missing required field: year.',
+    );
+
+    expect(() =>
+      validatePlexReviewMap({
+        ignoredItems: [],
+        manualMappings: [
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+            canonicalId: 'imdb:tt6951892',
+          },
+        ],
+      }),
+    ).toThrow(
+      'Plex review map manualMappings[0] canonicalId must be an IMDb title ID like tt0133093.',
+    );
+
+    expect(() =>
+      validatePlexReviewMap({
+        ignoredItems: [
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+          },
+        ],
+        manualMappings: [
+          {
+            plexRatingKey: '4292',
+            title: 'Samson',
+            year: 2017,
+            canonicalId: 'tt6951892',
+          },
+        ],
+      }),
+    ).toThrow(
+      'Plex review map plexRatingKey appears in both ignoredItems and manualMappings: 4292.',
+    );
   });
 });

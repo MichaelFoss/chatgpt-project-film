@@ -3,7 +3,7 @@
 ## Status
 
 - [x] P3-01: Add roadmap document
-- [ ] P3-02: Add review-map support
+- [x] P3-02: Add review-map support
 - [ ] P3-03: Add plex:import scaffolding
 - [ ] P3-04: Implement plex:import --write
 - [ ] P3-05: Controlled import validation
