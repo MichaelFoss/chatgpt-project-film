@@ -135,7 +135,7 @@ Rules:
 
 ## Phase 4 - Runtime Context
 
-- [ ] Update `sources/manual/streaming-context.md` with expanded
+- [x] Update `sources/manual/streaming-context.md` with expanded
       requirements:
   - Plex is now an implemented catalog source.
   - Plex data serves as provenance, not watch history.

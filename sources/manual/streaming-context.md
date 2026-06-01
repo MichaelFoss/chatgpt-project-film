@@ -1,7 +1,7 @@
 ---
 title: Streaming Context
 status: current
-last_updated: 2026-05-27
+last_updated: 2026-06-01
 upload_to_chatgpt: true
 ---
 
@@ -37,6 +37,10 @@ Plex is the primary long-term media platform.
 
 The user maintains a personal Plex media server.
 
+Plex is now an implemented catalog source for this repository.
+Plex-imported catalog entries establish catalog provenance and
+membership only.
+
 However:
 
 - historical metadata quality is inconsistent
@@ -44,15 +48,16 @@ However:
 - watched-state history may be incomplete
 - older watch history should not be assumed accurate
 
-Plex should therefore be treated primarily as:
+Plex should therefore be treated as:
 
-- a catalog source
-- an identifier source
-- a title inventory source
+- an implemented catalog source
+- a membership provenance source
+- an identifier source when stable IDs are present
 
 Plex data should not automatically imply:
 
 - watched status
+- watch history
 - completion
 - preference
 - ownership intent
@@ -60,16 +65,23 @@ Plex data should not automatically imply:
 
 ## Plex Metadata Philosophy
 
-Useful Plex-derived fields may include:
+Raw Plex import data should not be treated as authoritative descriptive
+metadata.
 
-- title
+Descriptive metadata should come from enrichment infrastructure and
+`data/metadata-cache.json`, not from raw Plex import records.
+
+Useful Plex-derived data may include:
+
 - IMDb ID
-- poster
-- release year
 - library presence
+- source provenance
 
 Potentially unreliable fields include:
 
+- title metadata
+- poster metadata
+- release-year metadata
 - historical watched status
 - play counts
 - partial viewing history
