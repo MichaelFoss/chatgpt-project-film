@@ -161,7 +161,7 @@ Rules:
 
 ## Phase 6 - Validation
 
-- [ ] Perform validation steps:
+- [x] Perform validation steps:
   - Update `last_updated` fields in source documents where appropriate.
   - Verify `upload_to_chatgpt` flags match the documented upload
     strategy.
