@@ -150,7 +150,7 @@ Rules:
 
 ## Phase 5 - Cleanup
 
-- [ ] Remove `DESIGN.metadata-enrichment.md` from the repository:
+- [x] Remove `DESIGN.metadata-enrichment.md` from the repository:
   - Remove the document from active repository documentation.
   - Remove any references that imply it is active.
   - Do not replace it with a new design proposal.
