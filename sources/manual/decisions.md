@@ -1,7 +1,7 @@
 ---
 title: Decisions
 status: current
-last_updated: 2026-05-30
+last_updated: 2026-06-01
 upload_to_chatgpt: false
 ---
 
@@ -27,6 +27,40 @@ Avoid recording:
 - rapidly changing implementation details
 
 ## Decision Log
+
+### 2026-06-01: Record Post-Plex Import Architecture Decisions
+
+The Plex import is the production ingestion mechanism for bringing Plex
+catalog membership into the repository.
+
+The import process is replay-safe and idempotent. Re-running the import
+workflow should not create duplicate catalog membership records for the
+same canonical title.
+
+Plex data identifies catalog membership and stable IDs only. Plex import
+does not make Plex a source of descriptive title metadata for canonical
+catalog generation.
+
+Plex import does not imply:
+
+- watched status
+- watch history
+- preference
+- rating
+- completion
+- intentional ownership
+- recommendation
+
+Temporary snapshot tooling is intentionally excluded from production
+history. Snapshot tooling may support review or one-off inspection, but
+it is not the production architecture and should not be treated as a
+durable data source.
+
+Metadata enrichment is a separate phase following import. Catalog
+membership can exist before descriptive metadata has been enriched.
+
+Generated catalog state may remain sparse until enrichment coverage
+improves.
 
 ### 2026-05-30: Add Catalog Sync as Phase Orchestration
 

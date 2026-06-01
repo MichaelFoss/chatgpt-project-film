@@ -1,7 +1,7 @@
 ---
 title: Data Model
 status: current
-last_updated: 2026-05-30
+last_updated: 2026-06-01
 upload_to_chatgpt: false
 ---
 
@@ -127,6 +127,31 @@ One JSON object exists per line.
 
 Future event streams may be added when justified.
 
+### Current Catalog Membership State
+
+Catalog membership derives exclusively from:
+
+```text
+events/catalog.events.ndjson
+```
+
+The repository currently contains 705 `catalog.add` events:
+
+- 704 events originated from Plex import.
+- 1 event is manual.
+
+These events establish catalog membership only.
+
+Plex-imported catalog events are durable membership records. They are
+not metadata snapshots and do not create watched, rated, liked, owned,
+completed, or preference facts.
+
+No watched, rated, liked, or owned intent may be inferred from Plex
+import.
+
+Temporary Plex snapshot tooling exists only outside the production
+architecture and is not part of the repository's production data model.
+
 ### Catalog Add Event
 
 The initial implementation should support a catalog-add event.
@@ -193,6 +218,12 @@ can be generated.
 
 Metadata enrichment and catalog generation are independent phases.
 
+Metadata remains in:
+
+```text
+data/metadata-cache.json
+```
+
 Phase 1: Metadata enrichment
 
 ```text
@@ -228,6 +259,14 @@ Given the same `events/catalog.events.ndjson` and
 `data/metadata-cache.json`, catalog generation should produce the same
 `data/catalog.json` output. Catalog generation should be possible
 entirely offline.
+
+The generated `data/catalog.json` output is expected to remain sparse
+until metadata hydration occurs. At the current post-import checkpoint,
+`data/metadata-cache.json` contains one enriched title and
+`data/catalog.json` contains one generated catalog record.
+
+Metadata enrichment infrastructure exists, but bulk metadata hydration
+is incomplete.
 
 ### Catalog Generation Replay Semantics
 
