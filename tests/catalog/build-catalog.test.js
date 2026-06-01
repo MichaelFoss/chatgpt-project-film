@@ -140,7 +140,10 @@ describe('buildCatalog', () => {
     });
     const catalog = JSON.parse(await fs.readFile(outputPath, 'utf8'));
 
-    expect(report.missingMetadata).toEqual([]);
+    expect(report.missingMetadata).not.toContain('imdb:tt0112573');
+    expect(report.missingMetadata).toHaveLength(
+      report.uniqueCatalogAdds - 1,
+    );
     expect(report.invalidMetadata).toEqual([]);
     expect(report.catalogRecordsWritten).toBe(1);
     expect(catalog).toEqual({

@@ -7,7 +7,7 @@
 - [x] P3-03: Add plex:import scaffolding
 - [x] P3-04: Implement plex:import --write
 - [x] P3-05: Controlled import validation
-- [ ] P3-06: Full import validation
+- [x] P3-06: Full import validation
 
 ## Purpose
 
