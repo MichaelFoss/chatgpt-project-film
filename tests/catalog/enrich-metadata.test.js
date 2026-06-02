@@ -161,6 +161,53 @@ describe('planMetadataEnrichment', () => {
     ]);
   });
 
+  it('plans lookups with a requested supporting provider ID', async () => {
+    const rootDir = await createTempProject();
+    const firstProvider = createFakeMetadataProvider();
+    const requestedProvider = {
+      ...createFakeMetadataProvider(),
+      id: 'requested',
+    };
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataEnrichment({
+      rootDir,
+      providers: [firstProvider, requestedProvider],
+      providerId: 'requested',
+    });
+
+    expect(report.plannedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        provider: 'requested',
+      },
+    ]);
+  });
+
+  it('reports requested provider IDs that do not support canonical IDs', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataEnrichment({
+      rootDir,
+      providers: [notImplementedProvider],
+      providerId: 'not-implemented',
+    });
+
+    expect(report.plannedLookups).toEqual([]);
+    expect(report.noSupportingProviderConfigured).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        requestedProvider: 'not-implemented',
+        selectionReason: 'requested-provider-does-not-support-id',
+      },
+    ]);
+  });
+
   it('skips valid metadata as already valid', async () => {
     const rootDir = await createTempProject();
     const fakeProvider = createFakeMetadataProvider();

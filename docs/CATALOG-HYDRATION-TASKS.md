@@ -47,7 +47,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 1 - Hydration Architecture and Provider Contract
 
-- [ ] Define the provider contract and hydration architecture:
+- [x] Define the provider contract and hydration architecture:
   - Create or update hydration modules without changing event schemas.
   - Define a metadata provider interface with explicit provider IDs.
   - Provider contract should support canonical ID lookup.

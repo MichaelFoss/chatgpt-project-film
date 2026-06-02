@@ -9,20 +9,36 @@ import {
   mapMetadataRecord,
 } from './catalog-metadata.js';
 import { createMetadataEnrichmentReport } from './metadata-enrichment-report.js';
-import { metadataProviders } from './metadata-providers/index.js';
+import {
+  metadataProviders,
+  selectMetadataProvider,
+} from './metadata-providers/index.js';
 
-function selectProvider(canonicalId, providers) {
-  return providers.find((provider) => provider.supports(canonicalId));
-}
-
-function addPlannedLookup(report, canonicalId, reason, providers) {
-  const provider = selectProvider(canonicalId, providers);
+function addPlannedLookup(
+  report,
+  canonicalId,
+  reason,
+  providers,
+  providerId,
+) {
+  const { provider, reason: selectionReason } = selectMetadataProvider({
+    canonicalId,
+    providers,
+    providerId,
+  });
 
   if (!provider) {
-    report.noSupportingProviderConfigured.push({
+    const item = {
       canonicalId,
       reason,
-    });
+    };
+
+    if (providerId) {
+      item.requestedProvider = providerId;
+      item.selectionReason = selectionReason;
+    }
+
+    report.noSupportingProviderConfigured.push(item);
     return;
   }
 
@@ -38,6 +54,7 @@ export async function planMetadataEnrichment({
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
   providers = metadataProviders,
+  providerId,
 } = {}) {
   const report = createMetadataEnrichmentReport();
 
@@ -67,7 +84,13 @@ export async function planMetadataEnrichment({
 
       if (!record) {
         report.missingMetadata.push(canonicalId);
-        addPlannedLookup(report, canonicalId, 'missing', providers);
+        addPlannedLookup(
+          report,
+          canonicalId,
+          'missing',
+          providers,
+          providerId,
+        );
         continue;
       }
 
@@ -75,7 +98,13 @@ export async function planMetadataEnrichment({
 
       if (!mapped) {
         report.invalidMetadata.push(canonicalId);
-        addPlannedLookup(report, canonicalId, 'invalid', providers);
+        addPlannedLookup(
+          report,
+          canonicalId,
+          'invalid',
+          providers,
+          providerId,
+        );
         continue;
       }
 

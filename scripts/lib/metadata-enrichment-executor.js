@@ -54,6 +54,7 @@ export async function executeMetadataEnrichment({
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
   providers = metadataProviders,
+  providerId,
   now = () => new Date(),
 } = {}) {
   const report = await planMetadataEnrichment({
@@ -61,6 +62,7 @@ export async function executeMetadataEnrichment({
     eventsPath,
     metadataCachePath,
     providers,
+    providerId,
   });
   report.mode = 'execute';
 
