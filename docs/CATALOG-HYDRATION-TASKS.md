@@ -70,7 +70,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 2 - Permanent Mock Provider
 
-- [ ] Implement a permanent mock metadata provider:
+- [x] Implement a permanent mock metadata provider:
   - Provider ID should be `mock`.
   - Mock provider must require no API key.
   - Mock provider must never contact the network.

@@ -1,4 +1,5 @@
 import { omdbProvider } from './omdb-provider.js';
+import { mockMetadataProvider } from './mock-provider.js';
 import { notImplementedProvider } from './not-implemented-provider.js';
 
 export const metadataProviders = [omdbProvider, notImplementedProvider];
@@ -16,4 +17,9 @@ export {
   omdbProvider,
   parseOmdbGenres,
 } from './omdb-provider.js';
+export {
+  createMockMetadataProvider,
+  mockMetadataFixtures,
+  mockMetadataProvider,
+} from './mock-provider.js';
 export { notImplementedProvider };
