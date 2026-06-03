@@ -92,8 +92,12 @@ should use conservative caps, starting with a small cap such as 10 or
 25:
 
 ```sh
-OMDB_API_KEY=... yarn hydrate:metadata:write --provider omdb --limit 10
+yarn hydrate:metadata:write --provider omdb --limit 10
 ```
+
+Local CLI runs load `OMDB_API_KEY` from the repository root `.env` file.
+An `OMDB_API_KEY` value provided by the shell takes precedence over the
+`.env` value.
 
 If a run reports provider rate limiting or the daily OMDb limit is
 reached, stop real-provider hydration for the day. Resume on the next
@@ -105,6 +109,12 @@ run. Each real run should be followed by inspecting the
 Do not run real-provider hydration automatically in tests or unattended
 workflows. Use `yarn hydrate:metadata:write --provider mock --limit 25`
 for local workflow testing without network access or API keys.
+
+As of 2026-06-03, a small real OMDb validation succeeded with a
+requested limit of 10, 10 attempted requests, 10 metadata-cache writes,
+and 0 unresolved lookups. The follow-up catalog rebuild produced 11
+catalog records and reported 694 missing metadata records. Production
+hydration has not yet been performed.
 
 `yarn catalog:sync` no longer performs legacy metadata enrichment by
 default because that path is uncapped. Use capped hydration first, then

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
+import { loadRepoEnv } from './lib/local-env.js';
 import { planMetadataHydration } from './lib/metadata-hydration-planner.js';
 import { executeMetadataHydrationWrite } from './lib/metadata-hydration-writer.js';
 import {
@@ -231,6 +232,7 @@ export function parseMetadataHydrationCli(args = process.argv) {
 
 async function main() {
   try {
+    loadRepoEnv();
     const options = parseMetadataHydrationCli();
     const report =
       options.command === 'write'
