@@ -262,7 +262,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 11 - Validation
 
-- [ ] Validate the completed hydration feature:
+- [x] Validate the completed hydration feature:
   - Run `yarn check`.
   - Run `yarn test`.
   - Run mock hydration plan.
