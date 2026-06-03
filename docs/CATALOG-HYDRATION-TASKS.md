@@ -163,9 +163,11 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 6 - Request Limits, Delays, Timeouts, and Retries
 
-- [ ] Implement request-control behavior shared by mock and real
+- [x] Implement request-control behavior shared by mock and real
       providers:
   - Support per-run request cap.
+  - Per-run request cap counts every provider lookup attempt, including
+    retries.
   - Support delay between requests.
   - Support provider timeout.
   - Support provider retry cap.

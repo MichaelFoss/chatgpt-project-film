@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   executeMetadataHydrationWrite,
   formatMetadataHydrationPlanReport,
+  parseMetadataHydrationCli,
 } from '../../scripts/hydrate-metadata.js';
 import {
   createMockMetadataProvider,
@@ -115,7 +116,7 @@ function foundFixture(canonicalId) {
   };
 }
 
-function createTrackingMockProvider(fixtures) {
+function createTrackingMockProvider(fixtures, options = {}) {
   const fixtureEntries = Array.isArray(fixtures)
     ? fixtures.map((canonicalId) => [
         canonicalId,
@@ -124,15 +125,19 @@ function createTrackingMockProvider(fixtures) {
     : Object.entries(fixtures);
   const provider = createMockMetadataProvider({
     fixtures: new Map(fixtureEntries),
+    ...options,
   });
   const calls = [];
+  const lookupOptions = [];
 
   return {
     id: provider.id,
     calls,
+    lookupOptions,
     supports: provider.supports,
     async lookup(options) {
       calls.push(options.canonicalId);
+      lookupOptions.push(options);
       return provider.lookup(options);
     },
   };
@@ -428,6 +433,229 @@ describe('executeMetadataHydrationWrite', () => {
     expect(report.remainingEligibleRecords).toBe(0);
     expect(report.unresolvedLookupRecords).toEqual([]);
     expect(after).toEqual(before);
+  });
+
+  it('parses shared request-control options for write mode', () => {
+    expect(
+      parseMetadataHydrationCli([
+        'node',
+        'scripts/hydrate-metadata.js',
+        'write',
+        '--provider',
+        'mock',
+        '--limit',
+        '5',
+        '--delay-ms',
+        '10',
+        '--timeout-ms=25',
+        '--retry-limit',
+        '2',
+      ]),
+    ).toMatchObject({
+      command: 'write',
+      providerId: 'mock',
+      limit: 5,
+      delayMs: 10,
+      timeoutMs: 25,
+      retryLimit: 2,
+    });
+  });
+
+  it('applies configured delay behavior between provider requests', async () => {
+    const rootDir = await createTempProject();
+    const provider = createTrackingMockProvider([
+      'mock:one',
+      'mock:two',
+    ]);
+    await writeEvents(rootDir, [
+      catalogAdd('mock:one'),
+      catalogAdd('mock:two'),
+    ]);
+    await writeMetadata(rootDir, {});
+
+    const startedAt = Date.now();
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+      limit: 2,
+      delayMs: 20,
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(provider.calls).toEqual(['mock:one', 'mock:two']);
+    expect(report.requestsAttempted).toBe(2);
+    expect(elapsedMs).toBeGreaterThanOrEqual(15);
+  });
+
+  it('applies provider timeout behavior using mock artificial delay', async () => {
+    const rootDir = await createTempProject();
+    const provider = createTrackingMockProvider(['mock:slow'], {
+      delayMs: 25,
+    });
+    await writeEvents(rootDir, [catalogAdd('mock:slow')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+      timeoutMs: 1,
+    });
+    const cache = await readMetadata(rootDir);
+
+    expect(provider.calls).toEqual(['mock:slow']);
+    expect(provider.lookupOptions).toEqual([
+      {
+        canonicalId: 'mock:slow',
+        timeoutMs: 1,
+      },
+    ]);
+    expect(report.requestsAttempted).toBe(1);
+    expect(report.unresolvedLookupRecords).toEqual([
+      {
+        canonicalId: 'mock:slow',
+        provider: 'mock',
+        status: metadataLookupResultCategories.timedOut,
+      },
+    ]);
+    expect(cache).toEqual({});
+  });
+
+  it('enforces retry cap behavior using mock retryable failure', async () => {
+    const rootDir = await createTempProject();
+    const provider = createTrackingMockProvider({
+      'mock:retryable-failure': {
+        status: metadataLookupResultCategories.retryableFailure,
+        error: {
+          source: 'transport',
+          message: 'retry later',
+          statusCode: 503,
+        },
+      },
+    });
+    await writeEvents(rootDir, [catalogAdd('mock:retryable-failure')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+      limit: 5,
+      retryLimit: 2,
+    });
+
+    expect(provider.calls).toEqual([
+      'mock:retryable-failure',
+      'mock:retryable-failure',
+      'mock:retryable-failure',
+    ]);
+    expect(report.requestsAttempted).toBe(3);
+    expect(report.lookupResults).toEqual([
+      {
+        canonicalId: 'mock:retryable-failure',
+        provider: 'mock',
+        status: metadataLookupResultCategories.retryableFailure,
+      },
+      {
+        canonicalId: 'mock:retryable-failure',
+        provider: 'mock',
+        status: metadataLookupResultCategories.retryableFailure,
+      },
+      {
+        canonicalId: 'mock:retryable-failure',
+        provider: 'mock',
+        status: metadataLookupResultCategories.retryableFailure,
+      },
+    ]);
+    expect(report.unresolvedLookupRecords).toEqual([
+      {
+        canonicalId: 'mock:retryable-failure',
+        provider: 'mock',
+        status: metadataLookupResultCategories.retryableFailure,
+      },
+    ]);
+  });
+
+  it('counts retry attempts against the same per-run request cap', async () => {
+    const rootDir = await createTempProject();
+    const provider = createTrackingMockProvider({
+      'mock:retryable-failure': {
+        status: metadataLookupResultCategories.retryableFailure,
+        error: {
+          source: 'transport',
+          message: 'retry later',
+          statusCode: 503,
+        },
+      },
+    });
+    await writeEvents(rootDir, [catalogAdd('mock:retryable-failure')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+      limit: 2,
+      retryLimit: 5,
+    });
+
+    expect(provider.calls).toEqual([
+      'mock:retryable-failure',
+      'mock:retryable-failure',
+    ]);
+    expect(report.requestsAttempted).toBe(2);
+    expect(report.lookupResults).toHaveLength(2);
+    expect(report.remainingEligibleRecords).toBe(0);
+    expect(report.unresolvedLookupRecords).toEqual([
+      {
+        canonicalId: 'mock:retryable-failure',
+        provider: 'mock',
+        status: metadataLookupResultCategories.retryableFailure,
+      },
+    ]);
+  });
+
+  it('stops the run on rate-limit results without treating later titles as failures', async () => {
+    const rootDir = await createTempProject();
+    const provider = createTrackingMockProvider({
+      'mock:rate-limited': {
+        status: metadataLookupResultCategories.rateLimited,
+        error: {
+          source: 'transport',
+          message: 'rate limited',
+          statusCode: 429,
+          retryAfterSeconds: 60,
+        },
+      },
+      'mock:later': foundFixture('mock:later'),
+    });
+    await writeEvents(rootDir, [
+      catalogAdd('mock:rate-limited'),
+      catalogAdd('mock:later'),
+    ]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+      limit: 10,
+    });
+    const cache = await readMetadata(rootDir);
+
+    expect(provider.calls).toEqual(['mock:rate-limited']);
+    expect(report.requestsAttempted).toBe(1);
+    expect(report.remainingEligibleRecords).toBe(1);
+    expect(report.unresolvedLookupRecords).toEqual([
+      {
+        canonicalId: 'mock:rate-limited',
+        provider: 'mock',
+        status: metadataLookupResultCategories.rateLimited,
+      },
+    ]);
+    expect(cache).toEqual({});
   });
 
   it('preserves existing valid metadata when a retryable failure fixture exists', async () => {

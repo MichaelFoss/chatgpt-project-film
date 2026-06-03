@@ -65,6 +65,16 @@ function parsePositiveInteger(value, optionName) {
   return Number(value);
 }
 
+function parseNonNegativeInteger(value, optionName) {
+  if (!/^(0|[1-9]\d*)$/.test(value)) {
+    throw new CatalogBuildError(
+      `Metadata hydration option ${optionName} must be a non-negative integer.`,
+    );
+  }
+
+  return Number(value);
+}
+
 export function parseMetadataHydrationCli(args = process.argv) {
   const command = resolveMetadataHydrationCommand(args);
   const options = {
@@ -121,6 +131,48 @@ export function parseMetadataHydrationCli(args = process.argv) {
       continue;
     }
 
+    if (arg === '--delay-ms' || arg.startsWith('--delay-ms=')) {
+      const parsed = readFlagValue({
+        args: commandArgs,
+        index,
+        name: '--delay-ms',
+      });
+      options.delayMs = parseNonNegativeInteger(
+        parsed.value,
+        '--delay-ms',
+      );
+      index = parsed.nextIndex;
+      continue;
+    }
+
+    if (arg === '--timeout-ms' || arg.startsWith('--timeout-ms=')) {
+      const parsed = readFlagValue({
+        args: commandArgs,
+        index,
+        name: '--timeout-ms',
+      });
+      options.timeoutMs = parseNonNegativeInteger(
+        parsed.value,
+        '--timeout-ms',
+      );
+      index = parsed.nextIndex;
+      continue;
+    }
+
+    if (arg === '--retry-limit' || arg.startsWith('--retry-limit=')) {
+      const parsed = readFlagValue({
+        args: commandArgs,
+        index,
+        name: '--retry-limit',
+      });
+      options.retryLimit = parseNonNegativeInteger(
+        parsed.value,
+        '--retry-limit',
+      );
+      index = parsed.nextIndex;
+      continue;
+    }
+
     throw new CatalogBuildError(
       `Unknown metadata hydration option: ${arg}`,
     );
@@ -139,6 +191,9 @@ async function main() {
             limit: options.limit,
             targetCanonicalId: options.targetCanonicalId,
             dryRun: options.dryRun,
+            delayMs: options.delayMs,
+            timeoutMs: options.timeoutMs,
+            retryLimit: options.retryLimit,
           })
         : await planMetadataHydration();
     console.log(formatMetadataHydrationPlanReport(report));

@@ -15,6 +15,9 @@ import {
 export const metadataHydrationWriteDefaults = Object.freeze({
   defaultLimit: 25,
   hardMaxLimit: 100,
+  delayMs: 0,
+  timeoutMs: null,
+  retryLimit: 0,
 });
 
 function findProvider(providerId, providers) {
@@ -47,6 +50,26 @@ function normalizeLimit({ limit, defaultLimit, hardMaxLimit }) {
   return effectiveLimit;
 }
 
+function normalizeNonNegativeInteger({ value, name }) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (!Number.isInteger(value) || value < 0) {
+    throw new CatalogBuildError(
+      `Metadata hydration option ${name} must be a non-negative integer.`,
+    );
+  }
+
+  return value;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function createMetadataRecordFromLookupResult({
   canonicalId,
   providerId,
@@ -75,6 +98,60 @@ function sortMetadataCache(cache) {
   );
 }
 
+function shouldRetryLookup(category) {
+  return [
+    metadataLookupResultCategories.retryableFailure,
+    metadataLookupResultCategories.timedOut,
+  ].includes(category);
+}
+
+async function controlledLookup({
+  provider,
+  canonicalId,
+  providerId,
+  report,
+  effectiveLimit,
+  delayMs,
+  timeoutMs,
+  retryLimit,
+}) {
+  let attemptsForLookup = 0;
+  let lastResult;
+  let lastCategory;
+
+  // The per-run cap covers every provider lookup attempt, including retries.
+  while (report.requestsAttempted < effectiveLimit) {
+    if (report.requestsAttempted > 0 && delayMs > 0) {
+      await sleep(delayMs);
+    }
+
+    lastResult = await provider.lookup({
+      canonicalId,
+      timeoutMs: timeoutMs ?? undefined,
+    });
+    lastCategory = classifyMetadataLookupResult(lastResult).category;
+    attemptsForLookup += 1;
+    report.requestsAttempted += 1;
+    report.lookupResults.push({
+      canonicalId,
+      provider: providerId,
+      status: lastCategory,
+    });
+
+    if (
+      !shouldRetryLookup(lastCategory) ||
+      attemptsForLookup > retryLimit
+    ) {
+      break;
+    }
+  }
+
+  return {
+    result: lastResult,
+    category: lastCategory,
+  };
+}
+
 export async function executeMetadataHydrationWrite({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
@@ -86,6 +163,9 @@ export async function executeMetadataHydrationWrite({
   dryRun = false,
   defaultLimit = metadataHydrationWriteDefaults.defaultLimit,
   hardMaxLimit = metadataHydrationWriteDefaults.hardMaxLimit,
+  delayMs = metadataHydrationWriteDefaults.delayMs,
+  timeoutMs = metadataHydrationWriteDefaults.timeoutMs,
+  retryLimit = metadataHydrationWriteDefaults.retryLimit,
   now = () => new Date(),
 } = {}) {
   assertMockProviderOnly(providerId);
@@ -94,6 +174,18 @@ export async function executeMetadataHydrationWrite({
     limit,
     defaultLimit,
     hardMaxLimit,
+  });
+  const effectiveDelayMs = normalizeNonNegativeInteger({
+    value: delayMs,
+    name: '--delay-ms',
+  });
+  const effectiveTimeoutMs = normalizeNonNegativeInteger({
+    value: timeoutMs,
+    name: '--timeout-ms',
+  });
+  const effectiveRetryLimit = normalizeNonNegativeInteger({
+    value: retryLimit,
+    name: '--retry-limit',
   });
 
   const report = await planMetadataHydration({
@@ -128,26 +220,34 @@ export async function executeMetadataHydrationWrite({
           (item) => item.canonicalId === targetCanonicalId,
         )
       : eligibleProviderLookups;
-    const cappedLookups = candidateLookups.slice(0, effectiveLimit);
     const { cache } = await loadMetadataCache(metadataCachePath);
     const updatedCache = { ...cache };
     let changed = false;
+    let processedLookupCount = 0;
+    let stopRequested = false;
 
-    for (const lookup of cappedLookups) {
+    for (const lookup of candidateLookups) {
+      if (report.requestsAttempted >= effectiveLimit || stopRequested) {
+        break;
+      }
+
       const { canonicalId } = lookup;
 
       if (mapMetadataRecord(canonicalId, updatedCache[canonicalId])) {
         continue;
       }
 
-      const result = await provider.lookup({ canonicalId });
-      const { category } = classifyMetadataLookupResult(result);
-      report.requestsAttempted += 1;
-      report.lookupResults.push({
+      const { result, category } = await controlledLookup({
+        provider,
         canonicalId,
-        provider: providerId,
-        status: category,
+        providerId,
+        report,
+        effectiveLimit,
+        delayMs: effectiveDelayMs,
+        timeoutMs: effectiveTimeoutMs,
+        retryLimit: effectiveRetryLimit,
       });
+      processedLookupCount += 1;
 
       if (category !== metadataLookupResultCategories.found) {
         report.unresolvedLookupRecords.push({
@@ -155,6 +255,8 @@ export async function executeMetadataHydrationWrite({
           provider: providerId,
           status: category,
         });
+        stopRequested =
+          category === metadataLookupResultCategories.rateLimited;
         continue;
       }
 
@@ -191,7 +293,7 @@ export async function executeMetadataHydrationWrite({
     }
 
     report.remainingEligibleRecords =
-      eligibleProviderLookups.length - cappedLookups.length;
+      eligibleProviderLookups.length - processedLookupCount;
 
     if (changed) {
       await writeGeneratedJsonFile(
