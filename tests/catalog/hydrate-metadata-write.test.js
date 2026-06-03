@@ -8,6 +8,7 @@ import {
   parseMetadataHydrationCli,
 } from '../../scripts/hydrate-metadata.js';
 import {
+  createOmdbProvider,
   createMockMetadataProvider,
   metadataLookupResultCategories,
 } from '../../scripts/lib/metadata-providers/index.js';
@@ -150,13 +151,36 @@ afterEach(async () => {
 });
 
 describe('executeMetadataHydrationWrite', () => {
-  it('rejects non-mock providers in write mode', async () => {
+  it('does not make OMDb available in default write mode', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd('imdb:tt0000002')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      limit: 1,
+    });
+
+    expect(report.provider).toBe('mock');
+    expect(report.eligibleLookups).toEqual([]);
+    expect(report.ineligibleLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0000002',
+        reason: 'missing',
+        selectionReason: 'no-supporting-provider',
+      },
+    ]);
+    expect(report.requestsAttempted).toBe(0);
+    expect(report.metadataRecordsWritten).toEqual([]);
+  });
+
+  it('rejects providers that are not configured in write mode', async () => {
     await expect(
       executeMetadataHydrationWrite({
-        providerId: 'omdb',
+        providerId: 'missing-provider',
       }),
     ).rejects.toThrow(
-      'Metadata hydration write mode currently supports only "--provider mock".',
+      'Metadata hydration provider is not configured: missing-provider.',
     );
   });
 
@@ -770,6 +794,69 @@ describe('executeMetadataHydrationWrite', () => {
       },
     ]);
     expect(cache).toEqual({});
+  });
+
+  it('writes validated OMDb metadata only when OMDb is explicitly selected', async () => {
+    const rootDir = await createTempProject();
+    const fetchCalls = [];
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async (url) => {
+        fetchCalls.push(url);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              Title: 'Braveheart',
+              Genre: 'Biography, Drama, War',
+              Type: 'movie',
+              Plot: 'Scottish warrior William Wallace leads.',
+              imdbID: 'tt0112573',
+              Response: 'True',
+            };
+          },
+        };
+      },
+    });
+    await writeEvents(rootDir, [catalogAdd('imdb:tt0112573')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'omdb',
+      limit: 1,
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const cache = await readMetadata(rootDir);
+
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0].protocol).toBe('https:');
+    expect(fetchCalls[0].hostname).toBe('www.omdbapi.com');
+    expect(fetchCalls[0].searchParams.get('i')).toBe('tt0112573');
+    expect(fetchCalls[0].searchParams.has('apikey')).toBe(true);
+    expect(report.requestsAttempted).toBe(1);
+    expect(report.metadataRecordsWritten).toEqual(['imdb:tt0112573']);
+    expect(cache['imdb:tt0112573']).toMatchObject({
+      canonicalId: 'imdb:tt0112573',
+      provider: 'omdb',
+      isValid: true,
+      provenance: {
+        source: 'provider-lookup',
+        provider: 'omdb',
+        lookupKey: 'tt0112573',
+      },
+      metadata: {
+        mediaType: 'movie',
+        title: 'Braveheart',
+        genres: ['Biography', 'Drama', 'War'],
+        omdb: {
+          imdbID: 'tt0112573',
+          Response: 'True',
+        },
+      },
+    });
   });
 
   it('formats reviewable write-mode summary counts', () => {

@@ -209,7 +209,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 8 - OMDb Provider
 
-- [ ] Implement the OMDb provider after the mock workflow is stable:
+- [x] Implement the OMDb provider after the mock workflow is stable:
   - Provider ID should be `omdb`.
   - OMDb provider must be opt-in.
   - OMDb provider must read API key from environment only.

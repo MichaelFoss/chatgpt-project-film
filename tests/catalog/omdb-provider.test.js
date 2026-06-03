@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  classifyMetadataLookupResult,
   createOmdbProvider,
   extractOmdbImdbId,
   mapOmdbResponse,
+  metadataLookupResultCategories,
   parseOmdbGenres,
 } from '../../scripts/lib/metadata-providers/index.js';
 
@@ -81,9 +83,10 @@ describe('omdbProvider', () => {
     });
 
     expect(fetchCalls).toHaveLength(1);
-    expect(fetchCalls[0].toString()).toBe(
-      'https://www.omdbapi.com/?apikey=test-key&i=tt0112573',
-    );
+    expect(fetchCalls[0].protocol).toBe('https:');
+    expect(fetchCalls[0].hostname).toBe('www.omdbapi.com');
+    expect(fetchCalls[0].searchParams.get('i')).toBe('tt0112573');
+    expect(fetchCalls[0].searchParams.has('apikey')).toBe(true);
     expect(record).toMatchObject({
       canonicalId: 'imdb:tt0112573',
       provider: 'omdb',
@@ -101,6 +104,11 @@ describe('omdbProvider', () => {
         omdb: braveheartOmdbResponse,
       },
     });
+    expect(response.status).toBe(metadataLookupResultCategories.found);
+    expect(response.metadata.omdb).toEqual(braveheartOmdbResponse);
+    expect(classifyMetadataLookupResult(response).category).toBe(
+      metadataLookupResultCategories.found,
+    );
   });
 
   it('rejects unsupported OMDb media types as invalid metadata', () => {
@@ -113,13 +121,15 @@ describe('omdbProvider', () => {
       },
     });
 
-    expect(result.status).toBe('invalid');
+    expect(result.status).toBe(
+      metadataLookupResultCategories.invalidResponse,
+    );
     expect(result.error.message).toBe(
       'Unsupported OMDb media type: episode.',
     );
   });
 
-  it('treats OMDb not found responses as invalid provider results', () => {
+  it('treats OMDb not found responses as not-found provider results', () => {
     const result = mapOmdbResponse({
       canonicalId: 'imdb:tt0000000',
       lookupKey: 'tt0000000',
@@ -133,7 +143,7 @@ describe('omdbProvider', () => {
       provider: 'omdb',
       canonicalId: 'imdb:tt0000000',
       lookupKey: 'tt0000000',
-      status: 'invalid',
+      status: metadataLookupResultCategories.notFound,
       error: {
         source: 'provider',
         message: 'Movie not found!',
@@ -159,10 +169,138 @@ describe('omdbProvider', () => {
       provider: 'omdb',
       canonicalId: 'imdb:tt0112573',
       lookupKey: 'tt0112573',
-      status: 'unavailable',
+      status: metadataLookupResultCategories.permanentFailure,
       error: {
         source: 'application',
         message: 'OMDB_API_KEY is not configured.',
+      },
+    });
+  });
+
+  it('rejects unsupported canonical IDs cleanly without calling fetch', async () => {
+    const fetchCalls = [];
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async (url) => {
+        fetchCalls.push(url);
+      },
+    });
+
+    const response = await provider.lookup({
+      canonicalId: 'tmdb:603',
+    });
+
+    expect(fetchCalls).toEqual([]);
+    expect(response).toMatchObject({
+      provider: 'omdb',
+      canonicalId: 'tmdb:603',
+      lookupKey: null,
+      status: metadataLookupResultCategories.permanentFailure,
+      error: {
+        source: 'application',
+        message: 'Unsupported canonical ID for OMDb: tmdb:603.',
+      },
+    });
+  });
+
+  it('maps malformed JSON responses to invalid-response', async () => {
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          throw new Error('Unexpected token');
+        },
+      }),
+    });
+
+    const response = await provider.lookup({
+      canonicalId: 'imdb:tt0112573',
+    });
+
+    expect(response).toMatchObject({
+      status: metadataLookupResultCategories.invalidResponse,
+      error: {
+        source: 'provider',
+        message: 'Unable to parse OMDb response JSON: Unexpected token',
+      },
+    });
+  });
+
+  it('maps transport failures to retryable-failure', async () => {
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async () => {
+        throw new Error('socket closed');
+      },
+    });
+
+    const response = await provider.lookup({
+      canonicalId: 'imdb:tt0112573',
+    });
+
+    expect(response).toMatchObject({
+      status: metadataLookupResultCategories.retryableFailure,
+      error: {
+        source: 'transport',
+        message: 'OMDb transport failure: socket closed',
+      },
+    });
+  });
+
+  it('maps configured timeout failures to timed-out', async () => {
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async (_url, { signal }) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        }),
+    });
+
+    const response = await provider.lookup({
+      canonicalId: 'imdb:tt0112573',
+      timeoutMs: 1,
+    });
+
+    expect(response).toMatchObject({
+      status: metadataLookupResultCategories.timedOut,
+      error: {
+        source: 'transport',
+        message: 'OMDb request exceeded configured timeout.',
+      },
+    });
+  });
+
+  it('maps HTTP 429 responses to rate-limited', async () => {
+    const provider = createOmdbProvider({
+      apiKeyProvider: () => 'test-key',
+      fetchImpl: async () => ({
+        ok: false,
+        status: 429,
+        headers: {
+          get(name) {
+            return name === 'Retry-After' ? '60' : undefined;
+          },
+        },
+      }),
+    });
+
+    const response = await provider.lookup({
+      canonicalId: 'imdb:tt0112573',
+    });
+
+    expect(response).toMatchObject({
+      status: metadataLookupResultCategories.rateLimited,
+      error: {
+        source: 'transport',
+        message: 'OMDb request failed with status 429.',
+        statusCode: 429,
+        retryAfterSeconds: 60,
       },
     });
   });

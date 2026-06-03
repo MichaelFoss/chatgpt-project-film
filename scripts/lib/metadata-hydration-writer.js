@@ -10,6 +10,7 @@ import {
   classifyMetadataLookupResult,
   metadataLookupResultCategories,
   mockMetadataProvider,
+  omdbProvider,
 } from './metadata-providers/index.js';
 
 export const metadataHydrationWriteDefaults = Object.freeze({
@@ -24,12 +25,12 @@ function findProvider(providerId, providers) {
   return providers.find((provider) => provider.id === providerId);
 }
 
-function assertMockProviderOnly(providerId) {
-  if (providerId !== 'mock') {
-    throw new CatalogBuildError(
-      'Metadata hydration write mode currently supports only "--provider mock".',
-    );
+function resolveDefaultProviders(providerId) {
+  if (providerId === 'omdb') {
+    return [omdbProvider];
   }
+
+  return [mockMetadataProvider];
 }
 
 function normalizeLimit({ limit, defaultLimit, hardMaxLimit }) {
@@ -157,7 +158,7 @@ export async function executeMetadataHydrationWrite({
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
   providerId = 'mock',
-  providers = [mockMetadataProvider],
+  providers,
   limit,
   targetCanonicalId,
   dryRun = false,
@@ -168,8 +169,8 @@ export async function executeMetadataHydrationWrite({
   retryLimit = metadataHydrationWriteDefaults.retryLimit,
   now = () => new Date(),
 } = {}) {
-  assertMockProviderOnly(providerId);
-
+  const effectiveProviders =
+    providers ?? resolveDefaultProviders(providerId);
   const effectiveLimit = normalizeLimit({
     limit,
     defaultLimit,
@@ -192,7 +193,7 @@ export async function executeMetadataHydrationWrite({
     rootDir,
     eventsPath,
     metadataCachePath,
-    providers,
+    providers: effectiveProviders,
   });
   report.mode = dryRun ? 'dry-run' : 'write';
   report.provider = providerId;
@@ -202,7 +203,7 @@ export async function executeMetadataHydrationWrite({
   report.dryRun = dryRun;
 
   try {
-    const provider = findProvider(providerId, providers);
+    const provider = findProvider(providerId, effectiveProviders);
 
     if (!provider) {
       throw new CatalogBuildError(
