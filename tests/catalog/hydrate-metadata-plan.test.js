@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   formatMetadataHydrationPlanReport,
+  parseMetadataHydrationCli,
   planMetadataHydration,
   resolveMetadataHydrationCommand,
 } from '../../scripts/hydrate-metadata.js';
@@ -103,7 +104,43 @@ describe('planMetadataHydration', () => {
         'scripts/hydrate-metadata.js',
         'write',
       ]),
-    ).toThrow('Metadata hydration command must be "plan".');
+    ).not.toThrow();
+    expect(
+      resolveMetadataHydrationCommand([
+        'node',
+        'scripts/hydrate-metadata.js',
+        'write',
+      ]),
+    ).toBe('write');
+    expect(() =>
+      resolveMetadataHydrationCommand([
+        'node',
+        'scripts/hydrate-metadata.js',
+      ]),
+    ).toThrow('Metadata hydration command must be "plan" or "write".');
+  });
+
+  it('parses write CLI options', () => {
+    expect(
+      parseMetadataHydrationCli([
+        'node',
+        'scripts/hydrate-metadata.js',
+        'write',
+        '--provider',
+        'mock',
+        '--limit',
+        '12',
+        '--id',
+        'imdb:tt0112573',
+        '--dry-run',
+      ]),
+    ).toEqual({
+      command: 'write',
+      providerId: 'mock',
+      limit: 12,
+      targetCanonicalId: 'imdb:tt0112573',
+      dryRun: true,
+    });
   });
 
   it('reports read-only hydration planning counts', async () => {

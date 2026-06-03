@@ -119,7 +119,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 4 - Hydration Write Mode with Mock Provider
 
-- [ ] Implement capped write mode using the mock provider only:
+- [x] Implement capped write mode using the mock provider only:
   - Add `yarn hydrate:metadata:write`.
   - Write mode updates only `data/metadata-cache.json`.
   - Write mode must support `--provider mock`.

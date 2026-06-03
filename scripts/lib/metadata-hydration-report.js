@@ -1,6 +1,11 @@
 export function createMetadataHydrationPlanReport() {
   return {
     mode: 'plan',
+    provider: null,
+    requestedLimit: null,
+    effectiveLimit: null,
+    targetedCanonicalId: null,
+    dryRun: false,
     totalCatalogEvents: 0,
     uniqueCanonicalCatalogIds: 0,
     duplicateEventCount: 0,
@@ -12,6 +17,11 @@ export function createMetadataHydrationPlanReport() {
     eligibleLookups: [],
     ineligibleLookups: [],
     metadataCacheMissing: false,
+    requestsAttempted: 0,
+    lookupResults: [],
+    metadataRecordWriteCandidates: [],
+    metadataRecordsWritten: [],
+    remainingEligibleRecords: 0,
     filesWritten: [],
     fatalErrors: [],
   };
@@ -80,6 +90,47 @@ export function formatMetadataHydrationPlanReport(report) {
 
   if (report.metadataCacheMissing) {
     lines.push('- metadata cache file missing: true');
+  }
+
+  if (report.mode === 'write' || report.mode === 'dry-run') {
+    lines.push(`- provider: ${report.provider}`);
+    lines.push(`- requested limit: ${report.requestedLimit}`);
+    lines.push(`- effective limit: ${report.effectiveLimit}`);
+
+    if (report.targetedCanonicalId) {
+      lines.push(
+        `- targeted canonical ID: ${report.targetedCanonicalId}`,
+      );
+    }
+
+    lines.push(`- dry run: ${report.dryRun}`);
+    lines.push(`- requests attempted: ${report.requestsAttempted}`);
+
+    for (const item of report.lookupResults) {
+      lines.push(
+        `  - ${item.canonicalId} (${item.provider}, ${item.status})`,
+      );
+    }
+
+    lines.push(
+      `- metadata record write candidates: ${report.metadataRecordWriteCandidates.length}`,
+    );
+
+    for (const canonicalId of report.metadataRecordWriteCandidates) {
+      lines.push(`  - ${canonicalId}`);
+    }
+
+    lines.push(
+      `- metadata records written: ${report.metadataRecordsWritten.length}`,
+    );
+
+    for (const canonicalId of report.metadataRecordsWritten) {
+      lines.push(`  - ${canonicalId}`);
+    }
+
+    lines.push(
+      `- remaining eligible records: ${report.remainingEligibleRecords}`,
+    );
   }
 
   if (report.fatalErrors.length > 0) {
