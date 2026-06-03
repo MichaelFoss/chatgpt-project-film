@@ -201,6 +201,16 @@ describe('executeMetadataHydrationWrite', () => {
       'mock:valid': validMetadata('mock:valid'),
       'mock:invalid-cache': invalidMetadata('mock:invalid-cache'),
     });
+    const existingCatalogPath = path.join(
+      rootDir,
+      'data',
+      'catalog.json',
+    );
+    await fs.writeFile(
+      existingCatalogPath,
+      `${JSON.stringify({ untouched: true }, null, 2)}\n`,
+      'utf8',
+    );
 
     const report = await executeMetadataHydrationWrite({
       rootDir,
@@ -209,6 +219,10 @@ describe('executeMetadataHydrationWrite', () => {
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = await readMetadata(rootDir);
+    const existingCatalogText = await fs.readFile(
+      existingCatalogPath,
+      'utf8',
+    );
 
     expect(provider.calls).toEqual([
       'mock:missing',
@@ -262,6 +276,9 @@ describe('executeMetadataHydrationWrite', () => {
       },
     });
     expect(cache).not.toHaveProperty('mock:skip');
+    expect(existingCatalogText).toBe(
+      `${JSON.stringify({ untouched: true }, null, 2)}\n`,
+    );
   });
 
   it('enforces the request cap', async () => {

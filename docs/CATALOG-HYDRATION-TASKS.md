@@ -229,7 +229,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 9 - Catalog Rebuild Integration
 
-- [ ] Verify hydration integrates with catalog generation:
+- [x] Verify hydration integrates with catalog generation:
   - Hydration must not directly write `data/catalog.json`.
   - `yarn build:catalog` must consume `data/metadata-cache.json`
     offline.

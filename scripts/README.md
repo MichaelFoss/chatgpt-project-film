@@ -47,6 +47,24 @@ metadata gaps and planned lookups without contacting providers or
 writing files. `yarn enrich:metadata:write` performs cache-writing
 metadata enrichment.
 
+Metadata hydration and catalog rebuild are separate review steps:
+
+1. Run `yarn hydrate:metadata:plan` to review missing, skipped,
+   ineligible, and invalid cache records without writing files.
+2. Run `yarn hydrate:metadata:write --provider mock --limit 25`, or an
+   explicitly capped real-provider run, to update only
+   `data/metadata-cache.json`.
+3. Inspect the `data/metadata-cache.json` diff before rebuilding the
+   catalog.
+4. Run `yarn build:catalog` to regenerate `data/catalog.json` offline
+   from `events/catalog.events.ndjson` and `data/metadata-cache.json`.
+5. Inspect the `data/catalog.json` diff separately from the metadata
+   cache diff.
+6. Run `yarn check` and the relevant catalog tests before committing.
+
+Catalog generation must not read provider API keys or contact metadata
+providers. Hydration write mode must not write `data/catalog.json`.
+
 `yarn catalog:sync` runs `enrich:metadata:write` behavior followed by
 `build:catalog` behavior. It does not append catalog events, perform
 catalog import/add, or replace the standalone enrichment and build
