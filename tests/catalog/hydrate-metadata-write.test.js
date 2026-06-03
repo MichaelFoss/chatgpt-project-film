@@ -771,4 +771,101 @@ describe('executeMetadataHydrationWrite', () => {
     ]);
     expect(cache).toEqual({});
   });
+
+  it('formats reviewable write-mode summary counts', () => {
+    const report = {
+      mode: 'write',
+      provider: 'mock',
+      requestedLimit: 10,
+      effectiveLimit: 10,
+      targetedCanonicalId: null,
+      dryRun: false,
+      totalCatalogEvents: 7,
+      uniqueCanonicalCatalogIds: 7,
+      duplicateEventCount: 0,
+      duplicateCatalogIds: [],
+      existingValidMetadataRecords: [],
+      missingMetadataRecords: [
+        'mock:found',
+        'mock:not-found',
+        'mock:invalid',
+        'mock:retryable',
+        'mock:permanent',
+        'mock:timeout',
+        'mock:rate-limited',
+      ],
+      skippedRecords: [
+        {
+          canonicalId: 'mock:skip',
+          metadataLookup: 'skip',
+        },
+      ],
+      invalidCacheRecords: [],
+      eligibleLookups: [],
+      ineligibleLookups: [],
+      metadataCacheMissing: false,
+      requestsAttempted: 7,
+      lookupResults: [
+        {
+          canonicalId: 'mock:found',
+          provider: 'mock',
+          status: metadataLookupResultCategories.found,
+        },
+        {
+          canonicalId: 'mock:not-found',
+          provider: 'mock',
+          status: metadataLookupResultCategories.notFound,
+        },
+        {
+          canonicalId: 'mock:invalid',
+          provider: 'mock',
+          status: metadataLookupResultCategories.invalidResponse,
+        },
+        {
+          canonicalId: 'mock:retryable',
+          provider: 'mock',
+          status: metadataLookupResultCategories.retryableFailure,
+        },
+        {
+          canonicalId: 'mock:permanent',
+          provider: 'mock',
+          status: metadataLookupResultCategories.permanentFailure,
+        },
+        {
+          canonicalId: 'mock:timeout',
+          provider: 'mock',
+          status: metadataLookupResultCategories.timedOut,
+        },
+        {
+          canonicalId: 'mock:rate-limited',
+          provider: 'mock',
+          status: metadataLookupResultCategories.rateLimited,
+        },
+      ],
+      metadataRecordWriteCandidates: ['mock:found'],
+      metadataRecordsWritten: ['mock:found'],
+      remainingEligibleRecords: 3,
+      unresolvedLookupRecords: [],
+      filesWritten: ['data/metadata-cache.json'],
+      fatalErrors: [],
+    };
+
+    const formatted = formatMetadataHydrationPlanReport(report);
+
+    expect(formatted).toContain('- provider: mock');
+    expect(formatted).toContain('- requested limit: 10');
+    expect(formatted).toContain('- effective limit: 10');
+    expect(formatted).toContain('- requests attempted: 7');
+    expect(formatted).toContain('- successful writes: 1');
+    expect(formatted).toContain('- not-found count: 1');
+    expect(formatted).toContain('- invalid response count: 1');
+    expect(formatted).toContain('- retryable failure count: 1');
+    expect(formatted).toContain('- permanent failure count: 1');
+    expect(formatted).toContain('- timeout count: 1');
+    expect(formatted).toContain('- rate-limit count: 1');
+    expect(formatted).toContain('- skipped count: 1');
+    expect(formatted).toContain('- remaining eligible records: 3');
+    expect(formatted).toContain('- cache records written: 1');
+    expect(formatted).toContain('- another run safe: no');
+  });
 });

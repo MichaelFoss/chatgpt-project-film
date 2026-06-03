@@ -28,6 +28,13 @@ export function createMetadataHydrationPlanReport() {
   };
 }
 
+function countLookupResultsByStatus(lookupResults = []) {
+  return lookupResults.reduce((counts, item) => {
+    counts[item.status] = (counts[item.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
 export function formatMetadataHydrationPlanReport(report) {
   const lines = [
     'Metadata hydration plan',
@@ -94,6 +101,14 @@ export function formatMetadataHydrationPlanReport(report) {
   }
 
   if (report.mode === 'write' || report.mode === 'dry-run') {
+    const lookupResultCounts = countLookupResultsByStatus(
+      report.lookupResults,
+    );
+    const rateLimitCount = lookupResultCounts['rate-limited'] ?? 0;
+    const fatalErrorCount = report.fatalErrors.length;
+    const anotherRunSafe =
+      fatalErrorCount === 0 && rateLimitCount === 0 ? 'yes' : 'no';
+
     lines.push(`- provider: ${report.provider}`);
     lines.push(`- requested limit: ${report.requestedLimit}`);
     lines.push(`- effective limit: ${report.effectiveLimit}`);
@@ -106,6 +121,26 @@ export function formatMetadataHydrationPlanReport(report) {
 
     lines.push(`- dry run: ${report.dryRun}`);
     lines.push(`- requests attempted: ${report.requestsAttempted}`);
+    lines.push(
+      `- successful writes: ${report.metadataRecordsWritten.length}`,
+    );
+    lines.push(
+      `- not-found count: ${lookupResultCounts['not-found'] ?? 0}`,
+    );
+    lines.push(
+      `- invalid response count: ${lookupResultCounts['invalid-response'] ?? 0}`,
+    );
+    lines.push(
+      `- retryable failure count: ${lookupResultCounts['retryable-failure'] ?? 0}`,
+    );
+    lines.push(
+      `- permanent failure count: ${lookupResultCounts['permanent-failure'] ?? 0}`,
+    );
+    lines.push(
+      `- timeout count: ${lookupResultCounts['timed-out'] ?? 0}`,
+    );
+    lines.push(`- rate-limit count: ${rateLimitCount}`);
+    lines.push(`- skipped count: ${report.skippedRecords.length}`);
 
     for (const item of report.lookupResults) {
       lines.push(
@@ -124,6 +159,9 @@ export function formatMetadataHydrationPlanReport(report) {
     lines.push(
       `- metadata records written: ${report.metadataRecordsWritten.length}`,
     );
+    lines.push(
+      `- cache records written: ${report.metadataRecordsWritten.length}`,
+    );
 
     for (const canonicalId of report.metadataRecordsWritten) {
       lines.push(`  - ${canonicalId}`);
@@ -141,6 +179,8 @@ export function formatMetadataHydrationPlanReport(report) {
         `  - ${item.canonicalId} (${item.provider}, ${item.status})`,
       );
     }
+
+    lines.push(`- another run safe: ${anotherRunSafe}`);
   }
 
   if (report.fatalErrors.length > 0) {

@@ -189,7 +189,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 7 - CLI Reporting
 
-- [ ] Make hydration CLI output reviewable:
+- [x] Make hydration CLI output reviewable:
   - Report provider used.
   - Report requested cap.
   - Report effective cap.
