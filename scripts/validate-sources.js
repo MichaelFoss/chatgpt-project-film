@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import matter from 'gray-matter';
 
-const sourceDir = path.resolve('sources');
+export const sourceDir = path.resolve('sources');
 
 const requiredFields = [
   'title',
@@ -20,7 +21,7 @@ const allowedStatuses = new Set([
   'generated',
 ]);
 
-async function getMarkdownFiles(dir) {
+export async function getMarkdownFiles(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = [];
 
@@ -40,7 +41,7 @@ async function getMarkdownFiles(dir) {
   return files;
 }
 
-function validateFile(filePath, content) {
+export function validateFile(filePath, content) {
   const parsed = matter(content);
   const errors = [];
 
@@ -74,8 +75,10 @@ function validateFile(filePath, content) {
   return errors.map((error) => `${filePath}: ${error}`);
 }
 
-async function main() {
-  const files = await getMarkdownFiles(sourceDir);
+export async function validateSourceDirectory({
+  sourceDirectory = sourceDir,
+} = {}) {
+  const files = await getMarkdownFiles(sourceDirectory);
   const allErrors = [];
 
   for (const file of files) {
@@ -83,15 +86,26 @@ async function main() {
     allErrors.push(...validateFile(file, content));
   }
 
-  if (allErrors.length > 0) {
-    console.error(allErrors.join('\\n'));
+  return { errors: allErrors, fileCount: files.length };
+}
+
+async function main() {
+  const { errors, fileCount } = await validateSourceDirectory();
+
+  if (errors.length > 0) {
+    console.error(errors.join('\\n'));
     process.exit(1);
   }
 
-  console.log(`Validated ${files.length} source document(s).`);
+  console.log(`Validated ${fileCount} source document(s).`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

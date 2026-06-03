@@ -161,8 +161,10 @@ export function formatList(items) {
   return items.map((item) => `- \`${item}\``);
 }
 
-export async function getBuildableSourceDocuments() {
-  const files = await getMarkdownFiles(sourceDir);
+export async function getBuildableSourceDocuments({
+  sourceDirectory = sourceDir,
+} = {}) {
+  const files = await getMarkdownFiles(sourceDirectory);
   const buildable = [];
 
   for (const file of files) {

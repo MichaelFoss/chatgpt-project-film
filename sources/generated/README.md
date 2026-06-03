@@ -1,7 +1,7 @@
 ---
 title: Generated Sources
 status: current
-last_updated: 2026-05-30
+last_updated: 2026-06-03
 upload_to_chatgpt: false
 ---
 
@@ -78,3 +78,32 @@ Manual edits should generally be limited to:
 - migrations
 - emergency repair workflows
 - temporary bootstrap scenarios
+
+## Rebuild And Upload Flow
+
+Generated catalog source documents are rebuilt offline from
+`data/catalog.json`:
+
+```bash
+yarn build:catalog
+yarn build:sources
+```
+
+The upload bundle build command is:
+
+```bash
+yarn build
+```
+
+The upload build scans `sources/` recursively. Generated source
+documents under `sources/generated/` are included automatically when
+their frontmatter uses:
+
+```yaml
+status: generated
+upload_to_chatgpt: true
+```
+
+The build writes the combined bundle and upload checklist under `dist/`,
+and copies changed uploadable source files into `dist/uploads/` with
+build-tagged filenames.
