@@ -17,6 +17,7 @@ const allowedStatuses = new Set([
   'historical',
   'superseded',
   'draft',
+  'generated',
 ]);
 
 async function getMarkdownFiles(dir) {

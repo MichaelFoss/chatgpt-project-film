@@ -100,6 +100,22 @@ function optionalProviderString(value) {
   return normalized;
 }
 
+function normalizeReleaseYear(value) {
+  const normalized = optionalProviderString(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const match = normalized.match(/\d{4}/);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number.parseInt(match[0], 10);
+}
+
 export async function loadMetadataCache(metadataCachePath) {
   let text;
 
@@ -161,6 +177,7 @@ function mapNormalizedMetadata(canonicalId, metadata) {
     canonicalId,
     mediaType,
     title,
+    releaseYear: normalizeReleaseYear(metadata.omdb?.Year),
     description: optionalProviderString(metadata.description),
     posterUrl: optionalProviderString(metadata.posterUrl),
     genres: normalizeGenres(metadata.genres),

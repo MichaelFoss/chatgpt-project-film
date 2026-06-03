@@ -1,0 +1,2030 @@
+---
+title: Generated Catalog by Genre
+status: generated
+last_updated: 2026-06-03
+upload_to_chatgpt: true
+generated_from:
+  - data/catalog.json
+---
+
+# Generated Catalog by Genre
+
+Grouped by provider-normalized genre. Ownership or access does not imply
+watched status or liking.
+
+## Action
+
+- [REC] 3: Genesis (2012) - movie
+- 2012 (2009) - movie
+- 300 (2006) - movie
+- 300: Rise of an Empire (2014) - movie
+- 65 (2023) - movie
+- 7500 (2019) - movie
+- A Good Day to Die Hard (2013) - movie
+- Abigail (2024) - movie
+- Alita: Battle Angel (2019) - movie
+- Allied (2016) - movie
+- American Sniper (2015) - movie
+- Ant-Man (2015) - movie
+- Ant-Man and the Wasp (2018) - movie
+- Ant-Man and the Wasp: Quantumania (2023) - movie
+- Aquaman (2018) - movie
+- Aquaman and the Lost Kingdom (2023) - movie
+- Arcadian (2024) - movie
+- Argylle (2024) - movie
+- Attack the Block (2011) - movie
+- Attraction (2017) - movie
+- Avatar (2009) - movie
+- Avengers: Infinity War (2018) - movie
+- Batman Begins (2005) - movie
+- Batman v Superman: Dawn of Justice (2016) - movie
+- Battlestar Galactica: Blood & Chrome (2012) - movie
+- Black Panther (2018) - movie
+- Black Widow (2021) - movie
+- Blade Runner (1982) - movie
+- Bloodshot (2020) - movie
+- Brothers Under Fire (2026) - movie
+- Bullet Train (2022) - movie
+- Captain America: Brave New World (2025) - movie
+- Captain America: Civil War (2016) - movie
+- Captain America: The First Avenger (2011) - movie
+- Captain America: The Winter Soldier (2014) - movie
+- Captain Phillips (2013) - movie
+- Chaos Walking (2021) - movie
+- Chappie (2015) - movie
+- Civil War (2024) - movie
+- Cloverfield (2008) - movie
+- Coma (2019) - movie
+- Creed (2015) - movie
+- Creed II (2018) - movie
+- Dawn of the Dead (2004) - movie
+- Dawn of the Planet of the Apes (2014) - movie
+- Deadpool (2016) - movie
+- Deadpool 2 (2018) - movie
+- Den of Thieves (2018) - movie
+- District 9 (2009) - movie
+- Dog Soldiers (2002) - movie
+- Dune: Part One (2021) - movie
+- Dune: Part Two (2024) - movie
+- Dungeons & Dragons: Honor Among Thieves (2023) - movie
+- Dunkirk (2017) - movie
+- Eagle Eye (2008) - movie
+- Edge of Darkness (2010) - movie
+- Edge of Tomorrow (2014) - movie
+- Elevation (2024) - movie
+- Elysium (2013) - movie
+- Escape Plan (2013) - movie
+- Evangelion: 1.0 You Are (Not) Alone (2007) - movie
+- Evangelion: 2.0 You Can (Not) Advance (2009) - movie
+- Evangelion: 3.0 You Can (Not) Redo (2012) - movie
+- Evangelion: 3.0+1.01 Thrice Upon a Time (2021) - movie
+- Everything Everywhere All at Once (2022) - movie
+- Exodus: Gods and Kings (2014) - movie
+- Extraterrestrial (2014) - movie
+- F1: The Movie (2025) - movie
+- F9: The Fast Saga (2021) - movie
+- Fantastic Four (2005) - movie
+- Fast Five (2011) - movie
+- Fight or Flight (2024) - movie
+- Forsaken (2015) - movie
+- Fountain of Youth (2025) - movie
+- Free Guy (2021) - movie
+- Fright Night (2011) - movie
+- Furious 7 (2015) - movie
+- Fury (2014) - movie
+- G.I. Joe: The Rise of Cobra (2009) - movie
+- Ghost in the Shell (2017) - movie
+- Ghost in the Shell: S.A.C. 2nd GIG - Individual Eleven (2006) - movie
+- Ghost in the Shell: Stand Alone Complex - Solid State Society (2006) -
+  movie
+- Ghost in the Shell: The New Movie (2015) - movie
+- Gladiator II (2024) - movie
+- Gods of Egypt (2016) - movie
+- Godzilla (2014) - movie
+- Godzilla: King of the Monsters (2019) - movie
+- Greenland (2020) - movie
+- Greenland 2: Migration (2026) - movie
+- Guardians of the Galaxy (2014) - movie
+- Guardians of the Galaxy Vol. 3 (2023) - movie
+- Guardians of the Galaxy: Vol. 2 (2017) - movie
+- Hancock (2008) - movie
+- Hardcore Henry (2015) - movie
+- Harry Potter and the Half-Blood Prince (2009) - movie
+- Harry Potter and the Order of the Phoenix (2007) - movie
+- Heavy Metal 2000 (2000) - movie
+- Hellboy (2004) - movie
+- Hellboy II: The Golden Army (2008) - movie
+- How to Train Your Dragon (2010) - movie
+- How to Train Your Dragon 2 (2014) - movie
+- Hypnotic (2023) - movie
+- I Am Number Four (2011) - movie
+- In Time (2011) - movie
+- Inception (2010) - movie
+- Incredibles 2 (2018) - movie
+- Independence Day: Resurgence (2016) - movie
+- Indiana Jones and the Dial of Destiny (2023) - movie
+- Iron Man (2008) - movie
+- Jack Reacher (2012) - movie
+- Jack Reacher: Never Go Back (2016) - movie
+- Jack Ryan: Shadow Recruit (2014) - movie
+- Jason Bourne (2016) - movie
+- Jay and Silent Bob Reboot (2019) - movie
+- John Carter (2012) - movie
+- John Wick (2014) - movie
+- John Wick: Chapter 2 (2017) - movie
+- John Wick: Chapter 3 - Parabellum (2019) - movie
+- John Wick: Chapter 4 (2023) - movie
+- Jumper (2008) - movie
+- Jupiter Ascending (2015) - movie
+- Jurassic World (2015) - movie
+- Jurassic World: Dominion (2022) - movie
+- Jurassic World: Fallen Kingdom (2018) - movie
+- Kingdom of the Planet of the Apes (2024) - movie
+- Kingsglaive: Final Fantasy XV (2016) - movie
+- Kingsman: The Secret Service (2015) - movie
+- Kite Liberator (2007) - movie
+- Knight and Day (2010) - movie
+- Kong: Skull Island (2017) - movie
+- Legion (2010) - movie
+- Logan (2017) - movie
+- Lone Survivor (2014) - movie
+- Lucy (2014) - movie
+- Mad Max: Fury Road (2015) - movie
+- Man of Steel (2013) - movie
+- Mandy (2018) - movie
+- Max Payne (2008) - movie
+- Maze Runner: The Scorch Trials (2015) - movie
+- Megamind (2010) - movie
+- Men in Black³ (2012) - movie
+- Mike & Nick & Nick & Alice (2026) - movie
+- Mile 22 (2018) - movie
+- Mission: Impossible - Fallout (2018) - movie
+- Mission: Impossible - Ghost Protocol (2011) - movie
+- Mission: Impossible - Rogue Nation (2015) - movie
+- Monkey Man (2024) - movie
+- Moonfall (2022) - movie
+- Morbius (2022) - movie
+- Mortal Kombat (2021) - movie
+- Neon Genesis Evangelion: Death & Rebirth (1997) - movie
+- Neon Genesis Evangelion: The End of Evangelion (1997) - movie
+- Ninja Scroll (1993) - movie
+- No Time to Die (2021) - movie
+- Noah (2014) - movie
+- Nobody (2021) - movie
+- Novocaine (2025) - movie
+- Now You See Me 2 (2016) - movie
+- Ocean's Eight (2018) - movie
+- Olympus Has Fallen (2013) - movie
+- One Battle After Another (2025) - movie
+- One Mile (2026) - movie
+- Overlord (2018) - movie
+- Pacific Rim (2013) - movie
+- Pandorum (2009) - movie
+- Paycheck (2003) - movie
+- Pineapple Express (2008) - movie
+- Pirates of the Caribbean: Dead Men Tell No Tales (2017) - movie
+- Planet of the Apes (2001) - movie
+- Predators (2010) - movie
+- Predestination (2014) - movie
+- Prey (2022) - movie
+- Priest (2011) - movie
+- Primal (2019) - movie
+- Prince of Persia: The Sands of Time (2010) - movie
+- Puss in Boots (2011) - movie
+- Quantum of Solace (2008) - movie
+- R.I.P.D. (2013) - movie
+- Ready Player One (2018) - movie
+- Reign of the Fallen (2005) - movie
+- Replicas (2018) - movie
+- Rise of the Planet of the Apes (2011) - movie
+- Risen (2016) - movie
+- Robin Hood (2010) - movie
+- Safe House (2012) - movie
+- San Andreas (2015) - movie
+- Season of the Witch (2011) - movie
+- Seventh Son (2014) - movie
+- Sherlock Holmes (2009) - movie
+- Sin City: A Dame to Kill For (2014) - movie
+- Sinners (2025) - movie
+- Skyline (2010) - movie
+- Snow White and the Huntsman (2012) - movie
+- Snowpiercer (2013) - movie
+- Source Code (2011) - movie
+- Spider-Man 2 (2004) - movie
+- Spider-Man: Far from Home (2019) - movie
+- Spider-Man: Homecoming (2017) - movie
+- Spider-Man: Into the Spider-Verse (2018) - movie
+- Spider-Man: No Way Home (2021) - movie
+- Star Trek Beyond (2016) - movie
+- Star Trek II: The Wrath of Khan (1982) - movie
+- Star Trek III: The Search for Spock (1984) - movie
+- Star Trek V: The Final Frontier (1989) - movie
+- Star Trek VI: The Undiscovered Country (1991) - movie
+- Star Trek: First Contact (1996) - movie
+- Star Trek: Generations (1994) - movie
+- Star Trek: Insurrection (1998) - movie
+- Star Trek: Nemesis (2002) - movie
+- Star Wars: Episode I - The Phantom Menace (1999) - movie
+- Star Wars: Episode V - The Empire Strikes Back (1980) - movie
+- Super 8 (2011) - movie
+- Superman (2025) - movie
+- Taken (2008) - movie
+- Taken 2 (2012) - movie
+- Taken 3 (2014) - movie
+- Tenet (2020) - movie
+- Terminator Genisys (2015) - movie
+- Terminator: Dark Fate (2019) - movie
+- The 5th Wave (2016) - movie
+- The Accountant (2016) - movie
+- The Accountant 2 (2025) - movie
+- The Amazing Spider-Man 2 (2014) - movie
+- The Anomaly (2014) - movie
+- The Avengers (2012) - movie
+- The Batman (2022) - movie
+- The Beekeeper (2024) - movie
+- The Bourne Legacy (2012) - movie
+- The Chronicles of Narnia: Prince Caspian (2008) - movie
+- The Chronicles of Riddick (2004) - movie
+- The Creator (2023) - movie
+- The Dark Knight (2008) - movie
+- The Dark Knight Rises (2012) - movie
+- The Dark Tower (2017) - movie
+- The Divergent Series: Allegiant (2016) - movie
+- The Divergent Series: Insurgent (2015) - movie
+- The Expendables (2010) - movie
+- The Expendables 2 (2012) - movie
+- The Expendables 3 (2014) - movie
+- The Fantastic Four: First Steps (2025) - movie
+- The Fast and the Furious (2001) - movie
+- The Fate of the Furious (2017) - movie
+- The Forbidden Kingdom (2008) - movie
+- The Gorge (2025) - movie
+- The Hunger Games (2012) - movie
+- The Hunger Games: Catching Fire (2013) - movie
+- The Hunger Games: Mockingjay - Part 1 (2014) - movie
+- The Hunger Games: Mockingjay - Part 2 (2015) - movie
+- The Huntsman: Winter's War (2016) - movie
+- The Incredible Hulk (2008) - movie
+- The Interview (2014) - movie
+- The Iron Giant (1999) - movie
+- The Karate Kid Part II (1986) - movie
+- The Karate Kid Part III (1989) - movie
+- The Last Witch Hunter (2015) - movie
+- The Lone Ranger (2013) - movie
+- The Lord of the Rings: The War of the Rohirrim (2024) - movie
+- The Man with the Iron Fists (2012) - movie
+- The Matrix (1999) - movie
+- The Matrix Reloaded (2003) - movie
+- The Matrix Revolutions (2003) - movie
+- The Maze Runner (2014) - movie
+- The Mummy (1999) - movie
+- The Mummy: Tomb of the Dragon Emperor (2008) - movie
+- The Naked Gun (2025) - movie
+- The Revenant (2016) - movie
+- The Running Man (1987) - movie
+- The Strangers (2012) - movie
+- The Time Machine (2002) - movie
+- The Twilight Saga: Eclipse (2010) - movie
+- The Unbearable Weight of Massive Talent (2022) - movie
+- They Will Kill You (2026) - movie
+- Thor: Ragnarok (2017) - movie
+- Thor: The Dark World (2013) - movie
+- Thunderbolts\* (2025) - movie
+- Tomorrowland (2015) - movie
+- Top Gun: Maverick (2022) - movie
+- Total Recall (1990) - movie
+- Transformers: Age of Extinction (2014) - movie
+- Underwater (2020) - movie
+- Unknown (2011) - movie
+- Upgrade (2018) - movie
+- Valerian and the City of a Thousand Planets (2017) - movie
+- Venom (2018) - movie
+- Venom: Let There Be Carnage (2021) - movie
+- Venom: The Last Dance (2024) - movie
+- Wanted (2008) - movie
+- War for the Planet of the Apes (2017) - movie
+- Watchmen (2009) - movie
+- Westworld (1973) - movie
+- Wonder Woman (2017) - movie
+- Wonder Woman 1984 (2020) - movie
+- X-Men Origins: Wolverine (2009) - movie
+- X-Men: Apocalypse (2016) - movie
+- X-Men: Dark Phoenix (2019) - movie
+- X-Men: First Class (2011) - movie
+- Zack Snyder's Justice League (2021) - movie
+- Zombieland (2009) - movie
+- Zoolander 2 (2016) - movie
+
+## Adventure
+
+- [REC] 3: Genesis (2012) - movie
+- 2001: A Space Odyssey (1968) - movie
+- 2012 (2009) - movie
+- 65 (2023) - movie
+- A Wrinkle in Time (2018) - movie
+- A.I. Artificial Intelligence (2001) - movie
+- Ad Astra (2019) - movie
+- Alita: Battle Angel (2019) - movie
+- Annihilation (2018) - movie
+- Ant-Man and the Wasp (2018) - movie
+- Ant-Man and the Wasp: Quantumania (2023) - movie
+- Aquaman (2018) - movie
+- Aquaman and the Lost Kingdom (2023) - movie
+- As Above, So Below (2014) - movie
+- Attack the Block (2011) - movie
+- Avatar (2009) - movie
+- Avengers: Infinity War (2018) - movie
+- Batman v Superman: Dawn of Justice (2016) - movie
+- Black Panther (2018) - movie
+- Black Widow (2021) - movie
+- Bloodshot (2020) - movie
+- Cannibal Holocaust (1980) - movie
+- Captain America: Brave New World (2025) - movie
+- Captain America: The First Avenger (2011) - movie
+- Captain America: The Winter Soldier (2014) - movie
+- Chaos Walking (2021) - movie
+- City of Ember (2008) - movie
+- Cloudy with a Chance of Meatballs (2009) - movie
+- Cloudy with a Chance of Meatballs 2 (2013) - movie
+- Cold Mountain (2003) - movie
+- Coma (2019) - movie
+- Dawn of the Planet of the Apes (2014) - movie
+- Deadpool 2 (2018) - movie
+- Death Note: The Last Name (2006) - movie
+- Dune: Part One (2021) - movie
+- Dune: Part Two (2024) - movie
+- Dungeons & Dragons: Honor Among Thieves (2023) - movie
+- Earth to Echo (2014) - movie
+- Edge of Darkness (2010) - movie
+- Edge of Tomorrow (2014) - movie
+- Everything Everywhere All at Once (2022) - movie
+- Exodus: Gods and Kings (2014) - movie
+- Fantastic Beasts and Where to Find Them (2016) - movie
+- Fantastic Beasts: The Crimes of Grindelwald (2018) - movie
+- Fantastic Beasts: The Secrets of Dumbledore (2022) - movie
+- Fantastic Four (2005) - movie
+- Fantastic Mr. Fox (2009) - movie
+- Fear and Loathing in Las Vegas (1998) - movie
+- Finch (2021) - movie
+- Fountain of Youth (2025) - movie
+- Free Guy (2021) - movie
+- Frozen (2013) - movie
+- G.I. Joe: The Rise of Cobra (2009) - movie
+- Ghost in the Shell: Stand Alone Complex - Solid State Society (2006) -
+  movie
+- Ghostbusters: Afterlife (2021) - movie
+- Ghostbusters: Frozen Empire (2024) - movie
+- Gladiator II (2024) - movie
+- Gods of Egypt (2016) - movie
+- Godzilla (2014) - movie
+- Godzilla: King of the Monsters (2019) - movie
+- Greenland (2020) - movie
+- Greenland 2: Migration (2026) - movie
+- Guardians of the Galaxy (2014) - movie
+- Guardians of the Galaxy Vol. 3 (2023) - movie
+- Guardians of the Galaxy: Vol. 2 (2017) - movie
+- Hardcore Henry (2015) - movie
+- Harry Potter and the Deathly Hallows: Part 1 (2010) - movie
+- Harry Potter and the Goblet of Fire (2005) - movie
+- Harry Potter and the Half-Blood Prince (2009) - movie
+- Harry Potter and the Order of the Phoenix (2007) - movie
+- Harry Potter and the Prisoner of Azkaban (2004) - movie
+- Harry Potter and the Sorcerer's Stone (2001) - movie
+- Heavy Metal (1981) - movie
+- Heavy Metal 2000 (2000) - movie
+- Hellboy (2004) - movie
+- Hellboy II: The Golden Army (2008) - movie
+- How to Train Your Dragon (2010) - movie
+- How to Train Your Dragon 2 (2014) - movie
+- I Am Number Four (2011) - movie
+- Inception (2010) - movie
+- Incredibles 2 (2018) - movie
+- Independence Day: Resurgence (2016) - movie
+- Indiana Jones and the Dial of Destiny (2023) - movie
+- Inside Out (2015) - movie
+- Interstellar (2014) - movie
+- Iron Man (2008) - movie
+- Jay and Silent Bob Reboot (2019) - movie
+- John Carter (2012) - movie
+- Jumper (2008) - movie
+- Jupiter Ascending (2015) - movie
+- Jurassic World (2015) - movie
+- Jurassic World: Dominion (2022) - movie
+- Jurassic World: Fallen Kingdom (2018) - movie
+- Kingdom of the Planet of the Apes (2024) - movie
+- Kingsglaive: Final Fantasy XV (2016) - movie
+- Kingsman: The Secret Service (2015) - movie
+- Knight and Day (2010) - movie
+- Kong: Skull Island (2017) - movie
+- Mad Max: Fury Road (2015) - movie
+- Maleficent (2014) - movie
+- Man of Steel (2013) - movie
+- Maze Runner: The Scorch Trials (2015) - movie
+- Megamind (2010) - movie
+- Men in Black³ (2012) - movie
+- Mickey 17 (2025) - movie
+- Miss Peregrine's Home for Peculiar Children (2016) - movie
+- Mission: Impossible - Fallout (2018) - movie
+- Mission: Impossible - Ghost Protocol (2011) - movie
+- Mission: Impossible - Rogue Nation (2015) - movie
+- Monsters (2010) - movie
+- Monty Python and the Holy Grail (1975) - movie
+- Moonfall (2022) - movie
+- Morbius (2022) - movie
+- Mortal Kombat (2021) - movie
+- Ninja Scroll (1993) - movie
+- No Time to Die (2021) - movie
+- Noah (2014) - movie
+- Now You See Me 2 (2016) - movie
+- One Mile (2026) - movie
+- Pacific Rim (2013) - movie
+- Percy Jackson: Sea of Monsters (2013) - movie
+- Pirates of the Caribbean: Dead Men Tell No Tales (2017) - movie
+- Planet of the Apes (2001) - movie
+- Predators (2010) - movie
+- Prey (2022) - movie
+- Prince of Persia: The Sands of Time (2010) - movie
+- Prometheus (2012) - movie
+- Puss in Boots (2011) - movie
+- Quantum of Solace (2008) - movie
+- R.I.P.D. (2013) - movie
+- Ralph Breaks the Internet (2018) - movie
+- Ready Player One (2018) - movie
+- Robin Hood (2010) - movie
+- San Andreas (2015) - movie
+- Sausage Party (2016) - movie
+- Season of the Witch (2011) - movie
+- Seventh Son (2014) - movie
+- Sherlock Holmes (2009) - movie
+- Snow White and the Huntsman (2012) - movie
+- Spaceballs (1987) - movie
+- Spider-Man 2 (2004) - movie
+- Spider-Man: Far from Home (2019) - movie
+- Spider-Man: Homecoming (2017) - movie
+- Spider-Man: Into the Spider-Verse (2018) - movie
+- Spider-Man: No Way Home (2021) - movie
+- Stand by Me (1986) - movie
+- Star Trek Beyond (2016) - movie
+- Star Trek II: The Wrath of Khan (1982) - movie
+- Star Trek III: The Search for Spock (1984) - movie
+- Star Trek IV: The Voyage Home (1986) - movie
+- Star Trek V: The Final Frontier (1989) - movie
+- Star Trek VI: The Undiscovered Country (1991) - movie
+- Star Trek: First Contact (1996) - movie
+- Star Trek: Generations (1994) - movie
+- Star Trek: Insurrection (1998) - movie
+- Star Trek: Nemesis (2002) - movie
+- Star Trek: The Motion Picture (1979) - movie
+- Star Wars: Episode I - The Phantom Menace (1999) - movie
+- Star Wars: Episode V - The Empire Strikes Back (1980) - movie
+- Superman (2025) - movie
+- Tangled (2010) - movie
+- Terminator Genisys (2015) - movie
+- Terminator: Dark Fate (2019) - movie
+- The 5th Wave (2016) - movie
+- The Amazing Spider-Man 2 (2014) - movie
+- The Astronaut Farmer (2006) - movie
+- The Bourne Legacy (2012) - movie
+- The Chronicles of Narnia: Prince Caspian (2008) - movie
+- The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
+  (2005) - movie
+- The Chronicles of Narnia: The Voyage of the Dawn Treader (2010) -
+  movie
+- The Chronicles of Riddick (2004) - movie
+- The Creator (2023) - movie
+- The Dark Tower (2017) - movie
+- The Day the Earth Stood Still (2008) - movie
+- The Divergent Series: Allegiant (2016) - movie
+- The Divergent Series: Insurgent (2015) - movie
+- The Expendables (2010) - movie
+- The Expendables 2 (2012) - movie
+- The Expendables 3 (2014) - movie
+- The Fantastic Four: First Steps (2025) - movie
+- The Forbidden Kingdom (2008) - movie
+- The Gorge (2025) - movie
+- The Hobbit: An Unexpected Journey (2012) - movie
+- The Hobbit: The Battle of the Five Armies (2014) - movie
+- The Hobbit: The Desolation of Smaug (2013) - movie
+- The Hunger Games (2012) - movie
+- The Hunger Games: Catching Fire (2013) - movie
+- The Hunger Games: Mockingjay - Part 1 (2014) - movie
+- The Hunger Games: Mockingjay - Part 2 (2015) - movie
+- The Huntsman: Winter's War (2016) - movie
+- The Incredible Hulk (2008) - movie
+- The Interview (2014) - movie
+- The Iron Giant (1999) - movie
+- The Last Days on Mars (2013) - movie
+- The Last Witch Hunter (2015) - movie
+- The Lone Ranger (2013) - movie
+- The Lord of the Rings: The Fellowship of the Ring (2001) - movie
+- The Lord of the Rings: The Return of the King (2003) - movie
+- The Lord of the Rings: The Two Towers (2002) - movie
+- The Lord of the Rings: The War of the Rohirrim (2024) - movie
+- The Martian (2015) - movie
+- The Mummy (1999) - movie
+- The Mummy: Tomb of the Dragon Emperor (2008) - movie
+- The Pirates Who Don't Do Anything: A VeggieTales Movie (2008) - movie
+- The Princess Bride (1987) - movie
+- The Secret Life of Walter Mitty (2013) - movie
+- The Secret of NIMH (1982) - movie
+- The Super Mario Bros. Movie (2023) - movie
+- The Time Machine (2002) - movie
+- The Twilight Saga: Breaking Dawn - Part 1 (2011) - movie
+- The Twilight Saga: Breaking Dawn - Part 2 (2012) - movie
+- The Twilight Saga: Eclipse (2010) - movie
+- The Twilight Saga: New Moon (2009) - movie
+- The Wild Robot (2024) - movie
+- Thor: Ragnarok (2017) - movie
+- Thor: The Dark World (2013) - movie
+- Thunderbolts\* (2025) - movie
+- Tomorrowland (2015) - movie
+- Total Recall (1990) - movie
+- Transformers: Age of Extinction (2014) - movie
+- Valerian and the City of a Thousand Planets (2017) - movie
+- Venom (2018) - movie
+- Venom: Let There Be Carnage (2021) - movie
+- Venom: The Last Dance (2024) - movie
+- Voyagers (2021) - movie
+- War for the Planet of the Apes (2017) - movie
+- Wonder Woman (2017) - movie
+- Wonder Woman 1984 (2020) - movie
+- Wreck-It Ralph (2012) - movie
+- X-Men: Apocalypse (2016) - movie
+- X-Men: Dark Phoenix (2019) - movie
+- Zack Snyder's Justice League (2021) - movie
+- Zoolander 2 (2016) - movie
+
+## Animation
+
+- A Charlie Brown Thanksgiving (1973) - movie
+- Anomalisa (2015) - movie
+- Beavis and Butt-Head Do the Universe (2022) - movie
+- Cloudy with a Chance of Meatballs (2009) - movie
+- Cloudy with a Chance of Meatballs 2 (2013) - movie
+- Evangelion: 1.0 You Are (Not) Alone (2007) - movie
+- Evangelion: 2.0 You Can (Not) Advance (2009) - movie
+- Evangelion: 3.0 You Can (Not) Redo (2012) - movie
+- Evangelion: 3.0+1.01 Thrice Upon a Time (2021) - movie
+- Fantastic Mr. Fox (2009) - movie
+- Frozen (2013) - movie
+- Ghost in the Shell: S.A.C. 2nd GIG - Individual Eleven (2006) - movie
+- Ghost in the Shell: Stand Alone Complex - Solid State Society (2006) -
+  movie
+- Ghost in the Shell: The New Movie (2015) - movie
+- Heavy Metal (1981) - movie
+- Heavy Metal 2000 (2000) - movie
+- How to Train Your Dragon (2010) - movie
+- How to Train Your Dragon 2 (2014) - movie
+- Incredibles 2 (2018) - movie
+- Inside Out (2015) - movie
+- Jupiter Ascending (2015) - movie
+- Kingsglaive: Final Fantasy XV (2016) - movie
+- Kite Liberator (2007) - movie
+- Megamind (2010) - movie
+- Neon Genesis Evangelion: Death & Rebirth (1997) - movie
+- Neon Genesis Evangelion: The End of Evangelion (1997) - movie
+- Ninja Scroll (1993) - movie
+- Pale Cocoon (2005) - movie
+- Paprika (2007) - movie
+- Puss in Boots (2011) - movie
+- Ralph Breaks the Internet (2018) - movie
+- Sausage Party (2016) - movie
+- Sin City: A Dame to Kill For (2014) - movie
+- Spider-Man: Into the Spider-Verse (2018) - movie
+- Tangled (2010) - movie
+- The Iron Giant (1999) - movie
+- The Lord of the Rings: The War of the Rohirrim (2024) - movie
+- The Pirates Who Don't Do Anything: A VeggieTales Movie (2008) - movie
+- The Secret of NIMH (1982) - movie
+- The Super Mario Bros. Movie (2023) - movie
+- The Wild Robot (2024) - movie
+- Valerian and the City of a Thousand Planets (2017) - movie
+- Venom: Let There Be Carnage (2021) - movie
+- Wreck-It Ralph (2012) - movie
+
+## Biography
+
+- 127 Hours (2010) - movie
+- American Sniper (2015) - movie
+- Argo (2012) - movie
+- Battle of the Sexes (2017) - movie
+- Bohemian Rhapsody (2018) - movie
+- Borg vs. McEnroe (2017) - movie
+- Braveheart (1995) - movie
+- Captain Phillips (2013) - movie
+- Changeling (2008) - movie
+- Colonia (2015) - movie
+- Concussion (2015) - movie
+- Darkest Hour (2017) - movie
+- Frost/Nixon (2008) - movie
+- GoodFellas (1990) - movie
+- Hacksaw Ridge (2016) - movie
+- J. Edgar (2011) - movie
+- Lincoln (2012) - movie
+- Lone Survivor (2014) - movie
+- Moneyball (2011) - movie
+- Oppenheimer (2023) - movie
+- Pirates of Silicon Valley (1999) - movie
+- Public Enemies (2009) - movie
+- Steve Jobs (2015) - movie
+- Straight Outta Compton (2015) - movie
+- The Big Short (2015) - movie
+- The Imitation Game (2014) - movie
+- The King's Speech (2010) - movie
+- The Social Network (2010) - movie
+- The Wolf of Wall Street (2013) - movie
+- Vice (2018) - movie
+
+## Comedy
+
+- A Charlie Brown Thanksgiving (1973) - movie
+- A Million Ways to Die in the West (2014) - movie
+- Abigail (2024) - movie
+- Action Point (2018) - movie
+- Adaptation. (2002) - movie
+- Amélie (2002) - movie
+- Anchorman 2: The Legend Continues (2013) - movie
+- Anomalisa (2015) - movie
+- Ant-Man (2015) - movie
+- Ant-Man and the Wasp (2018) - movie
+- Ant-Man and the Wasp: Quantumania (2023) - movie
+- Argylle (2024) - movie
+- Attack the Block (2011) - movie
+- Battle of the Sexes (2017) - movie
+- Beau Is Afraid (2023) - movie
+- Beavis and Butt-Head Do the Universe (2022) - movie
+- Beetlejuice (1988) - movie
+- Birdman or (The Unexpected Virtue of Ignorance) (2014) - movie
+- Bullet Train (2022) - movie
+- Clerks III (2022) - movie
+- Cloudy with a Chance of Meatballs (2009) - movie
+- Cloudy with a Chance of Meatballs 2 (2013) - movie
+- Date Night (2010) - movie
+- Deadpool (2016) - movie
+- Deadpool 2 (2018) - movie
+- Dungeons & Dragons: Honor Among Thieves (2023) - movie
+- Emma (1996) - movie
+- Everything Everywhere All at Once (2022) - movie
+- Fantastic Mr. Fox (2009) - movie
+- Fear and Loathing in Las Vegas (1998) - movie
+- Fight or Flight (2024) - movie
+- Focus (2015) - movie
+- Free Guy (2021) - movie
+- Fright Night (2011) - movie
+- Frozen (2013) - movie
+- Ghostbusters: Afterlife (2021) - movie
+- Ghostbusters: Frozen Empire (2024) - movie
+- Guardians of the Galaxy (2014) - movie
+- Guardians of the Galaxy Vol. 3 (2023) - movie
+- Guardians of the Galaxy: Vol. 2 (2017) - movie
+- Hancock (2008) - movie
+- In Bruges (2008) - movie
+- Inside Out (2015) - movie
+- Jackass Presents: Bad Grandpa (2013) - movie
+- Jay and Silent Bob Reboot (2019) - movie
+- John Dies at the End (2012) - movie
+- Joseph (2015) - movie
+- Kingsman: The Secret Service (2015) - movie
+- Knight and Day (2010) - movie
+- La La Land (2016) - movie
+- Leatherheads (2008) - movie
+- Mallrats (1995) - movie
+- Manam (2014) - movie
+- Men in Black³ (2012) - movie
+- Mickey 17 (2025) - movie
+- Mike & Nick & Nick & Alice (2026) - movie
+- Monty Python and the Holy Grail (1975) - movie
+- Movie 43 (2013) - movie
+- Novocaine (2025) - movie
+- Now You See Me 2 (2016) - movie
+- Ocean's Eight (2018) - movie
+- Once Upon a Time... in Hollywood (2019) - movie
+- Pineapple Express (2008) - movie
+- Pizza Movie (2026) - movie
+- R.I.P.D. (2013) - movie
+- Ralph Breaks the Internet (2018) - movie
+- River (2023) - movie
+- Sausage Party (2016) - movie
+- Semi-Pro (2008) - movie
+- Sorry to Bother You (2018) - movie
+- Space Station 76 (2014) - movie
+- Spaceballs (1987) - movie
+- Spider-Man: Far from Home (2019) - movie
+- Stand by Me (1986) - movie
+- Star Trek IV: The Voyage Home (1986) - movie
+- Super Troopers 2 (2018) - movie
+- Tangled (2010) - movie
+- Ted (2012) - movie
+- Ted 2 (2015) - movie
+- The Big Short (2015) - movie
+- The Expendables 3 (2014) - movie
+- The House with a Clock in Its Walls (2018) - movie
+- The Interview (2014) - movie
+- The Naked Gun (2025) - movie
+- The Pirates Who Don't Do Anything: A VeggieTales Movie (2008) - movie
+- The Princess Bride (1987) - movie
+- The Rum Diary (2011) - movie
+- The Secret Life of Walter Mitty (2013) - movie
+- The Super Mario Bros. Movie (2023) - movie
+- The Unbearable Weight of Massive Talent (2022) - movie
+- The Whole Nine Yards (2000) - movie
+- The Wolf of Wall Street (2013) - movie
+- There's Something About Mary (1998) - movie
+- They Will Kill You (2026) - movie
+- This Is the End (2013) - movie
+- Thor: Ragnarok (2017) - movie
+- Transformers: Age of Extinction (2014) - movie
+- Vice (2018) - movie
+- Without a Clue (1988) - movie
+- Wreck-It Ralph (2012) - movie
+- Zombieland (2009) - movie
+- Zoolander 2 (2016) - movie
+
+## Crime
+
+- Abigail (2024) - movie
+- American Hustle (2013) - movie
+- American Psycho (2000) - movie
+- Bad Times at the El Royale (2018) - movie
+- Batman Begins (2005) - movie
+- Boiler Room (2000) - movie
+- Captain Phillips (2013) - movie
+- Changeling (2008) - movie
+- Chappie (2015) - movie
+- Date Night (2010) - movie
+- Death Note (2017) - movie
+- Death Note: L Change the World (2008) - movie
+- Death Note: The Last Name (2006) - movie
+- Deliver Us from Evil (2014) - movie
+- Den of Thieves (2018) - movie
+- Don't Breathe (2016) - movie
+- Exhibit A (2007) - movie
+- F9: The Fast Saga (2021) - movie
+- Fast Five (2011) - movie
+- Fight Club (1999) - movie
+- Focus (2015) - movie
+- Ghost in the Shell (2017) - movie
+- GoodFellas (1990) - movie
+- In Bruges (2008) - movie
+- Infinity Pool (2023) - movie
+- John Wick (2014) - movie
+- John Wick: Chapter 2 (2017) - movie
+- John Wick: Chapter 3 - Parabellum (2019) - movie
+- John Wick: Chapter 4 (2023) - movie
+- Joker (2019) - movie
+- Killer Joe (2011) - movie
+- Killers of the Flower Moon (2023) - movie
+- Kite Liberator (2007) - movie
+- Longlegs (2024) - movie
+- Malignant (2021) - movie
+- Maniac (2012) - movie
+- Max Payne (2008) - movie
+- Mike & Nick & Nick & Alice (2026) - movie
+- Mile 22 (2018) - movie
+- Monkey Man (2024) - movie
+- Natural Born Killers (1994) - movie
+- Nobody (2021) - movie
+- Novocaine (2025) - movie
+- Now You See Me (2013) - movie
+- Ocean's Eight (2018) - movie
+- Ocean's Eleven (2001) - movie
+- Ocean's Thirteen (2007) - movie
+- One Battle After Another (2025) - movie
+- Pineapple Express (2008) - movie
+- Play Back (2021) - movie
+- Public Enemies (2009) - movie
+- Sin City (2005) - movie
+- Sin City: A Dame to Kill For (2014) - movie
+- Space/Time (2025) - movie
+- State of Play (2009) - movie
+- Super Dark Times (2017) - movie
+- Super Troopers 2 (2018) - movie
+- Taken (2008) - movie
+- Taken 2 (2012) - movie
+- Taken 3 (2014) - movie
+- The Accountant (2016) - movie
+- The Accountant 2 (2025) - movie
+- The Adjustment Bureau (2011) - movie
+- The Batman (2022) - movie
+- The Beekeeper (2024) - movie
+- The Cell (2000) - movie
+- The Dark Knight (2008) - movie
+- The Dark Knight Rises (2012) - movie
+- The Fast and the Furious (2001) - movie
+- The Fate of the Furious (2017) - movie
+- The Godfather (1972) - movie
+- The Godfather Part II (1974) - movie
+- The Godfather Part III (1990) - movie
+- The Good Neighbor (2016) - movie
+- The Naked Gun (2025) - movie
+- The Unbearable Weight of Massive Talent (2022) - movie
+- The Usual Suspects (1995) - movie
+- The Whole Nine Yards (2000) - movie
+- The Wolf of Wall Street (2013) - movie
+- Thunderbolts\* (2025) - movie
+- Trap (2024) - movie
+- Wanted (2008) - movie
+- Without a Clue (1988) - movie
+
+## Documentary
+
+- Guest (2010) - movie
+- Once in a Lifetime: The Making of Blue Harvest (2008) - movie
+- The Captain's Summit (2009) - movie
+- Ultimate Iron Man (2010) - movie
+
+## Drama
+
+- 10 Cloverfield Lane (2016) - movie
+- 127 Hours (2010) - movie
+- 2:22 (2017) - movie
+- 28 Days Later (2002) - movie
+- 300 (2006) - movie
+- 300: Rise of an Empire (2014) - movie
+- 7500 (2019) - movie
+- A Dark Song (2016) - movie
+- A Few Good Men (1992) - movie
+- A Ghost Story (2017) - movie
+- A Quiet Place (2018) - movie
+- A Quiet Place Part II (2020) - movie
+- A Wrinkle in Time (2018) - movie
+- A.I. Artificial Intelligence (2001) - movie
+- Ad Astra (2019) - movie
+- Adaptation. (2002) - movie
+- After Yang (2021) - movie
+- Allied (2016) - movie
+- American Hustle (2013) - movie
+- American Psycho (2000) - movie
+- American Sniper (2015) - movie
+- Annihilation (2018) - movie
+- Anomalisa (2015) - movie
+- Antebellum (2020) - movie
+- Antichrist (2009) - movie
+- Antlers (2021) - movie
+- Approaching the Unknown (2016) - movie
+- Arcadian (2024) - movie
+- Argo (2012) - movie
+- Atlas Shrugged: Part I (2011) - movie
+- Attraction (2017) - movie
+- Backlight (2010) - movie
+- Bad Times at the El Royale (2018) - movie
+- Batman Begins (2005) - movie
+- Battle of the Sexes (2017) - movie
+- Beau Is Afraid (2023) - movie
+- Before I Fall (2017) - movie
+- Birdman or (The Unexpected Virtue of Ignorance) (2014) - movie
+- Blade Runner (1982) - movie
+- Blue Is the Warmest Colour (2013) - movie
+- Bohemian Rhapsody (2018) - movie
+- Boiler Room (2000) - movie
+- Borg vs. McEnroe (2017) - movie
+- Boyhood (2014) - movie
+- Braveheart (1995) - movie
+- Brazil (1985) - movie
+- Bridge of Spies (2015) - movie
+- Brightburn (2019) - movie
+- Brothers Under Fire (2026) - movie
+- Bug (2006) - movie
+- Camp Hell (2010) - movie
+- Changeling (2008) - movie
+- Chaos Walking (2021) - movie
+- Chappie (2015) - movie
+- Children of Men (2006) - movie
+- Chronicle (2012) - movie
+- City of Ember (2008) - movie
+- Clerks III (2022) - movie
+- Cloud Atlas (2012) - movie
+- Cold Mountain (2003) - movie
+- Colonia (2015) - movie
+- Concussion (2015) - movie
+- Contagion (2011) - movie
+- Creed (2015) - movie
+- Creed II (2018) - movie
+- Crimson Peak (2015) - movie
+- Darkest Hour (2017) - movie
+- Dawn of the Planet of the Apes (2014) - movie
+- Death Note (2017) - movie
+- Death Note: L Change the World (2008) - movie
+- Death Note: The Last Name (2006) - movie
+- Den of Thieves (2018) - movie
+- Die Alone (2024) - movie
+- Django Unchained (2012) - movie
+- Doctor Sleep (2019) - movie
+- Dogtooth (2009) - movie
+- Don't Worry Darling (2022) - movie
+- Dune: Part One (2021) - movie
+- Dune: Part Two (2024) - movie
+- Dunkirk (2017) - movie
+- Edge of Darkness (2010) - movie
+- Elysium (2013) - movie
+- Emma (1996) - movie
+- Enemy (2013) - movie
+- Eternal Sunshine of the Spotless Mind (2004) - movie
+- Europa Report (2013) - movie
+- Evangelion: 1.0 You Are (Not) Alone (2007) - movie
+- Evangelion: 2.0 You Can (Not) Advance (2009) - movie
+- Evangelion: 3.0 You Can (Not) Redo (2012) - movie
+- Evangelion: 3.0+1.01 Thrice Upon a Time (2021) - movie
+- Ex Machina (2014) - movie
+- Exhibit A (2007) - movie
+- Exodus: Gods and Kings (2014) - movie
+- F1: The Movie (2025) - movie
+- Fear and Loathing in Las Vegas (1998) - movie
+- Fifty Shades Darker (2017) - movie
+- Fifty Shades of Grey (2015) - movie
+- Fight Club (1999) - movie
+- Finch (2021) - movie
+- Flatliners (1990) - movie
+- Focus (2015) - movie
+- Forsaken (2015) - movie
+- Fright Night (2011) - movie
+- Frost/Nixon (2008) - movie
+- Fury (2014) - movie
+- Ghost in the Shell (2017) - movie
+- Ghost in the Shell: S.A.C. 2nd GIG - Individual Eleven (2006) - movie
+- Gladiator II (2024) - movie
+- Glass (2019) - movie
+- Gods of Egypt (2016) - movie
+- GoodFellas (1990) - movie
+- Gravity (2013) - movie
+- Hacksaw Ridge (2016) - movie
+- Hancock (2008) - movie
+- Her (2014) - movie
+- Hereafter (2010) - movie
+- High-Rise (2015) - movie
+- Home Movie (2008) - movie
+- Hypnotic (2023) - movie
+- I Am Legend (2007) - movie
+- I Think We're Alone Now (2018) - movie
+- I'm Thinking of Ending Things (2020) - movie
+- In Bruges (2008) - movie
+- In the Mouth of Madness (1994) - movie
+- Interstellar (2014) - movie
+- It Comes at Night (2017) - movie
+- J. Edgar (2011) - movie
+- Jack Ryan: Shadow Recruit (2014) - movie
+- John Wick: Chapter 3 - Parabellum (2019) - movie
+- Joker (2019) - movie
+- Joseph (2015) - movie
+- K-PAX (2001) - movie
+- Killer Joe (2011) - movie
+- Killers of the Flower Moon (2023) - movie
+- Kingdom of the Planet of the Apes (2024) - movie
+- Kite Liberator (2007) - movie
+- La La Land (2016) - movie
+- Lady in the Water (2006) - movie
+- Lake Mungo (2008) - movie
+- Lamb (2021) - movie
+- Last Night in Soho (2021) - movie
+- Leatherheads (2008) - movie
+- Let Me In (2010) - movie
+- Let the Right One In (2008) - movie
+- Lincoln (2012) - movie
+- Logan (2017) - movie
+- Lone Survivor (2014) - movie
+- Lovely Molly (2011) - movie
+- Maleficent (2014) - movie
+- Manam (2014) - movie
+- Margin Call (2011) - movie
+- Max Payne (2008) - movie
+- Melancholia (2011) - movie
+- Memoria (2021) - movie
+- Midnight Special (2016) - movie
+- Midsommar (2019) - movie
+- Miss Peregrine's Home for Peculiar Children (2016) - movie
+- Moneyball (2011) - movie
+- Monsters (2010) - movie
+- Moon (2009) - movie
+- Mother! (2017) - movie
+- Mulholland Drive (2001) - movie
+- Neon Genesis Evangelion: Death & Rebirth (1997) - movie
+- Neon Genesis Evangelion: The End of Evangelion (1997) - movie
+- Night Sights (2011) - movie
+- Noah (2014) - movie
+- Nobody (2021) - movie
+- Nymphomaniac: Vol. I (2013) - movie
+- Nymphomaniac: Vol. II (2013) - movie
+- Old (2021) - movie
+- Once Upon a Time... in Hollywood (2019) - movie
+- One Battle After Another (2025) - movie
+- One Mile (2026) - movie
+- One Mile: Chapter Two (2026) - movie
+- Oppenheimer (2023) - movie
+- Pale Cocoon (2005) - movie
+- Paprika (2007) - movie
+- Passengers (2016) - movie
+- Pearl (2022) - movie
+- Pirates of Silicon Valley (1999) - movie
+- Predestination (2014) - movie
+- Primer (2004) - movie
+- Project Almanac (2015) - movie
+- Public Enemies (2009) - movie
+- Raw (2016) - movie
+- Rememory (2017) - movie
+- Replicas (2018) - movie
+- Rings (2017) - movie
+- Rise of the Planet of the Apes (2011) - movie
+- Risen (2016) - movie
+- Robin Hood (2010) - movie
+- S. Darko (2009) - movie
+- Settlers (2021) - movie
+- Sinners (2025) - movie
+- Snow White and the Huntsman (2012) - movie
+- Sorry to Bother You (2018) - movie
+- Source Code (2011) - movie
+- Space Station 76 (2014) - movie
+- Spiral (2020) - movie
+- Split (2016) - movie
+- Stand by Me (1986) - movie
+- Star Trek: First Contact (1996) - movie
+- State of Play (2009) - movie
+- Steve Jobs (2015) - movie
+- Straight Outta Compton (2015) - movie
+- Super Dark Times (2017) - movie
+- Synchronicity (2015) - movie
+- Synecdoche, New York (2008) - movie
+- Take Shelter (2011) - movie
+- Thale (2012) - movie
+- The Accountant (2016) - movie
+- The Accountant 2 (2025) - movie
+- The Adjustment Bureau (2011) - movie
+- The Age of Adaline (2015) - movie
+- The Astronaut Farmer (2006) - movie
+- The Audition (2003) - movie
+- The Batman (2022) - movie
+- The Beguiled (2017) - movie
+- The Big Short (2015) - movie
+- The Box (2009) - movie
+- The Creator (2023) - movie
+- The Cure (2006) - movie
+- The Dark Knight (2008) - movie
+- The Dark Knight Rises (2012) - movie
+- The Dark Tower (2017) - movie
+- The Day the Earth Stood Still (2008) - movie
+- The Flight (2020) - movie
+- The Giver (2014) - movie
+- The Godfather (1972) - movie
+- The Godfather Part II (1974) - movie
+- The Godfather Part III (1990) - movie
+- The Good Neighbor (2016) - movie
+- The Huntsman: Winter's War (2016) - movie
+- The Imitation Game (2014) - movie
+- The Invisible Man (2020) - movie
+- The Karate Kid Part III (1989) - movie
+- The King's Speech (2010) - movie
+- The Lone Ranger (2013) - movie
+- The Lord of the Rings: The Fellowship of the Ring (2001) - movie
+- The Lord of the Rings: The Return of the King (2003) - movie
+- The Lord of the Rings: The Two Towers (2002) - movie
+- The Martian (2015) - movie
+- The Passion of the Christ (2004) - movie
+- The Revenant (2016) - movie
+- The Rite (2011) - movie
+- The Rum Diary (2011) - movie
+- The Secret Life of Walter Mitty (2013) - movie
+- The Secret of NIMH (1982) - movie
+- The Shape of Water (2017) - movie
+- The Shining (1980) - movie
+- The Social Network (2010) - movie
+- The Strangers (2012) - movie
+- The Substance (2024) - movie
+- The Time Traveler's Wife (2009) - movie
+- The Tree of Life (2011) - movie
+- The Turning (2020) - movie
+- The Twilight Saga: Breaking Dawn - Part 1 (2011) - movie
+- The Twilight Saga: Breaking Dawn - Part 2 (2012) - movie
+- The Twilight Saga: Eclipse (2010) - movie
+- The Twilight Saga: New Moon (2009) - movie
+- The Usual Suspects (1995) - movie
+- The Village (2004) - movie
+- The Witch (2016) - movie
+- The Woman (2011) - movie
+- The Woman in Black (2012) - movie
+- Three Thousand Years of Longing (2022) - movie
+- Top Gun: Maverick (2022) - movie
+- True Grit (2010) - movie
+- Twilight (2008) - movie
+- Unfriended (2014) - movie
+- Upstream Color (2013) - movie
+- Vice (2018) - movie
+- Wall Street: Money Never Sleeps (2010) - movie
+- War for the Planet of the Apes (2017) - movie
+- Watchmen (2009) - movie
+- We Need to Talk About Kevin (2011) - movie
+- Westworld (1973) - movie
+- Whiplash (2014) - movie
+- Wish Upon (2017) - movie
+- Y tu mamá también (2001) - movie
+- You Won't Be Alone (2022) - movie
+- You're Next (2011) - movie
+
+## Family
+
+- A Wrinkle in Time (2018) - movie
+- City of Ember (2008) - movie
+- Earth to Echo (2014) - movie
+- Fantastic Beasts and Where to Find Them (2016) - movie
+- Fantastic Beasts: The Crimes of Grindelwald (2018) - movie
+- Harry Potter and the Deathly Hallows: Part 1 (2010) - movie
+- Harry Potter and the Goblet of Fire (2005) - movie
+- Harry Potter and the Half-Blood Prince (2009) - movie
+- Harry Potter and the Order of the Phoenix (2007) - movie
+- Harry Potter and the Prisoner of Azkaban (2004) - movie
+- Harry Potter and the Sorcerer's Stone (2001) - movie
+- Maleficent (2014) - movie
+- Miss Peregrine's Home for Peculiar Children (2016) - movie
+- Night Sights (2011) - movie
+- Percy Jackson: Sea of Monsters (2013) - movie
+- The Chronicles of Narnia: Prince Caspian (2008) - movie
+- The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
+  (2005) - movie
+- The Chronicles of Narnia: The Voyage of the Dawn Treader (2010) -
+  movie
+- The House with a Clock in Its Walls (2018) - movie
+- The Karate Kid Part II (1986) - movie
+- The Karate Kid Part III (1989) - movie
+- The Princess Bride (1987) - movie
+- The Wild Robot (2024) - movie
+- Tomorrowland (2015) - movie
+
+## Fantasy
+
+- [REC] 3: Genesis (2012) - movie
+- 1408 (2007) - movie
+- 300: Rise of an Empire (2014) - movie
+- A Ghost Story (2017) - movie
+- Aquaman (2018) - movie
+- Aquaman and the Lost Kingdom (2023) - movie
+- Avatar (2009) - movie
+- Beetlejuice (1988) - movie
+- Before I Fall (2017) - movie
+- Dark City (1998) - movie
+- Death Note (2017) - movie
+- Doctor Sleep (2019) - movie
+- Don't Be Afraid of the Dark (2010) - movie
+- Fantastic Beasts and Where to Find Them (2016) - movie
+- Fantastic Beasts: The Crimes of Grindelwald (2018) - movie
+- Fantastic Beasts: The Secrets of Dumbledore (2022) - movie
+- Fantastic Four (2005) - movie
+- Fountain of Youth (2025) - movie
+- Ghostbusters: Afterlife (2021) - movie
+- Ghostbusters: Frozen Empire (2024) - movie
+- Glass (2019) - movie
+- Godzilla: King of the Monsters (2019) - movie
+- Grave Encounters (2011) - movie
+- Gretel & Hansel (2020) - movie
+- Harry Potter and the Deathly Hallows: Part 1 (2010) - movie
+- Harry Potter and the Goblet of Fire (2005) - movie
+- Harry Potter and the Prisoner of Azkaban (2004) - movie
+- Harry Potter and the Sorcerer's Stone (2001) - movie
+- Heavy Metal (1981) - movie
+- Hellboy (2004) - movie
+- Hellboy II: The Golden Army (2008) - movie
+- Hereafter (2010) - movie
+- In the Mouth of Madness (1994) - movie
+- John Dies at the End (2012) - movie
+- Kong: Skull Island (2017) - movie
+- Lady in the Water (2006) - movie
+- Lamb (2021) - movie
+- Last and First Men (2020) - movie
+- Legion (2010) - movie
+- Let Me In (2010) - movie
+- Let the Right One In (2008) - movie
+- Mama (2013) - movie
+- Manam (2014) - movie
+- Mandy (2018) - movie
+- Mickey 17 (2025) - movie
+- Monty Python and the Holy Grail (1975) - movie
+- Mortal Kombat (2021) - movie
+- Paprika (2007) - movie
+- Percy Jackson: Sea of Monsters (2013) - movie
+- Pirates of the Caribbean: Dead Men Tell No Tales (2017) - movie
+- Play Back (2021) - movie
+- Priest (2011) - movie
+- Prince of Persia: The Sands of Time (2010) - movie
+- Red Riding Hood (2011) - movie
+- River (2023) - movie
+- Season of the Witch (2011) - movie
+- Seventh Son (2014) - movie
+- Sorry to Bother You (2018) - movie
+- Spider-Man: No Way Home (2021) - movie
+- Split (2016) - movie
+- Star Trek V: The Final Frontier (1989) - movie
+- Star Wars: Episode I - The Phantom Menace (1999) - movie
+- Star Wars: Episode V - The Empire Strikes Back (1980) - movie
+- Thale (2012) - movie
+- The Age of Adaline (2015) - movie
+- The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
+  (2005) - movie
+- The Chronicles of Narnia: The Voyage of the Dawn Treader (2010) -
+  movie
+- The Divergent Series: Allegiant (2016) - movie
+- The Forbidden Kingdom (2008) - movie
+- The Hobbit: An Unexpected Journey (2012) - movie
+- The Hobbit: The Battle of the Five Armies (2014) - movie
+- The Hobbit: The Desolation of Smaug (2013) - movie
+- The House with a Clock in Its Walls (2018) - movie
+- The Last Witch Hunter (2015) - movie
+- The Lord of the Rings: The Fellowship of the Ring (2001) - movie
+- The Lord of the Rings: The Return of the King (2003) - movie
+- The Lord of the Rings: The Two Towers (2002) - movie
+- The Mummy (1999) - movie
+- The Mummy: Tomb of the Dragon Emperor (2008) - movie
+- The Shape of Water (2017) - movie
+- The Time Traveler's Wife (2009) - movie
+- The Tree of Life (2011) - movie
+- The Twilight Saga: Breaking Dawn - Part 1 (2011) - movie
+- The Twilight Saga: Breaking Dawn - Part 2 (2012) - movie
+- The Twilight Saga: New Moon (2009) - movie
+- The Watchers (2024) - movie
+- The Witch (2016) - movie
+- The Woman in Black (2012) - movie
+- This Is the End (2013) - movie
+- Thor: The Dark World (2013) - movie
+- Three Thousand Years of Longing (2022) - movie
+- Twilight (2008) - movie
+- Unfriended (2014) - movie
+- V/H/S/94 (2021) - movie
+- Wish Upon (2017) - movie
+- Wonder Woman (2017) - movie
+- Wonder Woman 1984 (2020) - movie
+- You Won't Be Alone (2022) - movie
+- Zack Snyder's Justice League (2021) - movie
+
+## History
+
+- Argo (2012) - movie
+- Bridge of Spies (2015) - movie
+- Colonia (2015) - movie
+- Darkest Hour (2017) - movie
+- Dunkirk (2017) - movie
+- Frost/Nixon (2008) - movie
+- Hacksaw Ridge (2016) - movie
+- Killers of the Flower Moon (2023) - movie
+- Lincoln (2012) - movie
+- Oppenheimer (2023) - movie
+- Pirates of Silicon Valley (1999) - movie
+- Risen (2016) - movie
+- Straight Outta Compton (2015) - movie
+- The Beguiled (2017) - movie
+- The King's Speech (2010) - movie
+
+## Horror
+
+- 10 Cloverfield Lane (2016) - movie
+- 13 Sins (2014) - movie
+- 1408 (2007) - movie
+- 28 Days Later (2002) - movie
+- 28 Weeks Later (2007) - movie
+- A Dark Song (2016) - movie
+- A Quiet Place (2018) - movie
+- A Quiet Place Part II (2020) - movie
+- Afflicted (2013) - movie
+- Alien: Covenant (2017) - movie
+- Alien: Romulus (2024) - movie
+- American Psycho (2000) - movie
+- Amulet (2020) - movie
+- Angel Heart (1987) - movie
+- Annabelle (2014) - movie
+- Annabelle Comes Home (2019) - movie
+- Annabelle: Creation (2017) - movie
+- Annihilation (2018) - movie
+- Antebellum (2020) - movie
+- Antichrist (2009) - movie
+- Antlers (2021) - movie
+- Apollo 18 (2011) - movie
+- Arcadian (2024) - movie
+- As Above, So Below (2014) - movie
+- Atrocious (2010) - movie
+- Barbarian (2022) - movie
+- Beau Is Afraid (2023) - movie
+- Blair Witch (2016) - movie
+- Brightburn (2019) - movie
+- Bug (2006) - movie
+- Camp Hell (2010) - movie
+- Candyman (1992) - movie
+- Cannibal Holocaust (1980) - movie
+- Chamber of Secrets (2015) - movie
+- Cloverfield (2008) - movie
+- Color Out of Space (2019) - movie
+- Crimson Peak (2015) - movie
+- Cuckoo (2024) - movie
+- Dark Circles (2013) - movie
+- Dark Skies (2013) - movie
+- Dawn of the Dead (2004) - movie
+- Deliver Us from Evil (2014) - movie
+- Devil (2010) - movie
+- Devil's Due (2014) - movie
+- Die Alone (2024) - movie
+- Doctor Sleep (2019) - movie
+- Dog Soldiers (2002) - movie
+- Don't Be Afraid of the Dark (2010) - movie
+- Don't Breathe (2016) - movie
+- Elevation (2024) - movie
+- Event Horizon (1997) - movie
+- Evil Dead Rise (2023) - movie
+- Exhibit A (2007) - movie
+- Extraterrestrial (2014) - movie
+- Flatliners (1990) - movie
+- Get Out (2017) - movie
+- Glass (2019) - movie
+- Grave Encounters (2011) - movie
+- Grave Encounters 2 (2012) - movie
+- Gretel & Hansel (2020) - movie
+- Hellraiser (1987) - movie
+- Home Movie (2008) - movie
+- I Am Legend (2007) - movie
+- In the Mouth of Madness (1994) - movie
+- Infinity Pool (2023) - movie
+- Insidious (2011) - movie
+- Insidious: Chapter 2 (2013) - movie
+- It (2017) - movie
+- It Comes at Night (2017) - movie
+- It Follows (2014) - movie
+- John Dies at the End (2012) - movie
+- Knock at the Cabin (2023) - movie
+- Lake Mungo (2008) - movie
+- Lamb (2021) - movie
+- Last Night in Soho (2021) - movie
+- Late Night with the Devil (2023) - movie
+- Lee Cronin's The Mummy (2026) - movie
+- Legion (2010) - movie
+- Let Me In (2010) - movie
+- Let the Right One In (2008) - movie
+- Life (2017) - movie
+- Longlegs (2024) - movie
+- Lovely Molly (2011) - movie
+- Malignant (2021) - movie
+- Mama (2013) - movie
+- Mandy (2018) - movie
+- Maniac (2012) - movie
+- Midsommar (2019) - movie
+- Mirrors (2008) - movie
+- Morbius (2022) - movie
+- Mother! (2017) - movie
+- Nope (2022) - movie
+- Oculus (2013) - movie
+- Orphan (2009) - movie
+- Overlord (2018) - movie
+- Pandorum (2009) - movie
+- Paranormal Activity 3 (2011) - movie
+- Paranormal Activity 4 (2012) - movie
+- Paranormal Activity: The Ghost Dimension (2015) - movie
+- Paranormal Activity: The Marked Ones (2014) - movie
+- Pearl (2022) - movie
+- Phoenix Forgotten (2017) - movie
+- Poltergeist (1982) - movie
+- Prey (2022) - movie
+- Priest (2011) - movie
+- Pulse (2010) - movie
+- Quarantine (2008) - movie
+- Raw (2016) - movie
+- REC (2007) - movie
+- Red Riding Hood (2011) - movie
+- Rings (2017) - movie
+- Saw (2004) - movie
+- Saw II (2005) - movie
+- Sinister (2012) - movie
+- Sinners (2025) - movie
+- Skinamarink (2022) - movie
+- Smile (2022) - movie
+- Supernova (2000) - movie
+- Talk to Me (2022) - movie
+- Thale (2012) - movie
+- The Bay (2012) - movie
+- The Black Phone (2022) - movie
+- The Blackcoat's Daughter (2015) - movie
+- The Cell (2000) - movie
+- The Conjuring (2013) - movie
+- The Conjuring 2 (2016) - movie
+- The Conjuring: Last Rites (2025) - movie
+- The Conjuring: The Devil Made Me Do It (2021) - movie
+- The Crazies (2010) - movie
+- The Evil Dead (1981) - movie
+- The Fourth Kind (2009) - movie
+- The Gates (2023) - movie
+- The Good Neighbor (2016) - movie
+- The Gorge (2025) - movie
+- The Grudge (2004) - movie
+- The Hills Have Eyes (2006) - movie
+- The Invisible Man (2020) - movie
+- The Last Days on Mars (2013) - movie
+- The Last Horror Movie (2003) - movie
+- The Lazarus Effect (2015) - movie
+- The Long Walk (2025) - movie
+- The Mist (2007) - movie
+- The Nun (2018) - movie
+- The Pope's Exorcist (2023) - movie
+- The Rite (2011) - movie
+- The Sacrament (2013) - movie
+- The Shining (1980) - movie
+- The Strangers (2012) - movie
+- The Substance (2024) - movie
+- The Triangle (2001) - movie
+- The Tunnel (2011) - movie
+- The Turning (2020) - movie
+- The Visit (2015) - movie
+- The Watchers (2024) - movie
+- The Witch (2016) - movie
+- The Woman (2011) - movie
+- The Woman in Black (2012) - movie
+- They Will Kill You (2026) - movie
+- Things Will Be Different (2024) - movie
+- Trap (2024) - movie
+- Underwater (2020) - movie
+- Unfriended (2014) - movie
+- V/H/S (2012) - movie
+- V/H/S Viral (2014) - movie
+- V/H/S/2 (2013) - movie
+- V/H/S/94 (2021) - movie
+- V/H/S/Beyond (2024) - movie
+- V/H/S/Halloween (2025) - movie
+- Venom: The Last Dance (2024) - movie
+- Vicious (2025) - movie
+- Vivarium (2019) - movie
+- Weapons (2025) - movie
+- Wish Upon (2017) - movie
+- XX (2017) - movie
+- You Should Have Left (2020) - movie
+- You Won't Be Alone (2022) - movie
+- You're Next (2011) - movie
+- Zombieland (2009) - movie
+
+## Music
+
+- Bohemian Rhapsody (2018) - movie
+- La La Land (2016) - movie
+- Whiplash (2014) - movie
+
+## Mystery
+
+- 1408 (2007) - movie
+- 2:22 (2017) - movie
+- 400 Days (2015) - movie
+- A Ghost Story (2017) - movie
+- Ad Astra (2019) - movie
+- Afflicted (2013) - movie
+- Alien Code (2018) - movie
+- Amulet (2020) - movie
+- Angel Heart (1987) - movie
+- Annabelle (2014) - movie
+- Annabelle Comes Home (2019) - movie
+- Annabelle: Creation (2017) - movie
+- Antebellum (2020) - movie
+- Antlers (2021) - movie
+- Apollo 18 (2011) - movie
+- As Above, So Below (2014) - movie
+- Atlas Shrugged: Part I (2011) - movie
+- Atrocious (2010) - movie
+- Backlight (2010) - movie
+- Bad Times at the El Royale (2018) - movie
+- Barbarian (2022) - movie
+- Before I Fall (2017) - movie
+- Blair Witch (2016) - movie
+- Brightburn (2019) - movie
+- Brothers Under Fire (2026) - movie
+- Cloud Atlas (2012) - movie
+- Coherence (2013) - movie
+- Color Out of Space (2019) - movie
+- Coma (2019) - movie
+- Crimson Peak (2015) - movie
+- Cuckoo (2024) - movie
+- Dark City (1998) - movie
+- Death Note: L Change the World (2008) - movie
+- Deliver Us from Evil (2014) - movie
+- Devil (2010) - movie
+- Devil's Due (2014) - movie
+- Die Alone (2024) - movie
+- Don't Worry Darling (2022) - movie
+- Eagle Eye (2008) - movie
+- Elevation (2024) - movie
+- Enemy (2013) - movie
+- Europa Report (2013) - movie
+- Extraterrestrial (2014) - movie
+- Fifty Shades Darker (2017) - movie
+- Get Out (2017) - movie
+- Ghost in the Shell: S.A.C. 2nd GIG - Individual Eleven (2006) - movie
+- Grave Encounters (2011) - movie
+- Grave Encounters 2 (2012) - movie
+- Gretel & Hansel (2020) - movie
+- Hypnotic (2023) - movie
+- I Think We're Alone Now (2018) - movie
+- Infinity Pool (2023) - movie
+- Insidious (2011) - movie
+- Insidious: Chapter 2 (2013) - movie
+- It Comes at Night (2017) - movie
+- It Follows (2014) - movie
+- K-PAX (2001) - movie
+- Knock at the Cabin (2023) - movie
+- Knowing (2009) - movie
+- Lady in the Water (2006) - movie
+- Lake Mungo (2008) - movie
+- Last and First Men (2020) - movie
+- Last Night in Soho (2021) - movie
+- Longlegs (2024) - movie
+- Malignant (2021) - movie
+- Memoria (2021) - movie
+- Midnight Special (2016) - movie
+- Midsommar (2019) - movie
+- Mirrors (2008) - movie
+- Moon (2009) - movie
+- Mother! (2017) - movie
+- Mulholland Drive (2001) - movie
+- Nope (2022) - movie
+- Now You See Me (2013) - movie
+- Oculus (2013) - movie
+- Old (2021) - movie
+- Orphan (2009) - movie
+- Pandorum (2009) - movie
+- Paranormal Activity 3 (2011) - movie
+- Paranormal Activity 4 (2012) - movie
+- Paranormal Activity: The Ghost Dimension (2015) - movie
+- Paranormal Activity: The Marked Ones (2014) - movie
+- Paycheck (2003) - movie
+- Phoenix Forgotten (2017) - movie
+- Project Almanac (2015) - movie
+- Quantum of Solace (2008) - movie
+- REC (2007) - movie
+- Red Riding Hood (2011) - movie
+- Rememory (2017) - movie
+- Reminiscence (2021) - movie
+- Rings (2017) - movie
+- S. Darko (2009) - movie
+- Saw (2004) - movie
+- Saw II (2005) - movie
+- Sherlock Holmes (2009) - movie
+- Sinister (2012) - movie
+- Skinamarink (2022) - movie
+- Smile (2022) - movie
+- Source Code (2011) - movie
+- Star Trek: Generations (1994) - movie
+- Star Trek: The Motion Picture (1979) - movie
+- State of Play (2009) - movie
+- Super Troopers 2 (2018) - movie
+- Synchronicity (2015) - movie
+- The Adjustment Bureau (2011) - movie
+- The Anomaly (2014) - movie
+- The Arrival (1996) - movie
+- The Artifice Girl (2022) - movie
+- The Black Phone (2022) - movie
+- The Blackcoat's Daughter (2015) - movie
+- The Box (2009) - movie
+- The Conjuring (2013) - movie
+- The Conjuring 2 (2016) - movie
+- The Conjuring: Last Rites (2025) - movie
+- The Conjuring: The Devil Made Me Do It (2021) - movie
+- The Fourth Kind (2009) - movie
+- The Grudge (2004) - movie
+- The Invisible Man (2020) - movie
+- The Lazarus Effect (2015) - movie
+- The Maze Runner (2014) - movie
+- The Nun (2018) - movie
+- The Rite (2011) - movie
+- The Tunnel (2011) - movie
+- The Turning (2020) - movie
+- The Usual Suspects (1995) - movie
+- The Village (2004) - movie
+- The Visit (2015) - movie
+- The Watchers (2024) - movie
+- Trap (2024) - movie
+- Unknown (2011) - movie
+- Upstream Color (2013) - movie
+- V/H/S (2012) - movie
+- V/H/S/94 (2021) - movie
+- Vivarium (2019) - movie
+- Voyagers (2021) - movie
+- Watchmen (2009) - movie
+- We Need to Talk About Kevin (2011) - movie
+- Weapons (2025) - movie
+- Without a Clue (1988) - movie
+- You Should Have Left (2020) - movie
+- You're Next (2011) - movie
+
+## Romance
+
+- 2:22 (2017) - movie
+- Allied (2016) - movie
+- Amélie (2002) - movie
+- Attraction (2017) - movie
+- Blue Is the Warmest Colour (2013) - movie
+- Cold Mountain (2003) - movie
+- Date Night (2010) - movie
+- Emma (1996) - movie
+- Eternal Sunshine of the Spotless Mind (2004) - movie
+- Fifty Shades Darker (2017) - movie
+- Fifty Shades of Grey (2015) - movie
+- Her (2014) - movie
+- Hereafter (2010) - movie
+- J. Edgar (2011) - movie
+- Leatherheads (2008) - movie
+- Mallrats (1995) - movie
+- Monsters (2010) - movie
+- Natural Born Killers (1994) - movie
+- Passengers (2016) - movie
+- Play Back (2021) - movie
+- Reminiscence (2021) - movie
+- Synchronicity (2015) - movie
+- The Age of Adaline (2015) - movie
+- The Divergent Series: Insurgent (2015) - movie
+- The Giver (2014) - movie
+- The Shape of Water (2017) - movie
+- The Time Traveler's Wife (2009) - movie
+- There's Something About Mary (1998) - movie
+- Three Thousand Years of Longing (2022) - movie
+- Twilight (2008) - movie
+
+## Sci-Fi
+
+- 10 Cloverfield Lane (2016) - movie
+- 2001: A Space Odyssey (1968) - movie
+- 2012 (2009) - movie
+- 2307: Winter's Dream (2016) - movie
+- 28 Days Later (2002) - movie
+- 28 Weeks Later (2007) - movie
+- 400 Days (2015) - movie
+- 65 (2023) - movie
+- A Quiet Place (2018) - movie
+- A Quiet Place Part II (2020) - movie
+- A.I. Artificial Intelligence (2001) - movie
+- After Yang (2021) - movie
+- Alien Code (2018) - movie
+- Alien: Covenant (2017) - movie
+- Alien: Romulus (2024) - movie
+- Alita: Battle Angel (2019) - movie
+- Ant-Man (2015) - movie
+- Apollo 18 (2011) - movie
+- Approaching the Unknown (2016) - movie
+- Atlas Shrugged: Part I (2011) - movie
+- Avengers: Infinity War (2018) - movie
+- Backlight (2010) - movie
+- Batman v Superman: Dawn of Justice (2016) - movie
+- Battlestar Galactica: Blood & Chrome (2012) - movie
+- Beavis and Butt-Head Do the Universe (2022) - movie
+- Beyond (2013) - movie
+- Black Panther (2018) - movie
+- Black Widow (2021) - movie
+- Blade Runner (1982) - movie
+- Bloodshot (2020) - movie
+- Brazil (1985) - movie
+- Captain America: Brave New World (2025) - movie
+- Captain America: Civil War (2016) - movie
+- Captain America: The First Avenger (2011) - movie
+- Captain America: The Winter Soldier (2014) - movie
+- Children of Men (2006) - movie
+- Chronicle (2012) - movie
+- Cloud Atlas (2012) - movie
+- Cloverfield (2008) - movie
+- Coherence (2013) - movie
+- Color Out of Space (2019) - movie
+- Companion (2025) - movie
+- Dark City (1998) - movie
+- Dark Skies (2013) - movie
+- Deadpool (2016) - movie
+- District 9 (2009) - movie
+- Earth to Echo (2014) - movie
+- Edge of Tomorrow (2014) - movie
+- Elysium (2013) - movie
+- Eternal Sunshine of the Spotless Mind (2004) - movie
+- Europa Report (2013) - movie
+- Event Horizon (1997) - movie
+- Ex Machina (2014) - movie
+- Finch (2021) - movie
+- Flatliners (1990) - movie
+- G.I. Joe: The Rise of Cobra (2009) - movie
+- Ghost in the Shell: S.A.C. 2nd GIG - Individual Eleven (2006) - movie
+- Ghost in the Shell: The New Movie (2015) - movie
+- Godzilla (2014) - movie
+- Gravity (2013) - movie
+- Greenland 2: Migration (2026) - movie
+- Hardcore Henry (2015) - movie
+- Her (2014) - movie
+- High-Rise (2015) - movie
+- I Am Legend (2007) - movie
+- I Am Number Four (2011) - movie
+- I Think We're Alone Now (2018) - movie
+- In Time (2011) - movie
+- Inception (2010) - movie
+- Independence Day: Resurgence (2016) - movie
+- Indiana Jones and the Dial of Destiny (2023) - movie
+- Interstellar (2014) - movie
+- Iron Man (2008) - movie
+- John Carter (2012) - movie
+- Jumper (2008) - movie
+- Jurassic World (2015) - movie
+- Jurassic World: Dominion (2022) - movie
+- Jurassic World: Fallen Kingdom (2018) - movie
+- K-PAX (2001) - movie
+- Kite Liberator (2007) - movie
+- Knowing (2009) - movie
+- Last and First Men (2020) - movie
+- Life (2017) - movie
+- Limitless (2011) - movie
+- Logan (2017) - movie
+- Lucy (2014) - movie
+- Mad Max: Fury Road (2015) - movie
+- Man of Steel (2013) - movie
+- Maze Runner: The Scorch Trials (2015) - movie
+- Melancholia (2011) - movie
+- Memoria (2021) - movie
+- Midnight Special (2016) - movie
+- Moon (2009) - movie
+- Moonfall (2022) - movie
+- Night Sights (2011) - movie
+- Nope (2022) - movie
+- Overlord (2018) - movie
+- Pacific Rim (2013) - movie
+- Passengers (2016) - movie
+- Paycheck (2003) - movie
+- Phoenix Forgotten (2017) - movie
+- Planet of the Apes (2001) - movie
+- Predators (2010) - movie
+- Predestination (2014) - movie
+- Primer (2004) - movie
+- Project Almanac (2015) - movie
+- Prometheus (2012) - movie
+- Quarantine (2008) - movie
+- Ready Player One (2018) - movie
+- Reign of the Fallen (2005) - movie
+- Rememory (2017) - movie
+- Reminiscence (2021) - movie
+- Replicas (2018) - movie
+- Rise of the Planet of the Apes (2011) - movie
+- River (2023) - movie
+- S. Darko (2009) - movie
+- Settlers (2021) - movie
+- Skyline (2010) - movie
+- Snowpiercer (2013) - movie
+- Space Station 76 (2014) - movie
+- Space/Time (2025) - movie
+- Spaceballs (1987) - movie
+- Spider-Man 2 (2004) - movie
+- Spider-Man: Homecoming (2017) - movie
+- Star Trek Beyond (2016) - movie
+- Star Trek II: The Wrath of Khan (1982) - movie
+- Star Trek III: The Search for Spock (1984) - movie
+- Star Trek IV: The Voyage Home (1986) - movie
+- Star Trek VI: The Undiscovered Country (1991) - movie
+- Star Trek: Insurrection (1998) - movie
+- Star Trek: Nemesis (2002) - movie
+- Star Trek: The Motion Picture (1979) - movie
+- Sunshine (2007) - movie
+- Super 8 (2011) - movie
+- Superman (2025) - movie
+- Supernova (2000) - movie
+- Tenet (2020) - movie
+- Terminator Genisys (2015) - movie
+- Terminator: Dark Fate (2019) - movie
+- The 5th Wave (2016) - movie
+- The Amazing Spider-Man 2 (2014) - movie
+- The Anomaly (2014) - movie
+- The Arrival (1996) - movie
+- The Artifice Girl (2022) - movie
+- The Astronaut Farmer (2006) - movie
+- The Avengers (2012) - movie
+- The Bay (2012) - movie
+- The Cell (2000) - movie
+- The Chronicles of Riddick (2004) - movie
+- The Day the Earth Stood Still (2008) - movie
+- The Fantastic Four: First Steps (2025) - movie
+- The Fourth Kind (2009) - movie
+- The Giver (2014) - movie
+- The Hunger Games (2012) - movie
+- The Hunger Games: Catching Fire (2013) - movie
+- The Hunger Games: Mockingjay - Part 1 (2014) - movie
+- The Hunger Games: Mockingjay - Part 2 (2015) - movie
+- The Incredible Hulk (2008) - movie
+- The Last Days on Mars (2013) - movie
+- The Lazarus Effect (2015) - movie
+- The Martian (2015) - movie
+- The Matrix (1999) - movie
+- The Matrix Reloaded (2003) - movie
+- The Matrix Revolutions (2003) - movie
+- The Maze Runner (2014) - movie
+- The Mist (2007) - movie
+- The Running Man (1987) - movie
+- The Substance (2024) - movie
+- The Time Machine (2002) - movie
+- Things Will Be Different (2024) - movie
+- This Is the End (2013) - movie
+- Total Recall (1990) - movie
+- Underwater (2020) - movie
+- Upgrade (2018) - movie
+- Upstream Color (2013) - movie
+- V/H/S/Beyond (2024) - movie
+- Venom (2018) - movie
+- Vivarium (2019) - movie
+- Voyagers (2021) - movie
+- Westworld (1973) - movie
+- X-Men Origins: Wolverine (2009) - movie
+- X-Men: Apocalypse (2016) - movie
+- X-Men: Dark Phoenix (2019) - movie
+- X-Men: First Class (2011) - movie
+
+## Short
+
+- A Charlie Brown Thanksgiving (1973) - movie
+- Beyond (2013) - movie
+- Chamber of Secrets (2015) - movie
+- Erdö (2011) - movie
+- Joseph (2015) - movie
+- Once in a Lifetime: The Making of Blue Harvest (2008) - movie
+- Pale Cocoon (2005) - movie
+- The Audition (2003) - movie
+- The Cure (2006) - movie
+
+## Sport
+
+- Borg vs. McEnroe (2017) - movie
+- Concussion (2015) - movie
+- Creed (2015) - movie
+- Creed II (2018) - movie
+- F1: The Movie (2025) - movie
+- Moneyball (2011) - movie
+- Semi-Pro (2008) - movie
+- The Karate Kid Part II (1986) - movie
+
+## Thriller
+
+- 13 Sins (2014) - movie
+- 400 Days (2015) - movie
+- 7500 (2019) - movie
+- A Few Good Men (1992) - movie
+- A Good Day to Die Hard (2013) - movie
+- Afflicted (2013) - movie
+- Alien Code (2018) - movie
+- Alien: Covenant (2017) - movie
+- Alien: Romulus (2024) - movie
+- Angel Heart (1987) - movie
+- Annabelle (2014) - movie
+- Annabelle Comes Home (2019) - movie
+- Annabelle: Creation (2017) - movie
+- Antichrist (2009) - movie
+- Approaching the Unknown (2016) - movie
+- Argylle (2024) - movie
+- Atrocious (2010) - movie
+- Barbarian (2022) - movie
+- Blair Witch (2016) - movie
+- Boiler Room (2000) - movie
+- Brazil (1985) - movie
+- Bridge of Spies (2015) - movie
+- Bug (2006) - movie
+- Bullet Train (2022) - movie
+- Camp Hell (2010) - movie
+- Candyman (1992) - movie
+- Children of Men (2006) - movie
+- Chronicle (2012) - movie
+- Civil War (2024) - movie
+- Coherence (2013) - movie
+- Companion (2025) - movie
+- Contagion (2011) - movie
+- Cuckoo (2024) - movie
+- Dark Skies (2013) - movie
+- Devil (2010) - movie
+- District 9 (2009) - movie
+- Dog Soldiers (2002) - movie
+- Dogtooth (2009) - movie
+- Don't Be Afraid of the Dark (2010) - movie
+- Don't Breathe (2016) - movie
+- Don't Worry Darling (2022) - movie
+- Eagle Eye (2008) - movie
+- Enemy (2013) - movie
+- Escape Plan (2013) - movie
+- Event Horizon (1997) - movie
+- Ex Machina (2014) - movie
+- F9: The Fast Saga (2021) - movie
+- Fast Five (2011) - movie
+- Fifty Shades of Grey (2015) - movie
+- Fight Club (1999) - movie
+- Furious 7 (2015) - movie
+- Get Out (2017) - movie
+- Gravity (2013) - movie
+- Greenland (2020) - movie
+- Hellraiser (1987) - movie
+- Home Movie (2008) - movie
+- I'm Thinking of Ending Things (2020) - movie
+- Identity (2022) - movie
+- In Time (2011) - movie
+- Insidious (2011) - movie
+- Insidious: Chapter 2 (2013) - movie
+- It Follows (2014) - movie
+- Jack Reacher (2012) - movie
+- Jack Reacher: Never Go Back (2016) - movie
+- Jack Ryan: Shadow Recruit (2014) - movie
+- Jason Bourne (2016) - movie
+- John Wick (2014) - movie
+- John Wick: Chapter 2 (2017) - movie
+- John Wick: Chapter 4 (2023) - movie
+- Joker (2019) - movie
+- Killer Joe (2011) - movie
+- Kite Liberator (2007) - movie
+- Knock at the Cabin (2023) - movie
+- Knowing (2009) - movie
+- Life (2017) - movie
+- Limitless (2011) - movie
+- Lucy (2014) - movie
+- Mama (2013) - movie
+- Maniac (2012) - movie
+- Margin Call (2011) - movie
+- Mile 22 (2018) - movie
+- Mission: Impossible - Fallout (2018) - movie
+- Mission: Impossible - Ghost Protocol (2011) - movie
+- Mission: Impossible - Rogue Nation (2015) - movie
+- Monkey Man (2024) - movie
+- Mulholland Drive (2001) - movie
+- No Time to Die (2021) - movie
+- Now You See Me (2013) - movie
+- Ocean's Eleven (2001) - movie
+- Ocean's Thirteen (2007) - movie
+- Oculus (2013) - movie
+- Old (2021) - movie
+- Olympus Has Fallen (2013) - movie
+- Orphan (2009) - movie
+- Paranormal Activity 3 (2011) - movie
+- Pearl (2022) - movie
+- Poltergeist (1982) - movie
+- Primal (2019) - movie
+- Primer (2004) - movie
+- Quarantine (2008) - movie
+- REC (2007) - movie
+- Safe House (2012) - movie
+- San Andreas (2015) - movie
+- Saw (2004) - movie
+- Settlers (2021) - movie
+- Sin City (2005) - movie
+- Sinister (2012) - movie
+- Skyline (2010) - movie
+- Smile (2022) - movie
+- Snowpiercer (2013) - movie
+- Space/Time (2025) - movie
+- Sunshine (2007) - movie
+- Super 8 (2011) - movie
+- Super Dark Times (2017) - movie
+- Supernova (2000) - movie
+- Take Shelter (2011) - movie
+- Taken (2008) - movie
+- Taken 2 (2012) - movie
+- Taken 3 (2014) - movie
+- Talk to Me (2022) - movie
+- Tenet (2020) - movie
+- The Arrival (1996) - movie
+- The Artifice Girl (2022) - movie
+- The Bay (2012) - movie
+- The Beekeeper (2024) - movie
+- The Beguiled (2017) - movie
+- The Black Phone (2022) - movie
+- The Blackcoat's Daughter (2015) - movie
+- The Bourne Legacy (2012) - movie
+- The Box (2009) - movie
+- The Conjuring (2013) - movie
+- The Conjuring 2 (2016) - movie
+- The Conjuring: Last Rites (2025) - movie
+- The Conjuring: The Devil Made Me Do It (2021) - movie
+- The Expendables (2010) - movie
+- The Expendables 2 (2012) - movie
+- The Fast and the Furious (2001) - movie
+- The Fate of the Furious (2017) - movie
+- The Gates (2023) - movie
+- The Grudge (2004) - movie
+- The Highest Stakes (2026) - movie
+- The Hills Have Eyes (2006) - movie
+- The Imitation Game (2014) - movie
+- The Last Horror Movie (2003) - movie
+- The Long Walk (2025) - movie
+- The Mist (2007) - movie
+- The Nun (2018) - movie
+- The Pope's Exorcist (2023) - movie
+- The Running Man (1987) - movie
+- The Sacrament (2013) - movie
+- The Triangle (2001) - movie
+- The Tunnel (2011) - movie
+- The Village (2004) - movie
+- The Visit (2015) - movie
+- The Woman (2011) - movie
+- Things Will Be Different (2024) - movie
+- Unknown (2011) - movie
+- Upgrade (2018) - movie
+- V/H/S (2012) - movie
+- V/H/S Viral (2014) - movie
+- V/H/S/2 (2013) - movie
+- V/H/S/Beyond (2024) - movie
+- Wanted (2008) - movie
+- We Need to Talk About Kevin (2011) - movie
+- You Should Have Left (2020) - movie
+
+## Uncategorized
+
+- Moses (2018) - movie
+
+## War
+
+- Braveheart (1995) - movie
+- Civil War (2024) - movie
+- Fury (2014) - movie
+
+## Western
+
+- A Million Ways to Die in the West (2014) - movie
+- Django Unchained (2012) - movie
+- Forsaken (2015) - movie
+- The Revenant (2016) - movie
+- True Grit (2010) - movie

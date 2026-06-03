@@ -35,6 +35,7 @@ const expectedBraveheartCatalogRecord = {
     },
     metacritic: '68',
   },
+  releaseYear: 1995,
 };
 
 async function createTempProject() {
@@ -171,6 +172,9 @@ describe('buildCatalog', () => {
           mediaType: 'movie',
           title: 'Normalized Braveheart',
           genres: ['Drama'],
+          omdb: {
+            Year: '1995',
+          },
         },
       },
     });
@@ -184,6 +188,7 @@ describe('buildCatalog', () => {
       canonicalId: 'imdb:tt0112573',
       mediaType: 'movie',
       title: 'Normalized Braveheart',
+      releaseYear: 1995,
       genres: ['Drama'],
     });
   });
@@ -210,6 +215,9 @@ describe('buildCatalog', () => {
           mediaType: 'movie',
           title: 'Offline Braveheart',
           genres: ['Drama'],
+          omdb: {
+            Year: '1995-1996',
+          },
         },
       },
     });
@@ -224,6 +232,7 @@ describe('buildCatalog', () => {
         canonicalId: 'imdb:tt0112573',
         mediaType: 'movie',
         title: 'Offline Braveheart',
+        releaseYear: 1995,
         genres: ['Drama'],
       });
     } finally {
@@ -258,6 +267,9 @@ describe('buildCatalog', () => {
         metadata: {
           mediaType: 'movie',
           title: 'Braveheart',
+          omdb: {
+            Year: '1995',
+          },
           genres: ['Biography', 'Drama'],
           description: 'A historical epic.',
           posterUrl: 'https://example.test/braveheart.jpg',
@@ -297,6 +309,7 @@ describe('buildCatalog', () => {
           },
           omdb: {
             Title: 'Game of Thrones',
+            Year: '2011-2019',
             Type: 'series',
             Genre: 'Action, Adventure, Drama',
             Plot: 'Noble families vie for control.',
@@ -330,6 +343,7 @@ describe('buildCatalog', () => {
         canonicalId: 'imdb:tt0112573',
         mediaType: 'movie',
         title: 'Braveheart',
+        releaseYear: 1995,
         description: 'A historical epic.',
         posterUrl: 'https://example.test/braveheart.jpg',
         genres: ['Biography', 'Drama'],
@@ -349,6 +363,7 @@ describe('buildCatalog', () => {
         canonicalId: 'imdb:tt0944947',
         mediaType: 'series',
         title: 'Game of Thrones',
+        releaseYear: 2011,
         description: 'Noble families vie for control.',
         genres: ['Action', 'Adventure', 'Drama'],
         people: {
