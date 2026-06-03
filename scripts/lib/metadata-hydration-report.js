@@ -35,6 +35,26 @@ function countLookupResultsByStatus(lookupResults = []) {
   }, {});
 }
 
+function formatLookupDetail(item) {
+  const error = item.detail?.error;
+
+  if (!error) {
+    return '';
+  }
+
+  const details = [
+    error.message,
+    error.statusCode !== undefined
+      ? `status ${error.statusCode}`
+      : null,
+    error.retryAfterSeconds !== undefined
+      ? `retry after ${error.retryAfterSeconds}s`
+      : null,
+  ].filter(Boolean);
+
+  return details.length > 0 ? `: ${details.join(', ')}` : '';
+}
+
 export function formatMetadataHydrationPlanReport(report) {
   const lines = [
     'Metadata hydration plan',
@@ -144,7 +164,7 @@ export function formatMetadataHydrationPlanReport(report) {
 
     for (const item of report.lookupResults) {
       lines.push(
-        `  - ${item.canonicalId} (${item.provider}, ${item.status})`,
+        `  - ${item.canonicalId} (${item.provider}, ${item.status})${formatLookupDetail(item)}`,
       );
     }
 

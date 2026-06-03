@@ -79,21 +79,22 @@ export function parseMetadataHydrationCli(args = process.argv) {
   const command = resolveMetadataHydrationCommand(args);
   const options = {
     command,
-    providerId: 'mock',
     dryRun: false,
   };
-  const commandArgs = args.slice(3);
-
-  if (command === 'plan' && commandArgs.length > 0) {
-    throw new CatalogBuildError(
-      'Metadata hydration plan mode does not accept options yet.',
-    );
+  if (command === 'write') {
+    options.providerId = 'mock';
   }
+  const commandArgs = args.slice(3);
 
   for (let index = 0; index < commandArgs.length; index += 1) {
     const arg = commandArgs[index];
 
     if (arg === '--dry-run') {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --dry-run is only supported in write mode.',
+        );
+      }
       options.dryRun = true;
       continue;
     }
@@ -110,6 +111,11 @@ export function parseMetadataHydrationCli(args = process.argv) {
     }
 
     if (arg === '--limit' || arg.startsWith('--limit=')) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --limit is only supported in write mode.',
+        );
+      }
       const parsed = readFlagValue({
         args: commandArgs,
         index,
@@ -121,6 +127,11 @@ export function parseMetadataHydrationCli(args = process.argv) {
     }
 
     if (arg === '--id' || arg.startsWith('--id=')) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --id is only supported in write mode.',
+        );
+      }
       const parsed = readFlagValue({
         args: commandArgs,
         index,
@@ -132,6 +143,11 @@ export function parseMetadataHydrationCli(args = process.argv) {
     }
 
     if (arg === '--delay-ms' || arg.startsWith('--delay-ms=')) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --delay-ms is only supported in write mode.',
+        );
+      }
       const parsed = readFlagValue({
         args: commandArgs,
         index,
@@ -145,7 +161,34 @@ export function parseMetadataHydrationCli(args = process.argv) {
       continue;
     }
 
+    if (
+      arg === '--mock-delay-ms' ||
+      arg.startsWith('--mock-delay-ms=')
+    ) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --mock-delay-ms is only supported in write mode.',
+        );
+      }
+      const parsed = readFlagValue({
+        args: commandArgs,
+        index,
+        name: '--mock-delay-ms',
+      });
+      options.mockDelayMs = parseNonNegativeInteger(
+        parsed.value,
+        '--mock-delay-ms',
+      );
+      index = parsed.nextIndex;
+      continue;
+    }
+
     if (arg === '--timeout-ms' || arg.startsWith('--timeout-ms=')) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --timeout-ms is only supported in write mode.',
+        );
+      }
       const parsed = readFlagValue({
         args: commandArgs,
         index,
@@ -160,6 +203,11 @@ export function parseMetadataHydrationCli(args = process.argv) {
     }
 
     if (arg === '--retry-limit' || arg.startsWith('--retry-limit=')) {
+      if (command !== 'write') {
+        throw new CatalogBuildError(
+          'Metadata hydration option --retry-limit is only supported in write mode.',
+        );
+      }
       const parsed = readFlagValue({
         args: commandArgs,
         index,
@@ -194,8 +242,11 @@ async function main() {
             delayMs: options.delayMs,
             timeoutMs: options.timeoutMs,
             retryLimit: options.retryLimit,
+            mockDelayMs: options.mockDelayMs,
           })
-        : await planMetadataHydration();
+        : await planMetadataHydration({
+            providerId: options.providerId,
+          });
     console.log(formatMetadataHydrationPlanReport(report));
   } catch (error) {
     const report = error.report ?? createMetadataHydrationPlanReport();

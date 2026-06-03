@@ -42,15 +42,16 @@ yarn catalog:list --title="Guardians of the Galaxy: Vol. 2"
 yarn catalog:search --genre='*comedy'
 ```
 
-`yarn enrich:metadata:plan` runs the dry-run planner. It reports
+`yarn enrich:metadata:plan` is a legacy read-only planner. It reports
 metadata gaps and planned lookups without contacting providers or
-writing files. `yarn enrich:metadata:write` performs cache-writing
-metadata enrichment.
+writing files. `yarn enrich:metadata:write` is deprecated and fails
+closed; use capped metadata hydration for all cache-writing workflows.
 
 Metadata hydration and catalog rebuild are separate review steps:
 
-1. Run `yarn hydrate:metadata:plan` to review missing, skipped,
-   ineligible, and invalid cache records without writing files.
+1. Run `yarn hydrate:metadata:plan --provider mock` or
+   `yarn hydrate:metadata:plan --provider omdb` to review missing,
+   skipped, ineligible, and invalid cache records without writing files.
 2. Run `yarn hydrate:metadata:write --provider mock --limit 25`, or an
    explicitly capped real-provider run, to update only
    `data/metadata-cache.json`.
@@ -64,6 +65,26 @@ Metadata hydration and catalog rebuild are separate review steps:
 
 Catalog generation must not read provider API keys or contact metadata
 providers. Hydration write mode must not write `data/catalog.json`.
+
+Hydration plan mode accepts only `--provider`. Provider selection makes
+plan mode preview the same provider support that write mode will use.
+Without `--provider`, plan mode uses the production provider registry.
+
+Hydration write options:
+
+- `--provider mock|omdb`: select the provider. OMDb is real-provider
+  hydration and must be explicitly selected.
+- `--limit N`: cap provider lookup attempts. The default cap is 25 and
+  the hard maximum is 100.
+- `--id canonicalId`: target a single eligible catalog ID.
+- `--dry-run`: perform provider lookups and reporting without writing
+  `data/metadata-cache.json`.
+- `--delay-ms N`: wait between provider lookup attempts.
+- `--mock-delay-ms N`: add artificial delay inside mock lookups for
+  timeout testing. This is separate from `--delay-ms`.
+- `--timeout-ms N`: pass a provider timeout to each lookup.
+- `--retry-limit N`: retry retryable failures and timeouts up to this
+  many times. Retries count against `--limit`.
 
 Real-provider hydration should be run cautiously and manually. OMDb free
 API keys are limited to 1,000 requests per day, so normal OMDb runs
@@ -85,11 +106,10 @@ Do not run real-provider hydration automatically in tests or unattended
 workflows. Use `yarn hydrate:metadata:write --provider mock --limit 25`
 for local workflow testing without network access or API keys.
 
-`yarn catalog:sync` runs `enrich:metadata:write` behavior followed by
-`build:catalog` behavior. It does not append catalog events, perform
-catalog import/add, or replace the standalone enrichment and build
-commands. Fatal enrichment errors skip catalog generation; provider
-lookup failures are reported without blocking catalog generation.
+`yarn catalog:sync` no longer performs legacy metadata enrichment by
+default because that path is uncapped. Use capped hydration first, then
+run `yarn build:catalog`. It does not append catalog events or perform
+catalog import/add behavior.
 
 Provider planning and execution report distinct states:
 

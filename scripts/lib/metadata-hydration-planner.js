@@ -10,14 +10,22 @@ import {
 } from './catalog-metadata.js';
 import {
   metadataProviders,
+  mockMetadataProvider,
   selectMetadataProvider,
 } from './metadata-providers/index.js';
 import { createMetadataHydrationPlanReport } from './metadata-hydration-report.js';
 
-function addLookupPlan({ report, canonicalId, reason, providers }) {
+function addLookupPlan({
+  report,
+  canonicalId,
+  reason,
+  providers,
+  providerId,
+}) {
   const { provider, reason: selectionReason } = selectMetadataProvider({
     canonicalId,
     providers,
+    providerId,
   });
 
   if (!provider) {
@@ -36,13 +44,30 @@ function addLookupPlan({ report, canonicalId, reason, providers }) {
   });
 }
 
+function resolvePlanningProviders({ providers, providerId }) {
+  if (providers) {
+    return providers;
+  }
+
+  if (providerId === 'mock') {
+    return [mockMetadataProvider];
+  }
+
+  return metadataProviders;
+}
+
 export async function planMetadataHydration({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
-  providers = metadataProviders,
+  providers,
+  providerId,
 } = {}) {
   const report = createMetadataHydrationPlanReport();
+  const effectiveProviders = resolvePlanningProviders({
+    providers,
+    providerId,
+  });
 
   try {
     const events = await readEvents(eventsPath);
@@ -76,7 +101,8 @@ export async function planMetadataHydration({
           report,
           canonicalId,
           reason: 'missing',
-          providers,
+          providers: effectiveProviders,
+          providerId,
         });
         continue;
       }
@@ -87,7 +113,8 @@ export async function planMetadataHydration({
           report,
           canonicalId,
           reason: 'invalid-cache',
-          providers,
+          providers: effectiveProviders,
+          providerId,
         });
         continue;
       }

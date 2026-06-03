@@ -143,6 +143,34 @@ describe('planMetadataHydration', () => {
     });
   });
 
+  it('parses plan provider selection without write-only options', () => {
+    expect(
+      parseMetadataHydrationCli([
+        'node',
+        'scripts/hydrate-metadata.js',
+        'plan',
+        '--provider',
+        'mock',
+      ]),
+    ).toEqual({
+      command: 'plan',
+      providerId: 'mock',
+      dryRun: false,
+    });
+
+    expect(() =>
+      parseMetadataHydrationCli([
+        'node',
+        'scripts/hydrate-metadata.js',
+        'plan',
+        '--limit',
+        '1',
+      ]),
+    ).toThrow(
+      'Metadata hydration option --limit is only supported in write mode.',
+    );
+  });
+
   it('reports read-only hydration planning counts', async () => {
     const rootDir = await createTempProject();
     const provider = createFakeMetadataProvider();
@@ -280,6 +308,39 @@ describe('planMetadataHydration', () => {
         canonicalId: 'imdb:tt0000002',
         reason: 'missing',
         selectionReason: 'no-supporting-provider',
+      },
+    ]);
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+  });
+
+  it('plans against the requested mock provider without explicit provider injection', async () => {
+    const rootDir = await createTempProject();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    await writeEvents(rootDir, [
+      catalogAdd('imdb:tt0112573'),
+      catalogAdd('imdb:tt0000002'),
+    ]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataHydration({
+      rootDir,
+      providerId: 'mock',
+    });
+
+    expect(report.eligibleLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        provider: 'mock',
+      },
+    ]);
+    expect(report.ineligibleLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0000002',
+        reason: 'missing',
+        selectionReason: 'requested-provider-does-not-support-id',
       },
     ]);
     expect(fetchSpy).not.toHaveBeenCalled();

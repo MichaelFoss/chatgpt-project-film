@@ -101,19 +101,21 @@ describe('planMetadataEnrichment', () => {
         'plan',
       ]),
     ).toBe('plan');
-    expect(
+    expect(() =>
       resolveMetadataEnrichmentCommand([
         'node',
         'scripts/enrich-metadata.js',
         'write',
       ]),
-    ).toBe('write');
+    ).toThrow(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
     expect(() =>
       resolveMetadataEnrichmentCommand([
         'node',
         'scripts/enrich-metadata.js',
       ]),
-    ).toThrow('Metadata enrichment command must be "plan" or "write".');
+    ).toThrow('Metadata enrichment command must be "plan".');
   });
 
   it('plans missing metadata for lookup', async () => {
@@ -352,6 +354,12 @@ describe('planMetadataEnrichment', () => {
 });
 
 describe('executeMetadataEnrichment', () => {
+  it('rejects legacy write mode unless explicitly opted in by tests', async () => {
+    await expect(executeMetadataEnrichment()).rejects.toThrow(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
+  });
+
   it('writes metadata-cache.json for missing metadata', async () => {
     const rootDir = await createTempProject();
     const fakeProvider = createFakeMetadataProvider();
@@ -361,6 +369,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
 
@@ -442,6 +451,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [unavailableProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = JSON.parse(
@@ -485,6 +495,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [provider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = JSON.parse(
@@ -532,6 +543,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const after = await readProjectFiles(rootDir);
@@ -552,6 +564,7 @@ describe('executeMetadataEnrichment', () => {
     await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
 

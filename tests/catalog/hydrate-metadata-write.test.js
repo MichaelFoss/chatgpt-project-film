@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   executeMetadataHydrationWrite,
   formatMetadataHydrationPlanReport,
+  planMetadataHydration,
   parseMetadataHydrationCli,
 } from '../../scripts/hydrate-metadata.js';
 import {
@@ -167,7 +168,7 @@ describe('executeMetadataHydrationWrite', () => {
       {
         canonicalId: 'imdb:tt0000002',
         reason: 'missing',
-        selectionReason: 'no-supporting-provider',
+        selectionReason: 'requested-provider-does-not-support-id',
       },
     ]);
     expect(report.requestsAttempted).toBe(0);
@@ -322,7 +323,7 @@ describe('executeMetadataHydrationWrite', () => {
     expect(Object.keys(cache)).toEqual(['mock:one', 'mock:two']);
   });
 
-  it('reports capped remaining records separately from attempted unresolved records', async () => {
+  it('reports remaining records from cache state after capped and unresolved lookups', async () => {
     const rootDir = await createTempProject();
     const provider = createTrackingMockProvider({
       'mock:not-found': {
@@ -354,7 +355,7 @@ describe('executeMetadataHydrationWrite', () => {
 
     expect(provider.calls).toEqual(['mock:not-found', 'mock:written']);
     expect(report.requestsAttempted).toBe(2);
-    expect(report.remainingEligibleRecords).toBe(1);
+    expect(report.remainingEligibleRecords).toBe(2);
     expect(report.unresolvedLookupRecords).toEqual([
       {
         canonicalId: 'mock:not-found',
@@ -364,9 +365,18 @@ describe('executeMetadataHydrationWrite', () => {
     ]);
     expect(report.metadataRecordsWritten).toEqual(['mock:written']);
     expect(Object.keys(cache)).toEqual(['mock:written']);
-    expect(formatted).toContain('- remaining eligible records: 1');
+    expect(formatted).toContain('- remaining eligible records: 2');
     expect(formatted).toContain('- unresolved lookup records: 1');
     expect(formatted).toContain('mock:not-found (mock, not-found)');
+
+    const followupPlan = await planMetadataHydration({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+    });
+    expect(
+      followupPlan.eligibleLookups.map((item) => item.canonicalId),
+    ).toEqual(['mock:not-found', 'mock:capped']);
   });
 
   it('applies the default cap and rejects limits above the hard maximum', async () => {
@@ -471,7 +481,7 @@ describe('executeMetadataHydrationWrite', () => {
     expect(report.metadataRecordWriteCandidates).toEqual(['mock:one']);
     expect(report.metadataRecordsWritten).toEqual([]);
     expect(report.filesWritten).toEqual([]);
-    expect(report.remainingEligibleRecords).toBe(0);
+    expect(report.remainingEligibleRecords).toBe(1);
     expect(report.unresolvedLookupRecords).toEqual([]);
     expect(after).toEqual(before);
   });
@@ -488,6 +498,8 @@ describe('executeMetadataHydrationWrite', () => {
         '5',
         '--delay-ms',
         '10',
+        '--mock-delay-ms',
+        '15',
         '--timeout-ms=25',
         '--retry-limit',
         '2',
@@ -497,9 +509,42 @@ describe('executeMetadataHydrationWrite', () => {
       providerId: 'mock',
       limit: 5,
       delayMs: 10,
+      mockDelayMs: 15,
       timeoutMs: 25,
       retryLimit: 2,
     });
+  });
+
+  it('applies CLI-configurable mock lookup delay separately from inter-request delay', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd('imdb:tt0112573')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providerId: 'mock',
+      limit: 1,
+      mockDelayMs: 25,
+      timeoutMs: 1,
+    });
+    const cache = await readMetadata(rootDir);
+
+    expect(report.requestsAttempted).toBe(1);
+    expect(report.lookupResults).toMatchObject([
+      {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'mock',
+        status: metadataLookupResultCategories.timedOut,
+        detail: {
+          error: {
+            source: 'transport',
+            message: 'Mock lookup exceeded configured timeout.',
+          },
+        },
+      },
+    ]);
+    expect(report.remainingEligibleRecords).toBe(1);
+    expect(cache).toEqual({});
   });
 
   it('applies configured delay behavior between provider requests', async () => {
@@ -562,6 +607,7 @@ describe('executeMetadataHydrationWrite', () => {
       },
     ]);
     expect(cache).toEqual({});
+    expect(report.remainingEligibleRecords).toBe(1);
   });
 
   it('enforces retry cap behavior using mock retryable failure', async () => {
@@ -593,7 +639,7 @@ describe('executeMetadataHydrationWrite', () => {
       'mock:retryable-failure',
     ]);
     expect(report.requestsAttempted).toBe(3);
-    expect(report.lookupResults).toEqual([
+    expect(report.lookupResults).toMatchObject([
       {
         canonicalId: 'mock:retryable-failure',
         provider: 'mock',
@@ -617,6 +663,15 @@ describe('executeMetadataHydrationWrite', () => {
         status: metadataLookupResultCategories.retryableFailure,
       },
     ]);
+
+    const followupPlan = await planMetadataHydration({
+      rootDir,
+      providers: [provider],
+      providerId: 'mock',
+    });
+    expect(
+      followupPlan.eligibleLookups.map((item) => item.canonicalId),
+    ).toEqual(['mock:retryable-failure']);
   });
 
   it('counts retry attempts against the same per-run request cap', async () => {
@@ -648,7 +703,7 @@ describe('executeMetadataHydrationWrite', () => {
     ]);
     expect(report.requestsAttempted).toBe(2);
     expect(report.lookupResults).toHaveLength(2);
-    expect(report.remainingEligibleRecords).toBe(0);
+    expect(report.remainingEligibleRecords).toBe(1);
     expect(report.unresolvedLookupRecords).toEqual([
       {
         canonicalId: 'mock:retryable-failure',
@@ -688,7 +743,7 @@ describe('executeMetadataHydrationWrite', () => {
 
     expect(provider.calls).toEqual(['mock:rate-limited']);
     expect(report.requestsAttempted).toBe(1);
-    expect(report.remainingEligibleRecords).toBe(1);
+    expect(report.remainingEligibleRecords).toBe(2);
     expect(report.unresolvedLookupRecords).toEqual([
       {
         canonicalId: 'mock:rate-limited',
@@ -792,7 +847,7 @@ describe('executeMetadataHydrationWrite', () => {
     const cache = await readMetadata(rootDir);
 
     expect(provider.calls).toEqual(['mock:not-found']);
-    expect(report.lookupResults).toEqual([
+    expect(report.lookupResults).toMatchObject([
       {
         canonicalId: 'mock:not-found',
         provider: 'mock',
@@ -802,7 +857,7 @@ describe('executeMetadataHydrationWrite', () => {
     expect(report.metadataRecordWriteCandidates).toEqual([]);
     expect(report.metadataRecordsWritten).toEqual([]);
     expect(report.filesWritten).toEqual([]);
-    expect(report.remainingEligibleRecords).toBe(0);
+    expect(report.remainingEligibleRecords).toBe(1);
     expect(report.unresolvedLookupRecords).toEqual([
       {
         canonicalId: 'mock:not-found',
@@ -876,6 +931,70 @@ describe('executeMetadataHydrationWrite', () => {
     });
   });
 
+  it('uses provider-specific metadata record mapping when available', async () => {
+    const rootDir = await createTempProject();
+    const provider = {
+      id: 'mapped',
+      supports: (canonicalId) => canonicalId === 'mapped:one',
+      async lookup({ canonicalId }) {
+        return {
+          provider: 'mapped',
+          canonicalId,
+          lookupKey: 'provider-native-key',
+          status: metadataLookupResultCategories.found,
+          metadata: {
+            mediaType: 'movie',
+            title: 'Ignored generic metadata',
+            genres: ['Ignored'],
+          },
+        };
+      },
+      toMetadataRecord({ canonicalId, response, fetchedAt }) {
+        return {
+          canonicalId,
+          provider: 'mapped',
+          isValid: true,
+          lastUpdatedAt: fetchedAt,
+          provenance: {
+            source: 'provider-lookup',
+            provider: 'mapped',
+            lookupKey: response.lookupKey,
+            mapper: 'custom',
+          },
+          metadata: {
+            mediaType: 'movie',
+            title: 'Mapped metadata',
+            genres: ['Mapped'],
+          },
+        };
+      },
+    };
+    await writeEvents(rootDir, [catalogAdd('mapped:one')]);
+    await writeMetadata(rootDir, {});
+
+    const report = await executeMetadataHydrationWrite({
+      rootDir,
+      providers: [provider],
+      providerId: 'mapped',
+      limit: 1,
+      now: () => new Date('2026-05-30T12:00:00.000Z'),
+    });
+    const cache = await readMetadata(rootDir);
+
+    expect(report.metadataRecordsWritten).toEqual(['mapped:one']);
+    expect(cache['mapped:one']).toMatchObject({
+      canonicalId: 'mapped:one',
+      provider: 'mapped',
+      isValid: true,
+      provenance: {
+        mapper: 'custom',
+      },
+      metadata: {
+        title: 'Mapped metadata',
+      },
+    });
+  });
+
   it('formats reviewable write-mode summary counts', () => {
     const report = {
       mode: 'write',
@@ -944,6 +1063,14 @@ describe('executeMetadataHydrationWrite', () => {
           canonicalId: 'mock:rate-limited',
           provider: 'mock',
           status: metadataLookupResultCategories.rateLimited,
+          detail: {
+            error: {
+              source: 'transport',
+              message: 'rate limited',
+              statusCode: 429,
+              retryAfterSeconds: 60,
+            },
+          },
         },
       ],
       metadataRecordWriteCandidates: ['mock:found'],
@@ -967,6 +1094,9 @@ describe('executeMetadataHydrationWrite', () => {
     expect(formatted).toContain('- permanent failure count: 1');
     expect(formatted).toContain('- timeout count: 1');
     expect(formatted).toContain('- rate-limit count: 1');
+    expect(formatted).toContain(
+      'mock:rate-limited (mock, rate-limited): rate limited, status 429, retry after 60s',
+    );
     expect(formatted).toContain('- skipped count: 1');
     expect(formatted).toContain('- remaining eligible records: 3');
     expect(formatted).toContain('- cache records written: 1');

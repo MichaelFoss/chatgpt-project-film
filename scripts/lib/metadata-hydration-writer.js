@@ -8,8 +8,8 @@ import { writeGeneratedJsonFile } from './json-file.js';
 import { planMetadataHydration } from './metadata-hydration-planner.js';
 import {
   classifyMetadataLookupResult,
+  createMockMetadataProvider,
   metadataLookupResultCategories,
-  mockMetadataProvider,
   omdbProvider,
 } from './metadata-providers/index.js';
 
@@ -17,6 +17,7 @@ export const metadataHydrationWriteDefaults = Object.freeze({
   defaultLimit: 25,
   hardMaxLimit: 100,
   delayMs: 0,
+  mockDelayMs: 0,
   timeoutMs: null,
   retryLimit: 0,
 });
@@ -25,12 +26,12 @@ function findProvider(providerId, providers) {
   return providers.find((provider) => provider.id === providerId);
 }
 
-function resolveDefaultProviders(providerId) {
+function resolveDefaultProviders({ providerId, mockDelayMs }) {
   if (providerId === 'omdb') {
     return [omdbProvider];
   }
 
-  return [mockMetadataProvider];
+  return [createMockMetadataProvider({ delayMs: mockDelayMs })];
 }
 
 function normalizeLimit({ limit, defaultLimit, hardMaxLimit }) {
@@ -91,6 +92,30 @@ function createMetadataRecordFromLookupResult({
   };
 }
 
+function createMetadataRecord({
+  provider,
+  canonicalId,
+  providerId,
+  result,
+  fetchedAt,
+}) {
+  if (typeof provider.toMetadataRecord === 'function') {
+    return provider.toMetadataRecord({
+      canonicalId,
+      response: result,
+      result,
+      fetchedAt,
+    });
+  }
+
+  return createMetadataRecordFromLookupResult({
+    canonicalId,
+    providerId,
+    result,
+    fetchedAt,
+  });
+}
+
 function sortMetadataCache(cache) {
   return Object.fromEntries(
     Object.entries(cache).sort(([left], [right]) =>
@@ -130,13 +155,15 @@ async function controlledLookup({
       canonicalId,
       timeoutMs: timeoutMs ?? undefined,
     });
-    lastCategory = classifyMetadataLookupResult(lastResult).category;
+    const classification = classifyMetadataLookupResult(lastResult);
+    lastCategory = classification.category;
     attemptsForLookup += 1;
     report.requestsAttempted += 1;
     report.lookupResults.push({
       canonicalId,
       provider: providerId,
       status: lastCategory,
+      detail: classification.detail,
     });
 
     if (
@@ -167,10 +194,19 @@ export async function executeMetadataHydrationWrite({
   delayMs = metadataHydrationWriteDefaults.delayMs,
   timeoutMs = metadataHydrationWriteDefaults.timeoutMs,
   retryLimit = metadataHydrationWriteDefaults.retryLimit,
+  mockDelayMs = metadataHydrationWriteDefaults.mockDelayMs,
   now = () => new Date(),
 } = {}) {
+  const effectiveMockDelayMs = normalizeNonNegativeInteger({
+    value: mockDelayMs,
+    name: '--mock-delay-ms',
+  });
   const effectiveProviders =
-    providers ?? resolveDefaultProviders(providerId);
+    providers ??
+    resolveDefaultProviders({
+      providerId,
+      mockDelayMs: effectiveMockDelayMs,
+    });
   const effectiveLimit = normalizeLimit({
     limit,
     defaultLimit,
@@ -194,6 +230,7 @@ export async function executeMetadataHydrationWrite({
     eventsPath,
     metadataCachePath,
     providers: effectiveProviders,
+    providerId,
   });
   report.mode = dryRun ? 'dry-run' : 'write';
   report.provider = providerId;
@@ -224,7 +261,6 @@ export async function executeMetadataHydrationWrite({
     const { cache } = await loadMetadataCache(metadataCachePath);
     const updatedCache = { ...cache };
     let changed = false;
-    let processedLookupCount = 0;
     let stopRequested = false;
 
     for (const lookup of candidateLookups) {
@@ -248,7 +284,6 @@ export async function executeMetadataHydrationWrite({
         timeoutMs: effectiveTimeoutMs,
         retryLimit: effectiveRetryLimit,
       });
-      processedLookupCount += 1;
 
       if (category !== metadataLookupResultCategories.found) {
         report.unresolvedLookupRecords.push({
@@ -267,7 +302,8 @@ export async function executeMetadataHydrationWrite({
         continue;
       }
 
-      const record = createMetadataRecordFromLookupResult({
+      const record = createMetadataRecord({
+        provider,
         canonicalId,
         providerId,
         result,
@@ -279,6 +315,16 @@ export async function executeMetadataHydrationWrite({
           canonicalId,
           provider: providerId,
           status: metadataLookupResultCategories.invalidResponse,
+          detail: {
+            provider: providerId,
+            canonicalId,
+            lookupKey: result.lookupKey,
+            error: {
+              source: 'application',
+              message:
+                'Provider result could not be mapped into a valid metadata cache record.',
+            },
+          },
         });
         report.unresolvedLookupRecords.push({
           canonicalId,
@@ -293,8 +339,10 @@ export async function executeMetadataHydrationWrite({
       changed = true;
     }
 
-    report.remainingEligibleRecords =
-      eligibleProviderLookups.length - processedLookupCount;
+    report.remainingEligibleRecords = eligibleProviderLookups.filter(
+      ({ canonicalId }) =>
+        !mapMetadataRecord(canonicalId, updatedCache[canonicalId]),
+    ).length;
 
     if (changed) {
       await writeGeneratedJsonFile(
