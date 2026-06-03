@@ -54,13 +54,22 @@ export async function executeMetadataEnrichment({
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
   providers = metadataProviders,
+  providerId,
+  allowDeprecatedUnsafeWrite = false,
   now = () => new Date(),
 } = {}) {
+  if (!allowDeprecatedUnsafeWrite) {
+    throw new CatalogBuildError(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
+  }
+
   const report = await planMetadataEnrichment({
     rootDir,
     eventsPath,
     metadataCachePath,
     providers,
+    providerId,
   });
   report.mode = 'execute';
 

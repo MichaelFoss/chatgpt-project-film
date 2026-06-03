@@ -265,8 +265,9 @@ until metadata hydration occurs. At the current post-import checkpoint,
 `data/metadata-cache.json` contains one enriched title and
 `data/catalog.json` contains one generated catalog record.
 
-Metadata enrichment infrastructure exists, but bulk metadata hydration
-is incomplete.
+Capped metadata hydration is the supported write workflow for filling
+`data/metadata-cache.json`. The older metadata enrichment write path is
+deprecated because it does not provide hydration request caps.
 
 ### Catalog Generation Replay Semantics
 
@@ -318,6 +319,8 @@ yarn catalog:import <path> --write
 yarn catalog:add <canonicalId> --source manual --plan
 yarn catalog:add <canonicalId> --source manual --write
 yarn catalog:sync
+yarn hydrate:metadata:plan [--provider mock|omdb]
+yarn hydrate:metadata:write --provider mock|omdb --limit <N>
 ```
 
 Import input is a JSON array. Each item must include `canonicalId` and
@@ -474,10 +477,10 @@ included in catalog state.
 
 The event stream should remain minimal.
 
-Metadata enrichment should populate descriptive fields using external
+Metadata hydration should populate descriptive fields using external
 sources and persist the results in `data/metadata-cache.json`.
 
-Metadata enrichment is separate from catalog generation. It identifies
+Metadata hydration is separate from catalog generation. It identifies
 catalog-add events whose metadata is missing, invalid, or eligible for
 refresh; performs provider lookups only when allowed by event policy and
 repository workflow; and updates metadata cache records according to the
@@ -485,6 +488,10 @@ metadata update rules.
 
 Catalog generation should consume the resulting metadata cache without
 performing lookups or modifying cache records.
+
+Hydration write mode must always be capped. Use
+`yarn hydrate:metadata:write` rather than the deprecated
+`enrich:metadata:write` path.
 
 ### OMDb
 
@@ -607,7 +614,8 @@ Provider-specific payload example:
 If no prior record exists:
 
 - store valid metadata
-- store invalid metadata or failed request details
+- report invalid metadata or failed request details without creating
+  placeholder catalog data
 
 If a valid record already exists:
 
@@ -617,7 +625,8 @@ If a valid record already exists:
 If an invalid record already exists:
 
 - newer valid metadata replaces it
-- newer invalid metadata or failed request details may replace it
+- newer invalid metadata or failed request details may be retained only
+  by an explicit conservative failure-persistence workflow
 
 ### Metadata Validity
 

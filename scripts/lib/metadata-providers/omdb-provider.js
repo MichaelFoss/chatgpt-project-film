@@ -1,3 +1,8 @@
+import {
+  createMetadataLookupResult,
+  metadataLookupResultCategories,
+} from './provider-contract.js';
+
 const imdbCanonicalIdPattern = /^imdb:(tt\d{7,})$/;
 
 function normalizeString(value) {
@@ -88,17 +93,44 @@ function createProviderResult({
   canonicalId,
   lookupKey,
   status,
-  response,
+  metadata,
   error,
 }) {
-  return {
+  return createMetadataLookupResult({
     provider: 'omdb',
     canonicalId,
     lookupKey,
     status,
-    response,
+    metadata,
     error,
-  };
+  });
+}
+
+function isOmdbNotFoundError(message) {
+  return /not found/i.test(message ?? '');
+}
+
+function isOmdbRateLimitError(message) {
+  return /limit|rate|too many/i.test(message ?? '');
+}
+
+function normalizeOmdbMetadata(response) {
+  const metadata = compactObject({
+    mediaType: mapOmdbMediaType(response.Type),
+    title: normalizeString(response.Title),
+    description: optionalOmdbString(response.Plot),
+    posterUrl: optionalOmdbString(response.Poster),
+    genres: parseOmdbGenres(response.Genre),
+    people: compactObject({
+      directors: splitPeople(response.Director),
+      writers: splitPeople(response.Writer),
+      actors: splitPeople(response.Actors),
+    }),
+    ratings: compactObject(mapOmdbRatings(response)),
+    omdb: response,
+  });
+  metadata.genres = parseOmdbGenres(response.Genre);
+  return metadata;
 }
 
 export function mapOmdbResponse({ canonicalId, lookupKey, response }) {
@@ -110,8 +142,7 @@ export function mapOmdbResponse({ canonicalId, lookupKey, response }) {
     return createProviderResult({
       canonicalId,
       lookupKey,
-      status: 'invalid',
-      response,
+      status: metadataLookupResultCategories.invalidResponse,
       error: {
         source: 'provider',
         message: 'OMDb response must be a JSON object.',
@@ -121,30 +152,36 @@ export function mapOmdbResponse({ canonicalId, lookupKey, response }) {
 
   const title = normalizeString(response.Title);
   const mediaType = mapOmdbMediaType(response.Type);
-  const hasGenre = normalizeString(response.Genre);
 
-  if (response.Response !== 'True' || !title || !hasGenre) {
+  if (response.Response !== 'True') {
+    const message = response.Error ?? 'OMDb response is not usable.';
+    const status = isOmdbNotFoundError(message)
+      ? metadataLookupResultCategories.notFound
+      : isOmdbRateLimitError(message)
+        ? metadataLookupResultCategories.rateLimited
+        : metadataLookupResultCategories.invalidResponse;
+
     return createProviderResult({
       canonicalId,
       lookupKey,
-      status: 'invalid',
-      response,
+      status,
       error: {
         source: 'provider',
-        message: response.Error ?? 'OMDb response is not usable.',
+        message,
       },
     });
   }
 
-  if (!mediaType) {
+  if (!title || !mediaType) {
     return createProviderResult({
       canonicalId,
       lookupKey,
-      status: 'invalid',
-      response,
+      status: metadataLookupResultCategories.invalidResponse,
       error: {
         source: 'provider',
-        message: `Unsupported OMDb media type: ${response.Type}.`,
+        message: !title
+          ? 'OMDb response is missing required title.'
+          : `Unsupported OMDb media type: ${response.Type}.`,
       },
     });
   }
@@ -152,8 +189,8 @@ export function mapOmdbResponse({ canonicalId, lookupKey, response }) {
   return createProviderResult({
     canonicalId,
     lookupKey,
-    status: 'valid',
-    response,
+    status: metadataLookupResultCategories.found,
+    metadata: normalizeOmdbMetadata(response),
   });
 }
 
@@ -169,18 +206,13 @@ export function createOmdbMetadataRecord({
     lookupKey,
   };
 
-  if (result.status !== 'valid') {
+  if (result.status !== metadataLookupResultCategories.found) {
     return {
       canonicalId,
       provider: 'omdb',
       isValid: false,
       lastUpdatedAt: fetchedAt,
       provenance,
-      metadata: result.response
-        ? {
-            omdb: result.response,
-          }
-        : undefined,
       request: {
         retryAttemptsCount: 0,
         error: result.error,
@@ -188,30 +220,49 @@ export function createOmdbMetadataRecord({
     };
   }
 
-  const { response } = result;
-  const metadata = compactObject({
-    mediaType: mapOmdbMediaType(response.Type),
-    title: normalizeString(response.Title),
-    description: optionalOmdbString(response.Plot),
-    posterUrl: optionalOmdbString(response.Poster),
-    genres: parseOmdbGenres(response.Genre),
-    people: compactObject({
-      directors: splitPeople(response.Director),
-      writers: splitPeople(response.Writer),
-      actors: splitPeople(response.Actors),
-    }),
-    ratings: compactObject(mapOmdbRatings(response)),
-    omdb: response,
-  });
-
   return {
     canonicalId,
     provider: 'omdb',
     isValid: true,
     lastUpdatedAt: fetchedAt,
     provenance,
-    metadata,
+    metadata: result.metadata,
   };
+}
+
+function createTimeoutSignal(timeoutMs) {
+  if (timeoutMs === undefined || timeoutMs === null) {
+    return {};
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  return { controller, signal: controller.signal, timeout };
+}
+
+function parseRetryAfterSeconds(response) {
+  const value = response.headers?.get?.('Retry-After');
+
+  if (!value || !/^[1-9]\d*$/.test(value)) {
+    return undefined;
+  }
+
+  return Number(value);
+}
+
+function classifyHttpFailure(response) {
+  if (response.status === 429) {
+    return metadataLookupResultCategories.rateLimited;
+  }
+
+  if ([408, 500, 502, 503, 504].includes(response.status)) {
+    return metadataLookupResultCategories.retryableFailure;
+  }
+
+  return metadataLookupResultCategories.permanentFailure;
 }
 
 export function createOmdbProvider({
@@ -225,14 +276,14 @@ export function createOmdbProvider({
       return extractOmdbImdbId(canonicalId) !== null;
     },
 
-    async lookup({ canonicalId }) {
+    async lookup({ canonicalId, timeoutMs } = {}) {
       const lookupKey = extractOmdbImdbId(canonicalId);
 
       if (!lookupKey) {
         return createProviderResult({
           canonicalId,
           lookupKey,
-          status: 'unsupported',
+          status: metadataLookupResultCategories.permanentFailure,
           error: {
             source: 'application',
             message: `Unsupported canonical ID for OMDb: ${canonicalId}.`,
@@ -246,7 +297,7 @@ export function createOmdbProvider({
         return createProviderResult({
           canonicalId,
           lookupKey,
-          status: 'unavailable',
+          status: metadataLookupResultCategories.permanentFailure,
           error: {
             source: 'application',
             message: 'OMDB_API_KEY is not configured.',
@@ -258,26 +309,74 @@ export function createOmdbProvider({
       url.searchParams.set('apikey', apiKey);
       url.searchParams.set('i', lookupKey);
 
-      const response = await fetchImpl(url);
+      const { signal, timeout } = createTimeoutSignal(timeoutMs);
 
-      if (!response.ok) {
+      try {
+        const response = await fetchImpl(url, { signal });
+
+        if (!response.ok) {
+          const status = classifyHttpFailure(response);
+
+          return createProviderResult({
+            canonicalId,
+            lookupKey,
+            status,
+            error: {
+              source: 'transport',
+              message: `OMDb request failed with status ${response.status}.`,
+              statusCode: response.status,
+              retryAfterSeconds:
+                status === metadataLookupResultCategories.rateLimited
+                  ? parseRetryAfterSeconds(response)
+                  : undefined,
+            },
+          });
+        }
+
+        let payload;
+
+        try {
+          payload = await response.json();
+        } catch (error) {
+          return createProviderResult({
+            canonicalId,
+            lookupKey,
+            status: metadataLookupResultCategories.invalidResponse,
+            error: {
+              source: 'provider',
+              message: `Unable to parse OMDb response JSON: ${error.message}`,
+            },
+          });
+        }
+
+        return mapOmdbResponse({
+          canonicalId,
+          lookupKey,
+          response: payload,
+        });
+      } catch (error) {
+        const timedOut =
+          error?.name === 'AbortError' ||
+          error?.name === 'TimeoutError';
+
         return createProviderResult({
           canonicalId,
           lookupKey,
-          status: 'invalid',
+          status: timedOut
+            ? metadataLookupResultCategories.timedOut
+            : metadataLookupResultCategories.retryableFailure,
           error: {
             source: 'transport',
-            message: `OMDb request failed with status ${response.status}.`,
-            statusCode: response.status,
+            message: timedOut
+              ? 'OMDb request exceeded configured timeout.'
+              : `OMDb transport failure: ${error.message}`,
           },
         });
+      } finally {
+        if (timeout) {
+          clearTimeout(timeout);
+        }
       }
-
-      return mapOmdbResponse({
-        canonicalId,
-        lookupKey,
-        response: await response.json(),
-      });
     },
 
     toMetadataRecord({ canonicalId, response, fetchedAt }) {

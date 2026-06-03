@@ -140,6 +140,24 @@ describe('syncCatalog', () => {
     expect(report.catalogBuildSkipped).toBe(false);
   });
 
+  it('does not run deprecated unsafe enrichment by default', async () => {
+    const rootDir = await createTempProject();
+    const fakeProvider = createFakeMetadataProvider();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await syncCatalog({
+      rootDir,
+      providers: [fakeProvider],
+    });
+
+    expect(report.catalogBuildSkipped).toBe(true);
+    expect(report.metadataEnrichmentReport.fatalErrors).toEqual([
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    ]);
+    expect(fakeProvider.calls.lookup).toEqual([]);
+  });
+
   it('writes metadata cache when fake provider fills missing metadata', async () => {
     const rootDir = await createTempProject();
     const fakeProvider = createFakeMetadataProvider();
@@ -149,6 +167,7 @@ describe('syncCatalog', () => {
     const report = await syncCatalog({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeEnrichment: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = await readJson(rootDir, 'data/metadata-cache.json');
@@ -180,6 +199,7 @@ describe('syncCatalog', () => {
     const report = await syncCatalog({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeEnrichment: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const catalog = await readJson(rootDir, 'data/catalog.json');
@@ -230,6 +250,7 @@ describe('syncCatalog', () => {
     const report = await syncCatalog({
       rootDir,
       providers: [unavailableProvider()],
+      allowDeprecatedUnsafeEnrichment: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const catalog = await readJson(rootDir, 'data/catalog.json');
@@ -266,6 +287,7 @@ describe('syncCatalog', () => {
     await syncCatalog({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeEnrichment: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const after = await fs.readFile(eventsPath, 'utf8');

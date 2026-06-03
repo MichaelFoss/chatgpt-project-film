@@ -22,12 +22,18 @@ export {
 export function resolveMetadataEnrichmentCommand(args = process.argv) {
   const command = args[2];
 
-  if (command === 'plan' || command === 'write') {
+  if (command === 'plan') {
     return command;
   }
 
+  if (command === 'write') {
+    throw new CatalogBuildError(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
+  }
+
   throw new CatalogBuildError(
-    'Metadata enrichment command must be "plan" or "write".',
+    'Metadata enrichment command must be "plan".',
   );
 }
 

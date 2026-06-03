@@ -8,19 +8,20 @@ import {
   loadMetadataCache,
   mapMetadataRecord,
 } from './catalog-metadata.js';
-import { createMetadataEnrichmentReport } from './metadata-enrichment-report.js';
 import {
   metadataProviders,
+  mockMetadataProvider,
   selectMetadataProvider,
 } from './metadata-providers/index.js';
+import { createMetadataHydrationPlanReport } from './metadata-hydration-report.js';
 
-function addPlannedLookup(
+function addLookupPlan({
   report,
   canonicalId,
   reason,
   providers,
   providerId,
-) {
+}) {
   const { provider, reason: selectionReason } = selectMetadataProvider({
     canonicalId,
     providers,
@@ -28,45 +29,54 @@ function addPlannedLookup(
   });
 
   if (!provider) {
-    const item = {
+    report.ineligibleLookups.push({
       canonicalId,
       reason,
-    };
-
-    if (providerId) {
-      item.requestedProvider = providerId;
-      item.selectionReason = selectionReason;
-    }
-
-    report.noSupportingProviderConfigured.push(item);
+      selectionReason,
+    });
     return;
   }
 
-  report.plannedLookups.push({
+  report.eligibleLookups.push({
     canonicalId,
     reason,
     provider: provider.id,
   });
 }
 
-export async function planMetadataEnrichment({
+function resolvePlanningProviders({ providers, providerId }) {
+  if (providers) {
+    return providers;
+  }
+
+  if (providerId === 'mock') {
+    return [mockMetadataProvider];
+  }
+
+  return metadataProviders;
+}
+
+export async function planMetadataHydration({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
   metadataCachePath = path.join(rootDir, 'data', 'metadata-cache.json'),
-  providers = metadataProviders,
+  providers,
   providerId,
 } = {}) {
-  const report = createMetadataEnrichmentReport();
+  const report = createMetadataHydrationPlanReport();
+  const effectiveProviders = resolvePlanningProviders({
+    providers,
+    providerId,
+  });
 
   try {
     const events = await readEvents(eventsPath);
-    report.eventsRead = events.length;
+    report.totalCatalogEvents = events.length;
 
     const replay = replayCatalogAddEvents(events);
-    report.uniqueCatalogAdds = replay.catalogAdds.length;
-    report.duplicateCatalogAddsSkipped =
-      replay.duplicateCatalogAdds.length;
-    report.duplicateCatalogAdds = replay.duplicateCatalogAdds;
+    report.uniqueCanonicalCatalogIds = replay.catalogAdds.length;
+    report.duplicateEventCount = replay.duplicateCatalogAdds.length;
+    report.duplicateCatalogIds = replay.duplicateCatalogAdds;
 
     const { cache, missingFile } =
       await loadMetadataCache(metadataCachePath);
@@ -76,39 +86,40 @@ export async function planMetadataEnrichment({
       const { canonicalId, metadataLookup } = catalogAdd;
 
       if (metadataLookup === 'skip') {
-        report.skippedMetadataLookup.push(canonicalId);
+        report.skippedRecords.push({
+          canonicalId,
+          metadataLookup,
+        });
         continue;
       }
 
       const record = cache[canonicalId];
 
       if (!record) {
-        report.missingMetadata.push(canonicalId);
-        addPlannedLookup(
+        report.missingMetadataRecords.push(canonicalId);
+        addLookupPlan({
           report,
           canonicalId,
-          'missing',
-          providers,
+          reason: 'missing',
+          providers: effectiveProviders,
           providerId,
-        );
+        });
         continue;
       }
 
-      const mapped = mapMetadataRecord(canonicalId, record);
-
-      if (!mapped) {
-        report.invalidMetadata.push(canonicalId);
-        addPlannedLookup(
+      if (!mapMetadataRecord(canonicalId, record)) {
+        report.invalidCacheRecords.push(canonicalId);
+        addLookupPlan({
           report,
           canonicalId,
-          'invalid',
-          providers,
+          reason: 'invalid-cache',
+          providers: effectiveProviders,
           providerId,
-        );
+        });
         continue;
       }
 
-      report.alreadyValidMetadata.push(canonicalId);
+      report.existingValidMetadataRecords.push(canonicalId);
     }
 
     return report;

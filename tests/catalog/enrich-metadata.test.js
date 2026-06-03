@@ -101,19 +101,21 @@ describe('planMetadataEnrichment', () => {
         'plan',
       ]),
     ).toBe('plan');
-    expect(
+    expect(() =>
       resolveMetadataEnrichmentCommand([
         'node',
         'scripts/enrich-metadata.js',
         'write',
       ]),
-    ).toBe('write');
+    ).toThrow(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
     expect(() =>
       resolveMetadataEnrichmentCommand([
         'node',
         'scripts/enrich-metadata.js',
       ]),
-    ).toThrow('Metadata enrichment command must be "plan" or "write".');
+    ).toThrow('Metadata enrichment command must be "plan".');
   });
 
   it('plans missing metadata for lookup', async () => {
@@ -157,6 +159,53 @@ describe('planMetadataEnrichment', () => {
         canonicalId: 'imdb:tt0112573',
         reason: 'missing',
         provider: 'omdb',
+      },
+    ]);
+  });
+
+  it('plans lookups with a requested supporting provider ID', async () => {
+    const rootDir = await createTempProject();
+    const firstProvider = createFakeMetadataProvider();
+    const requestedProvider = {
+      ...createFakeMetadataProvider(),
+      id: 'requested',
+    };
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataEnrichment({
+      rootDir,
+      providers: [firstProvider, requestedProvider],
+      providerId: 'requested',
+    });
+
+    expect(report.plannedLookups).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        provider: 'requested',
+      },
+    ]);
+  });
+
+  it('reports requested provider IDs that do not support canonical IDs', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {});
+
+    const report = await planMetadataEnrichment({
+      rootDir,
+      providers: [notImplementedProvider],
+      providerId: 'not-implemented',
+    });
+
+    expect(report.plannedLookups).toEqual([]);
+    expect(report.noSupportingProviderConfigured).toEqual([
+      {
+        canonicalId: 'imdb:tt0112573',
+        reason: 'missing',
+        requestedProvider: 'not-implemented',
+        selectionReason: 'requested-provider-does-not-support-id',
       },
     ]);
   });
@@ -305,6 +354,12 @@ describe('planMetadataEnrichment', () => {
 });
 
 describe('executeMetadataEnrichment', () => {
+  it('rejects legacy write mode unless explicitly opted in by tests', async () => {
+    await expect(executeMetadataEnrichment()).rejects.toThrow(
+      'Metadata enrichment write mode is deprecated. Use capped hydration instead: yarn hydrate:metadata:write --provider mock --limit 25',
+    );
+  });
+
   it('writes metadata-cache.json for missing metadata', async () => {
     const rootDir = await createTempProject();
     const fakeProvider = createFakeMetadataProvider();
@@ -314,6 +369,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
 
@@ -395,6 +451,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [unavailableProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = JSON.parse(
@@ -438,6 +495,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [provider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const cache = JSON.parse(
@@ -485,6 +543,7 @@ describe('executeMetadataEnrichment', () => {
     const report = await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
     const after = await readProjectFiles(rootDir);
@@ -505,6 +564,7 @@ describe('executeMetadataEnrichment', () => {
     await executeMetadataEnrichment({
       rootDir,
       providers: [fakeProvider],
+      allowDeprecatedUnsafeWrite: true,
       now: () => new Date('2026-05-30T12:00:00.000Z'),
     });
 

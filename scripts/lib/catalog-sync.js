@@ -71,6 +71,7 @@ export async function syncCatalog({
   outputPath = path.join(rootDir, 'data', 'catalog.json'),
   providers,
   now,
+  allowDeprecatedUnsafeEnrichment = false,
   enrichmentExecutor = executeMetadataEnrichment,
   catalogBuilder = buildCatalog,
 } = {}) {
@@ -82,6 +83,7 @@ export async function syncCatalog({
       eventsPath,
       metadataCachePath,
       providers,
+      allowDeprecatedUnsafeWrite: allowDeprecatedUnsafeEnrichment,
       now,
     });
   } catch (error) {

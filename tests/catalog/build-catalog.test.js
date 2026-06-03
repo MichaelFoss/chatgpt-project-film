@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CatalogBuildError } from '../../scripts/lib/catalog-build-error.js';
 import { buildCatalog } from '../../scripts/lib/catalog-builder.js';
 import { formatReport } from '../../scripts/lib/catalog-report.js';
@@ -183,6 +183,54 @@ describe('buildCatalog', () => {
       title: 'Normalized Braveheart',
       genres: ['Drama'],
     });
+  });
+
+  it('builds catalog offline without provider calls or API keys', async () => {
+    const rootDir = await createTempProject();
+    const originalApiKey = process.env.OMDB_API_KEY;
+    const fetchImpl = vi.fn(async () => {
+      throw new Error(
+        'Network access is not allowed during catalog build.',
+      );
+    });
+    vi.stubGlobal('fetch', fetchImpl);
+    process.env.OMDB_API_KEY = 'unused-test-key';
+
+    await writeEvents(rootDir, [catalogAdd()]);
+    await writeMetadata(rootDir, {
+      'imdb:tt0112573': {
+        canonicalId: 'imdb:tt0112573',
+        provider: 'omdb',
+        isValid: true,
+        lastUpdatedAt: '2026-05-29T00:00:00.000Z',
+        metadata: {
+          mediaType: 'movie',
+          title: 'Offline Braveheart',
+          genres: ['Drama'],
+        },
+      },
+    });
+
+    try {
+      const report = await buildCatalog({ rootDir });
+      const catalog = await readCatalog(rootDir);
+
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(report.catalogRecordsWritten).toBe(1);
+      expect(catalog['imdb:tt0112573']).toEqual({
+        canonicalId: 'imdb:tt0112573',
+        mediaType: 'movie',
+        title: 'Offline Braveheart',
+        genres: ['Drama'],
+      });
+    } finally {
+      if (originalApiKey === undefined) {
+        delete process.env.OMDB_API_KEY;
+      } else {
+        process.env.OMDB_API_KEY = originalApiKey;
+      }
+      vi.unstubAllGlobals();
+    }
   });
 
   it('valid replay writes expected catalog output', async () => {

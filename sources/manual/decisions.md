@@ -64,12 +64,24 @@ improves.
 
 ### 2026-05-30: Add Catalog Sync as Phase Orchestration
 
+Status: superseded by the 2026-06-03 uncapped enrichment deprecation.
+
 `yarn catalog:sync` should run metadata enrichment write behavior before
 catalog generation for the common cache-and-build workflow.
 
 The command should remain orchestration only. It must not append catalog
 events, perform catalog import/add behavior, or replace standalone
 `yarn enrich:metadata:write` and `yarn build:catalog` commands.
+
+### 2026-06-03: Deprecate Uncapped Metadata Enrichment Writes
+
+The uncapped `enrich:metadata:write` path is deprecated in favor of
+capped metadata hydration.
+
+Use `yarn hydrate:metadata:write` for metadata cache writes. Run
+`yarn build:catalog` separately after inspecting the metadata cache
+diff. `yarn catalog:sync` should not perform uncapped metadata
+enrichment by default.
 
 ### 2026-05-30: Name Catalog Event Stream Explicitly
 

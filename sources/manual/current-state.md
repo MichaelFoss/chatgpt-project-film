@@ -35,21 +35,21 @@ conversation or import
   -> ChatGPT Project uploads
 ```
 
-For catalog data, metadata enrichment and catalog generation are
+For catalog data, capped metadata hydration and catalog generation are
 separate phases:
 
 ```text
 events/catalog.events.ndjson
-  -> identify missing metadata
-  -> provider lookups
+  -> capped provider lookups
   -> data/metadata-cache.json
 
 events/catalog.events.ndjson + data/metadata-cache.json
   -> data/catalog.json
 ```
 
-`yarn catalog:sync` orchestrates those two phases in order for the
-common write-and-build workflow.
+`yarn hydrate:metadata:write` is the supported metadata-cache write
+path. `yarn catalog:sync` no longer performs uncapped metadata
+enrichment by default.
 
 Catalog generation is deterministic from `events/catalog.events.ndjson`
 and `data/metadata-cache.json`. It should run offline, must not perform
