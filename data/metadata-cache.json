@@ -14673,6 +14673,65 @@
       }
     }
   },
+  "imdb:tt1156398": {
+    "canonicalId": "imdb:tt1156398",
+    "provider": "omdb",
+    "isValid": true,
+    "lastUpdatedAt": "2026-06-03T19:03:24.263Z",
+    "provenance": {
+      "source": "provider-lookup",
+      "provider": "omdb",
+      "lookupKey": "tt1156398"
+    },
+    "metadata": {
+      "mediaType": "movie",
+      "title": "Zombieland",
+      "description": "A shy student trying to reach his family in Ohio, a gun-toting bruiser in search of the last Twinkie and a pair of sisters striving to get to an amusement park join forces in a trek across a zombie-filled America.",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BMTU5MDg0NTQ1N15BMl5BanBnXkFtZTcwMjA4Mjg3Mg@@._V1_SX300.jpg",
+      "genres": ["Action", "Comedy", "Horror"],
+      "people": {
+        "directors": ["Ruben Fleischer"],
+        "writers": ["Rhett Reese", "Paul Wernick"],
+        "actors": ["Jesse Eisenberg", "Emma Stone", "Woody Harrelson"]
+      },
+      "ratings": {
+        "imdb": "7.5",
+        "rottenTomatoes": { "critics": "89%" },
+        "metacritic": "73"
+      },
+      "omdb": {
+        "Title": "Zombieland",
+        "Year": "2009",
+        "Rated": "R",
+        "Released": "02 Oct 2009",
+        "Runtime": "88 min",
+        "Genre": "Action, Comedy, Horror",
+        "Director": "Ruben Fleischer",
+        "Writer": "Rhett Reese, Paul Wernick",
+        "Actors": "Jesse Eisenberg, Emma Stone, Woody Harrelson",
+        "Plot": "A shy student trying to reach his family in Ohio, a gun-toting bruiser in search of the last Twinkie and a pair of sisters striving to get to an amusement park join forces in a trek across a zombie-filled America.",
+        "Language": "English, Spanish, French",
+        "Country": "United States",
+        "Awards": "10 wins & 29 nominations total",
+        "Poster": "https://m.media-amazon.com/images/M/MV5BMTU5MDg0NTQ1N15BMl5BanBnXkFtZTcwMjA4Mjg3Mg@@._V1_SX300.jpg",
+        "Ratings": [
+          { "Source": "Internet Movie Database", "Value": "7.5/10" },
+          { "Source": "Rotten Tomatoes", "Value": "89%" },
+          { "Source": "Metacritic", "Value": "73/100" }
+        ],
+        "Metascore": "73",
+        "imdbRating": "7.5",
+        "imdbVotes": "663,399",
+        "imdbID": "tt1156398",
+        "Type": "movie",
+        "DVD": "N/A",
+        "BoxOffice": "$75,590,286",
+        "Production": "N/A",
+        "Website": "N/A",
+        "Response": "True"
+      }
+    }
+  },
   "imdb:tt1160419": {
     "canonicalId": "imdb:tt1160419",
     "provider": "omdb",
@@ -16360,6 +16419,65 @@
         "Type": "movie",
         "DVD": "N/A",
         "BoxOffice": "$6,217,733",
+        "Production": "N/A",
+        "Website": "N/A",
+        "Response": "True"
+      }
+    }
+  },
+  "imdb:tt12361974": {
+    "canonicalId": "imdb:tt12361974",
+    "provider": "omdb",
+    "isValid": true,
+    "lastUpdatedAt": "2026-06-03T19:03:24.196Z",
+    "provenance": {
+      "source": "provider-lookup",
+      "provider": "omdb",
+      "lookupKey": "tt12361974"
+    },
+    "metadata": {
+      "mediaType": "movie",
+      "title": "Zack Snyder's Justice League",
+      "description": "Determined to ensure that Superman's ultimate sacrifice wasn't in vain, Bruce Wayne recruits a team of metahumans to protect the world from an approaching threat of catastrophic proportions.",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BNDA0MzM5YTctZTU2My00NGQ5LWE2NTEtNDM0MjZmMDBkOTZkXkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg",
+      "genres": ["Action", "Adventure", "Fantasy"],
+      "people": {
+        "directors": ["Zack Snyder"],
+        "writers": ["Chris Terrio", "Zack Snyder", "Will Beall"],
+        "actors": ["Henry Cavill", "Ben Affleck", "Gal Gadot"]
+      },
+      "ratings": {
+        "imdb": "7.9",
+        "rottenTomatoes": { "critics": "71%" },
+        "metacritic": "54"
+      },
+      "omdb": {
+        "Title": "Zack Snyder's Justice League",
+        "Year": "2021",
+        "Rated": "R",
+        "Released": "18 Mar 2021",
+        "Runtime": "242 min",
+        "Genre": "Action, Adventure, Fantasy",
+        "Director": "Zack Snyder",
+        "Writer": "Chris Terrio, Zack Snyder, Will Beall",
+        "Actors": "Henry Cavill, Ben Affleck, Gal Gadot",
+        "Plot": "Determined to ensure that Superman's ultimate sacrifice wasn't in vain, Bruce Wayne recruits a team of metahumans to protect the world from an approaching threat of catastrophic proportions.",
+        "Language": "English, Icelandic, French",
+        "Country": "United States",
+        "Awards": "5 wins & 6 nominations total",
+        "Poster": "https://m.media-amazon.com/images/M/MV5BNDA0MzM5YTctZTU2My00NGQ5LWE2NTEtNDM0MjZmMDBkOTZkXkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg",
+        "Ratings": [
+          { "Source": "Internet Movie Database", "Value": "7.9/10" },
+          { "Source": "Rotten Tomatoes", "Value": "71%" },
+          { "Source": "Metacritic", "Value": "54/100" }
+        ],
+        "Metascore": "54",
+        "imdbRating": "7.9",
+        "imdbVotes": "472,346",
+        "imdbID": "tt12361974",
+        "Type": "movie",
+        "DVD": "N/A",
+        "BoxOffice": "N/A",
         "Production": "N/A",
         "Website": "N/A",
         "Response": "True"
@@ -21541,6 +21659,69 @@
       }
     }
   },
+  "imdb:tt1608290": {
+    "canonicalId": "imdb:tt1608290",
+    "provider": "omdb",
+    "isValid": true,
+    "lastUpdatedAt": "2026-06-03T19:03:24.333Z",
+    "provenance": {
+      "source": "provider-lookup",
+      "provider": "omdb",
+      "lookupKey": "tt1608290"
+    },
+    "metadata": {
+      "mediaType": "movie",
+      "title": "Zoolander 2",
+      "description": "Derek and Hansel are lured into modelling again, in Rome, where they find themselves the target of a sinister conspiracy.",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BZjM2NDEwOWQtOGMyOS00ZjVhLWEyNDUtNzQ0M2Y5ODFhNWE5XkEyXkFqcGc@._V1_SX300.jpg",
+      "genres": ["Action", "Adventure", "Comedy"],
+      "people": {
+        "directors": ["Ben Stiller"],
+        "writers": [
+          "Justin Theroux",
+          "Ben Stiller",
+          "Nicholas Stoller"
+        ],
+        "actors": ["Ben Stiller", "Owen Wilson", "Penélope Cruz"]
+      },
+      "ratings": {
+        "imdb": "4.7",
+        "rottenTomatoes": { "critics": "21%" },
+        "metacritic": "34"
+      },
+      "omdb": {
+        "Title": "Zoolander 2",
+        "Year": "2016",
+        "Rated": "PG-13",
+        "Released": "12 Feb 2016",
+        "Runtime": "101 min",
+        "Genre": "Action, Adventure, Comedy",
+        "Director": "Ben Stiller",
+        "Writer": "Justin Theroux, Ben Stiller, Nicholas Stoller",
+        "Actors": "Ben Stiller, Owen Wilson, Penélope Cruz",
+        "Plot": "Derek and Hansel are lured into modelling again, in Rome, where they find themselves the target of a sinister conspiracy.",
+        "Language": "English, Italian, Spanish",
+        "Country": "United States",
+        "Awards": "7 wins & 17 nominations total",
+        "Poster": "https://m.media-amazon.com/images/M/MV5BZjM2NDEwOWQtOGMyOS00ZjVhLWEyNDUtNzQ0M2Y5ODFhNWE5XkEyXkFqcGc@._V1_SX300.jpg",
+        "Ratings": [
+          { "Source": "Internet Movie Database", "Value": "4.7/10" },
+          { "Source": "Rotten Tomatoes", "Value": "21%" },
+          { "Source": "Metacritic", "Value": "34/100" }
+        ],
+        "Metascore": "34",
+        "imdbRating": "4.7",
+        "imdbVotes": "81,120",
+        "imdbID": "tt1608290",
+        "Type": "movie",
+        "DVD": "N/A",
+        "BoxOffice": "$28,848,693",
+        "Production": "N/A",
+        "Website": "N/A",
+        "Response": "True"
+      }
+    }
+  },
   "imdb:tt1615147": {
     "canonicalId": "imdb:tt1615147",
     "provider": "omdb",
@@ -25096,6 +25277,65 @@
         "Type": "movie",
         "DVD": "N/A",
         "BoxOffice": "$162,805,434",
+        "Production": "N/A",
+        "Website": "N/A",
+        "Response": "True"
+      }
+    }
+  },
+  "imdb:tt1853739": {
+    "canonicalId": "imdb:tt1853739",
+    "provider": "omdb",
+    "isValid": true,
+    "lastUpdatedAt": "2026-06-03T19:03:24.124Z",
+    "provenance": {
+      "source": "provider-lookup",
+      "provider": "omdb",
+      "lookupKey": "tt1853739"
+    },
+    "metadata": {
+      "mediaType": "movie",
+      "title": "You're Next",
+      "description": "When the Davison family comes under attack during their wedding anniversary getaway, the gang of mysterious killers soon learns that one of the victims harbors a secret talent for fighting back.",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BMTQwODAxMTE1NF5BMl5BanBnXkFtZTcwNTQ0MjY3OQ@@._V1_SX300.jpg",
+      "genres": ["Drama", "Horror", "Mystery"],
+      "people": {
+        "directors": ["Adam Wingard"],
+        "writers": ["Simon Barrett"],
+        "actors": ["Sharni Vinson", "Joe Swanberg", "AJ Bowen"]
+      },
+      "ratings": {
+        "imdb": "6.6",
+        "rottenTomatoes": { "critics": "79%" },
+        "metacritic": "66"
+      },
+      "omdb": {
+        "Title": "You're Next",
+        "Year": "2011",
+        "Rated": "R",
+        "Released": "23 Aug 2013",
+        "Runtime": "95 min",
+        "Genre": "Drama, Horror, Mystery",
+        "Director": "Adam Wingard",
+        "Writer": "Simon Barrett",
+        "Actors": "Sharni Vinson, Joe Swanberg, AJ Bowen",
+        "Plot": "When the Davison family comes under attack during their wedding anniversary getaway, the gang of mysterious killers soon learns that one of the victims harbors a secret talent for fighting back.",
+        "Language": "English",
+        "Country": "United States, United Kingdom",
+        "Awards": "11 wins & 20 nominations total",
+        "Poster": "https://m.media-amazon.com/images/M/MV5BMTQwODAxMTE1NF5BMl5BanBnXkFtZTcwNTQ0MjY3OQ@@._V1_SX300.jpg",
+        "Ratings": [
+          { "Source": "Internet Movie Database", "Value": "6.6/10" },
+          { "Source": "Rotten Tomatoes", "Value": "79%" },
+          { "Source": "Metacritic", "Value": "66/100" }
+        ],
+        "Metascore": "66",
+        "imdbRating": "6.6",
+        "imdbVotes": "116,989",
+        "imdbID": "tt1853739",
+        "Type": "movie",
+        "DVD": "N/A",
+        "BoxOffice": "$18,494,006",
         "Production": "N/A",
         "Website": "N/A",
         "Response": "True"
