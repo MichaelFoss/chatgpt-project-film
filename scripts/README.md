@@ -65,6 +65,26 @@ Metadata hydration and catalog rebuild are separate review steps:
 Catalog generation must not read provider API keys or contact metadata
 providers. Hydration write mode must not write `data/catalog.json`.
 
+Real-provider hydration should be run cautiously and manually. OMDb free
+API keys are limited to 1,000 requests per day, so normal OMDb runs
+should use conservative caps, starting with a small cap such as 10 or
+25:
+
+```sh
+OMDB_API_KEY=... yarn hydrate:metadata:write --provider omdb --limit 10
+```
+
+If a run reports provider rate limiting or the daily OMDb limit is
+reached, stop real-provider hydration for the day. Resume on the next
+day by running `yarn hydrate:metadata:plan`, then another capped
+`yarn hydrate:metadata:write --provider omdb --limit 10` or `--limit 25`
+run. Each real run should be followed by inspecting the
+`data/metadata-cache.json` diff before rebuilding `data/catalog.json`.
+
+Do not run real-provider hydration automatically in tests or unattended
+workflows. Use `yarn hydrate:metadata:write --provider mock --limit 25`
+for local workflow testing without network access or API keys.
+
 `yarn catalog:sync` runs `enrich:metadata:write` behavior followed by
 `build:catalog` behavior. It does not append catalog events, perform
 catalog import/add, or replace the standalone enrichment and build

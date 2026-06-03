@@ -247,7 +247,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 10 - Real Hydration Safety Documentation
 
-- [ ] Document safe real-provider hydration workflow:
+- [x] Document safe real-provider hydration workflow:
   - Document that OMDb is limited to 1,000 requests per day on the free
     tier.
   - Document that normal real runs should use conservative caps.
