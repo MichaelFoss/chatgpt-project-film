@@ -142,7 +142,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 5 - Cache Update Semantics
 
-- [ ] Implement durable metadata cache update behavior:
+- [x] Implement durable metadata cache update behavior:
   - Valid provider results create metadata cache records.
   - Existing valid metadata records are preserved by default.
   - Existing valid metadata records must not be replaced by failures.

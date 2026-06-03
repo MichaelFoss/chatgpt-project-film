@@ -22,6 +22,7 @@ export function createMetadataHydrationPlanReport() {
     metadataRecordWriteCandidates: [],
     metadataRecordsWritten: [],
     remainingEligibleRecords: 0,
+    unresolvedLookupRecords: [],
     filesWritten: [],
     fatalErrors: [],
   };
@@ -131,6 +132,15 @@ export function formatMetadataHydrationPlanReport(report) {
     lines.push(
       `- remaining eligible records: ${report.remainingEligibleRecords}`,
     );
+    lines.push(
+      `- unresolved lookup records: ${report.unresolvedLookupRecords.length}`,
+    );
+
+    for (const item of report.unresolvedLookupRecords) {
+      lines.push(
+        `  - ${item.canonicalId} (${item.provider}, ${item.status})`,
+      );
+    }
   }
 
   if (report.fatalErrors.length > 0) {

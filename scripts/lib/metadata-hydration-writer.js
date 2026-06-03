@@ -1,5 +1,10 @@
 import path from 'node:path';
 import { CatalogBuildError } from './catalog-build-error.js';
+import {
+  loadMetadataCache,
+  mapMetadataRecord,
+} from './catalog-metadata.js';
+import { writeGeneratedJsonFile } from './json-file.js';
 import { planMetadataHydration } from './metadata-hydration-planner.js';
 import {
   classifyMetadataLookupResult,
@@ -42,6 +47,34 @@ function normalizeLimit({ limit, defaultLimit, hardMaxLimit }) {
   return effectiveLimit;
 }
 
+function createMetadataRecordFromLookupResult({
+  canonicalId,
+  providerId,
+  result,
+  fetchedAt,
+}) {
+  return {
+    canonicalId,
+    provider: providerId,
+    isValid: true,
+    lastUpdatedAt: fetchedAt,
+    provenance: {
+      source: 'provider-lookup',
+      provider: providerId,
+      lookupKey: result.lookupKey,
+    },
+    metadata: result.metadata,
+  };
+}
+
+function sortMetadataCache(cache) {
+  return Object.fromEntries(
+    Object.entries(cache).sort(([left], [right]) =>
+      left.localeCompare(right),
+    ),
+  );
+}
+
 export async function executeMetadataHydrationWrite({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
@@ -53,6 +86,7 @@ export async function executeMetadataHydrationWrite({
   dryRun = false,
   defaultLimit = metadataHydrationWriteDefaults.defaultLimit,
   hardMaxLimit = metadataHydrationWriteDefaults.hardMaxLimit,
+  now = () => new Date(),
 } = {}) {
   assertMockProviderOnly(providerId);
 
@@ -84,19 +118,27 @@ export async function executeMetadataHydrationWrite({
       );
     }
 
-    const eligibleMissingLookups = report.eligibleLookups.filter(
+    const eligibleProviderLookups = report.eligibleLookups.filter(
       (item) =>
-        item.reason === 'missing' && item.provider === providerId,
+        ['missing', 'invalid-cache'].includes(item.reason) &&
+        item.provider === providerId,
     );
     const candidateLookups = targetCanonicalId
-      ? eligibleMissingLookups.filter(
+      ? eligibleProviderLookups.filter(
           (item) => item.canonicalId === targetCanonicalId,
         )
-      : eligibleMissingLookups;
+      : eligibleProviderLookups;
     const cappedLookups = candidateLookups.slice(0, effectiveLimit);
+    const { cache } = await loadMetadataCache(metadataCachePath);
+    const updatedCache = { ...cache };
+    let changed = false;
 
     for (const lookup of cappedLookups) {
       const { canonicalId } = lookup;
+
+      if (mapMetadataRecord(canonicalId, updatedCache[canonicalId])) {
+        continue;
+      }
 
       const result = await provider.lookup({ canonicalId });
       const { category } = classifyMetadataLookupResult(result);
@@ -108,13 +150,56 @@ export async function executeMetadataHydrationWrite({
       });
 
       if (category !== metadataLookupResultCategories.found) {
+        report.unresolvedLookupRecords.push({
+          canonicalId,
+          provider: providerId,
+          status: category,
+        });
         continue;
       }
 
       report.metadataRecordWriteCandidates.push(canonicalId);
+
+      if (dryRun) {
+        continue;
+      }
+
+      const record = createMetadataRecordFromLookupResult({
+        canonicalId,
+        providerId,
+        result,
+        fetchedAt: now().toISOString(),
+      });
+
+      if (!mapMetadataRecord(canonicalId, record)) {
+        report.lookupResults.push({
+          canonicalId,
+          provider: providerId,
+          status: metadataLookupResultCategories.invalidResponse,
+        });
+        report.unresolvedLookupRecords.push({
+          canonicalId,
+          provider: providerId,
+          status: metadataLookupResultCategories.invalidResponse,
+        });
+        continue;
+      }
+
+      updatedCache[canonicalId] = record;
+      report.metadataRecordsWritten.push(canonicalId);
+      changed = true;
     }
 
-    report.remainingEligibleRecords = eligibleMissingLookups.length;
+    report.remainingEligibleRecords =
+      eligibleProviderLookups.length - cappedLookups.length;
+
+    if (changed) {
+      await writeGeneratedJsonFile(
+        metadataCachePath,
+        sortMetadataCache(updatedCache),
+      );
+      report.filesWritten.push(metadataCachePath);
+    }
 
     return report;
   } catch (error) {
