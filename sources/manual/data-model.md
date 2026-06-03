@@ -261,9 +261,12 @@ Given the same `events/catalog.events.ndjson` and
 entirely offline.
 
 The generated `data/catalog.json` output is expected to remain sparse
-until metadata hydration occurs. At the current post-import checkpoint,
-`data/metadata-cache.json` contains one enriched title and
-`data/catalog.json` contains one generated catalog record.
+until metadata hydration occurs. At the current 2026-06-03 checkpoint,
+the completed Plex import has produced 705 catalog event IDs. A small
+real OMDb validation succeeded for 10 records, and `data/catalog.json`
+currently contains 11 generated catalog records with 694 catalog IDs
+still missing metadata. Production metadata hydration has not yet been
+performed.
 
 Capped metadata hydration is the supported write workflow for filling
 `data/metadata-cache.json`. The older metadata enrichment write path is

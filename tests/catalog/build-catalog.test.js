@@ -142,13 +142,16 @@ describe('buildCatalog', () => {
 
     expect(report.missingMetadata).not.toContain('imdb:tt0112573');
     expect(report.missingMetadata).toHaveLength(
-      report.uniqueCatalogAdds - 1,
+      report.uniqueCatalogAdds - report.catalogRecordsWritten,
     );
     expect(report.invalidMetadata).toEqual([]);
-    expect(report.catalogRecordsWritten).toBe(1);
-    expect(catalog).toEqual({
-      'imdb:tt0112573': expectedBraveheartCatalogRecord,
-    });
+    expect(report.catalogRecordsWritten).toBe(
+      Object.keys(catalog).length,
+    );
+    expect(report.catalogRecordsWritten).toBeGreaterThan(0);
+    expect(catalog['imdb:tt0112573']).toEqual(
+      expectedBraveheartCatalogRecord,
+    );
   });
 
   it('maps provider-backed records from normalized metadata without provider payloads', async () => {

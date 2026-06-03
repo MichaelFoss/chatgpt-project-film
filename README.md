@@ -114,6 +114,7 @@ cp .env.example .env
 Set these values in `.env`:
 
 ```bash
+OMDB_API_KEY=your-omdb-api-key
 PLEX_URL=http://your-plex-server:32400
 PLEX_TOKEN=your-plex-token
 ```
@@ -123,6 +124,12 @@ Then run:
 ```bash
 yarn plex:plan
 ```
+
+Plex import is complete at the current checkpoint, with 705 catalog
+event IDs. OMDb real-provider validation has succeeded for 10 records,
+and `data/catalog.json` currently contains 11 records with 694 catalog
+IDs still missing metadata. Production metadata hydration and runtime
+source generation have not yet been performed.
 
 The build workflow:
 

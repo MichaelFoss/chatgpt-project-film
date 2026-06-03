@@ -1,7 +1,7 @@
 ---
 title: Current State
 status: current
-last_updated: 2026-06-01
+last_updated: 2026-06-03
 upload_to_chatgpt: false
 ---
 
@@ -160,15 +160,25 @@ The repository currently contains:
 - event schema definitions
 - mid-series guidance rules
 - committed application configuration in `.appconfig.jsonc`
-
-The repository does not yet contain:
-
-- ingestion scripts
-- generated source builders
 - Plex import tooling
-- canonical materialized media state
-- generated runtime projections
-- event ingestion automation
+- catalog event ingestion tooling
+- capped metadata hydration tooling
+- deterministic catalog generation tooling
+- 705 catalog event IDs from the completed Plex import
+- 11 currently generated catalog records
+
+The current catalog checkpoint is:
+
+- Plex import: complete
+- catalog events: 705 IDs
+- OMDb real-provider validation: succeeded for 10 records
+- generated catalog: 11 records
+- missing catalog metadata after rebuild: 694 records
+- production metadata hydration: not yet performed
+- runtime source architecture: not yet implemented
+
+The repository does not yet contain generated runtime projections or
+event ingestion automation beyond the current catalog import workflows.
 
 ## Current Workflow Philosophy
 
