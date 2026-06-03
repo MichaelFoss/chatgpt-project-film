@@ -19,6 +19,7 @@
     "plex:import": "node scripts/plex-import.js",
     "plex:plan": "node scripts/plex-plan.js",
     "build:catalog": "node scripts/build-catalog.js",
+    "hydrate:metadata:plan": "node scripts/hydrate-metadata.js plan",
     "enrich:metadata:plan": "node scripts/enrich-metadata.js plan",
     "enrich:metadata:write": "node scripts/enrich-metadata.js write",
     "build": "node scripts/build.js",

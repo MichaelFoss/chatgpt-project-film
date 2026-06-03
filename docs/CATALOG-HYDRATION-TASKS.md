@@ -95,7 +95,7 @@ This task plan is intended to be executed one task at a time by Codex.
 
 ## Phase 3 - Hydration Planning
 
-- [ ] Implement hydration plan mode:
+- [x] Implement hydration plan mode:
   - Add `yarn hydrate:metadata:plan`.
   - Plan mode reads:
     - `events/catalog.events.ndjson`
