@@ -1,7 +1,7 @@
 ---
 title: Generated Catalog Summary
 status: generated
-last_updated: 2026-06-03
+last_updated: 2026-06-10
 upload_to_chatgpt: true
 generated_from:
   - data/catalog.json
@@ -11,8 +11,8 @@ generated_from:
 
 ## Scope Caveat
 
-Ownership or access in this catalog does not imply watched status,
-completion, preference, or liking.
+Ownership does not imply watched status, liked status, or recommendation
+strength.
 
 ## Catalog Size
 
