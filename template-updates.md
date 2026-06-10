@@ -8,3 +8,4 @@ Applied template updates are recorded here.
 | 2026-05-28 | 863151f         | Ignore dist artifacts in markdown checks    |
 | 2026-05-28 | 16f7d0a         | Improve first-build upload guidance         |
 | 2026-05-30 | bb9ec52         | Fix pre-commit source validation skip logic |
+| 2026-06-10 | 8cc6485         | Warn when template updates modify yarn lock |

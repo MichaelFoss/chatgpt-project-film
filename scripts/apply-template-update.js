@@ -129,6 +129,20 @@ function buildLedgerRow({ shortSha, description }) {
   return `| ${getTodayLocalDate()} | ${shortSha} | ${escapedDescription} |`;
 }
 
+function hasYarnLockChanges() {
+  const status = runGit(['status', '--porcelain', '--', 'yarn.lock']);
+
+  return status.status === 0 && Boolean(status.stdout.trim());
+}
+
+function printYarnInstallReminder() {
+  console.error('');
+  console.error('Template update modified yarn.lock.');
+  console.error('After resolving the update, run:');
+  console.error('  yarn install');
+  console.error('  yarn run check');
+}
+
 function printConflictInstructions({ shortSha, description }) {
   console.error('');
   console.error(
@@ -193,8 +207,15 @@ function main() {
 
   if (cherryPick.status !== 0) {
     printConflictInstructions({ shortSha, description });
+
+    if (hasYarnLockChanges()) {
+      printYarnInstallReminder();
+    }
+
     process.exit(cherryPick.status);
   }
+
+  const yarnInstallRequired = hasYarnLockChanges();
 
   appendLedgerRow({ shortSha, description });
   runGitOrExit(['add', ledgerPath], `Could not stage ${ledgerPath}.`);
@@ -206,6 +227,11 @@ function main() {
   console.log('');
   console.log(`Applied template update ${shortSha}.`);
   console.log(`Recorded it in ${ledgerPath}.`);
+
+  if (yarnInstallRequired) {
+    printYarnInstallReminder();
+  }
+
   console.log('Next steps:');
   console.log('- Review the resulting commit.');
   console.log('- Run the relevant project checks.');
