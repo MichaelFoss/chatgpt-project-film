@@ -1,7 +1,7 @@
 ---
 title: Generated Sources
 status: current
-last_updated: 2026-06-03
+last_updated: 2026-06-10
 upload_to_chatgpt: false
 ---
 
@@ -81,19 +81,32 @@ Manual edits should generally be limited to:
 
 ## Rebuild And Upload Flow
 
-Generated catalog source documents are rebuilt offline from
-`data/catalog.json`:
+Generated source documents are rebuilt offline from canonical data:
 
 ```bash
 yarn build:catalog
+yarn build:title-reactions
 yarn build:sources
 ```
 
-The upload bundle build command is:
+The full deterministic project build command is:
 
 ```bash
 yarn build
 ```
+
+`yarn build` regenerates catalog, title reactions, generated sources,
+then runs `yarn build:upload`.
+
+The upload artifact and build-tagging command is:
+
+```bash
+yarn build:upload
+```
+
+`yarn build:upload` requires a clean working tree. If generated files
+changed during `yarn build`, commit those changes and rerun
+`yarn build`.
 
 The upload build scans `sources/` recursively. Generated source
 documents under `sources/generated/` are included automatically when

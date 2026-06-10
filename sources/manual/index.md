@@ -1,7 +1,7 @@
 ---
 title: Source Document Index
 status: current
-last_updated: 2026-06-01
+last_updated: 2026-06-10
 upload_to_chatgpt: false
 ---
 
@@ -121,6 +121,18 @@ git add .
 git commit -m "Describe the source update"
 yarn build
 ```
+
+`yarn build` runs the full deterministic project build:
+
+1. `yarn build:catalog`
+2. `yarn build:title-reactions`
+3. `yarn build:sources`
+4. `yarn build:upload`
+
+`yarn build:upload` performs upload artifact packaging and build
+tagging. It requires a clean working tree. If `yarn build` regenerates
+canonical projections or generated sources, the upload step may abort;
+commit the generated files, then rerun `yarn build`.
 
 Then follow:
 
