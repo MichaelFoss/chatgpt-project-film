@@ -5,10 +5,106 @@ import { format, resolveConfig } from 'prettier';
 
 const generatedSourceFiles = {
   summary: 'catalog-summary.md',
-  byGenre: 'catalog-by-genre.md',
   byDecade: 'catalog-by-decade.md',
-  discovery: 'catalog-discovery.md',
+  titleIndexAF: 'catalog-title-index-a-f.md',
+  titleIndexGM: 'catalog-title-index-g-m.md',
+  titleIndexNZ: 'catalog-title-index-n-z.md',
+  genresActionAdventure: 'catalog-genres-action-adventure.md',
+  genresDramaCrimeThrillerMystery:
+    'catalog-genres-drama-crime-thriller-mystery.md',
+  genresSciFiFantasyHorror: 'catalog-genres-sci-fi-fantasy-horror.md',
+  genresComedyFamilyAnimationRomance:
+    'catalog-genres-comedy-family-animation-romance.md',
+  genresDocumentaryBiographyHistoryMusicSportWarWestern:
+    'catalog-genres-documentary-biography-history-music-sport-war-western.md',
+  genresUncategorized: 'catalog-genres-uncategorized.md',
+  criticalHighlights: 'catalog-critical-highlights.md',
+  coverageSummary: 'catalog-coverage-summary.md',
 };
+
+const supersededGeneratedSourceFiles = [
+  'catalog-by-genre.md',
+  'catalog-discovery.md',
+];
+
+const ownershipCaveat =
+  'Ownership does not imply watched status, liked status, or recommendation strength.';
+
+const titleIndexPartitions = [
+  {
+    filename: generatedSourceFiles.titleIndexAF,
+    title: 'Generated Catalog Title Index A-F',
+    heading: 'Generated Catalog Title Index A-F',
+    matches: (item) =>
+      firstTitleLetter(item) >= 'A' && firstTitleLetter(item) <= 'F',
+  },
+  {
+    filename: generatedSourceFiles.titleIndexGM,
+    title: 'Generated Catalog Title Index G-M',
+    heading: 'Generated Catalog Title Index G-M',
+    matches: (item) =>
+      firstTitleLetter(item) >= 'G' && firstTitleLetter(item) <= 'M',
+  },
+  {
+    filename: generatedSourceFiles.titleIndexNZ,
+    title: 'Generated Catalog Title Index N-Z',
+    heading: 'Generated Catalog Title Index N-Z',
+    matches: (item) => {
+      const letter = firstTitleLetter(item);
+
+      return letter < 'A' || letter > 'M';
+    },
+  },
+];
+
+const genreFamilies = [
+  {
+    filename: generatedSourceFiles.genresActionAdventure,
+    title: 'Generated Catalog Genres Action Adventure',
+    heading: 'Generated Catalog Genres: Action and Adventure',
+    genres: ['Action', 'Adventure'],
+  },
+  {
+    filename: generatedSourceFiles.genresDramaCrimeThrillerMystery,
+    title: 'Generated Catalog Genres Drama Crime Thriller Mystery',
+    heading:
+      'Generated Catalog Genres: Drama, Crime, Thriller, Mystery',
+    genres: ['Drama', 'Crime', 'Thriller', 'Mystery'],
+  },
+  {
+    filename: generatedSourceFiles.genresSciFiFantasyHorror,
+    title: 'Generated Catalog Genres Sci-Fi Fantasy Horror',
+    heading: 'Generated Catalog Genres: Sci-Fi, Fantasy, Horror',
+    genres: ['Sci-Fi', 'Fantasy', 'Horror'],
+  },
+  {
+    filename: generatedSourceFiles.genresComedyFamilyAnimationRomance,
+    title: 'Generated Catalog Genres Comedy Family Animation Romance',
+    heading:
+      'Generated Catalog Genres: Comedy, Family, Animation, Romance',
+    genres: ['Comedy', 'Family', 'Animation', 'Romance'],
+  },
+  {
+    filename:
+      generatedSourceFiles.genresDocumentaryBiographyHistoryMusicSportWarWestern,
+    title:
+      'Generated Catalog Genres Documentary Biography History Music Sport War Western',
+    heading: 'Generated Catalog Genres: Documentary and Related',
+    genres: [
+      'Documentary',
+      'Biography',
+      'History',
+      'Music',
+      'Sport',
+      'War',
+      'Western',
+    ],
+  },
+];
+
+const knownGenreNames = new Set(
+  genreFamilies.flatMap((family) => family.genres),
+);
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -56,13 +152,13 @@ function countBy(items, getKeys) {
   });
 }
 
-function frontmatter({ title, lastUpdated }) {
+function frontmatter({ title, lastUpdated, uploadToChatGPT = true }) {
   return [
     '---',
     `title: ${title}`,
     'status: generated',
     `last_updated: ${lastUpdated}`,
-    'upload_to_chatgpt: true',
+    `upload_to_chatgpt: ${uploadToChatGPT ? 'true' : 'false'}`,
     'generated_from:',
     '  - data/catalog.json',
     '---',
@@ -77,6 +173,31 @@ function formatItem(item) {
   const mediaType = item.mediaType ? ` - ${item.mediaType}` : '';
 
   return `${item.title}${year}${mediaType}`;
+}
+
+function imdbId(item) {
+  const canonicalId = String(item.canonicalId ?? '');
+
+  if (canonicalId.startsWith('imdb:')) {
+    return canonicalId.slice('imdb:'.length);
+  }
+
+  return null;
+}
+
+function primaryGenres(item) {
+  return Array.isArray(item.genres) && item.genres.length > 0
+    ? [...item.genres].sort((a, b) => a.localeCompare(b))
+    : [];
+}
+
+function firstTitleLetter(item) {
+  const first = String(item.title ?? '')
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+  return /^[A-Z]$/.test(first) ? first : '#';
 }
 
 function decadeLabel(item) {
@@ -133,6 +254,10 @@ function renderItemList(items) {
   return items.map((item) => `- ${formatItem(item)}`);
 }
 
+function renderOwnershipCaveat() {
+  return ['## Ownership Caveat', '', ownershipCaveat, ''];
+}
+
 function buildSummary(items, lastUpdated) {
   const mediaTypeCounts = countBy(items, (item) =>
     item.mediaType ? [item.mediaType] : ['unknown'],
@@ -151,7 +276,7 @@ function buildSummary(items, lastUpdated) {
     '',
     '## Scope Caveat',
     '',
-    'Ownership or access in this catalog does not imply watched status, completion, preference, or liking.',
+    ownershipCaveat,
     '',
     '## Catalog Size',
     '',
@@ -177,41 +302,114 @@ function buildSummary(items, lastUpdated) {
   ].join('\n');
 }
 
-function buildByGenre(items, lastUpdated) {
-  const grouped = new Map();
+function buildTitleIndex({ items, partition, lastUpdated }) {
+  const partitionItems = items
+    .filter(partition.matches)
+    .sort(compareItems);
+
+  return [
+    frontmatter({ title: partition.title, lastUpdated }),
+    `# ${partition.heading}`,
+    '',
+    ...renderOwnershipCaveat(),
+    '## Titles',
+    '',
+    ...renderTitleIndexRows(partitionItems),
+    '',
+  ].join('\n');
+}
+
+function renderTitleIndexRows(items) {
+  if (items.length === 0) {
+    return ['- None'];
+  }
+
+  return items.map((item) => {
+    const year = Number.isInteger(item.releaseYear)
+      ? String(item.releaseYear)
+      : 'unknown year';
+    const mediaType = item.mediaType ?? 'unknown media type';
+    const genres = primaryGenres(item);
+    const genreText =
+      genres.length > 0 ? genres.join(', ') : 'Uncategorized';
+    const id = imdbId(item);
+    const idText = id ? `IMDb: ${id}` : 'IMDb: unavailable';
+
+    return `- ${item.title} (${year}) - ${mediaType} - ${genreText} - ${idText}`;
+  });
+}
+
+function buildGenreFamily({ items, family, lastUpdated }) {
+  const grouped = groupItemsByGenres(items, family.genres);
+
+  return [
+    frontmatter({ title: family.title, lastUpdated }),
+    `# ${family.heading}`,
+    '',
+    ...renderOwnershipCaveat(),
+    ...renderGenreGroups(grouped, family.genres),
+  ].join('\n');
+}
+
+function buildUncategorizedGenres(items, lastUpdated) {
+  const unmatchedGenres = [
+    ...new Set(
+      items.flatMap((item) => {
+        const genres = primaryGenres(item);
+
+        if (genres.length === 0) {
+          return [];
+        }
+
+        return genres.filter((genre) => !knownGenreNames.has(genre));
+      }),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const grouped = groupItemsByGenres(items, [
+    'Uncategorized',
+    ...unmatchedGenres,
+  ]);
+
+  return [
+    frontmatter({
+      title: 'Generated Catalog Genres Uncategorized',
+      lastUpdated,
+    }),
+    '# Generated Catalog Genres: Uncategorized',
+    '',
+    ...renderOwnershipCaveat(),
+    ...renderGenreGroups(grouped, [
+      'Uncategorized',
+      ...unmatchedGenres,
+    ]),
+  ].join('\n');
+}
+
+function groupItemsByGenres(items, genres) {
+  const grouped = new Map(genres.map((genre) => [genre, []]));
 
   for (const item of items) {
-    const genres =
-      Array.isArray(item.genres) && item.genres.length > 0
-        ? [...item.genres].sort((a, b) => a.localeCompare(b))
-        : ['Uncategorized'];
+    const itemGenres = primaryGenres(item);
+    const normalizedGenres =
+      itemGenres.length > 0 ? itemGenres : ['Uncategorized'];
 
     for (const genre of genres) {
-      if (!grouped.has(genre)) {
-        grouped.set(genre, []);
+      if (normalizedGenres.includes(genre)) {
+        grouped.get(genre).push(item);
       }
-
-      grouped.get(genre).push(item);
     }
   }
 
-  const genreNames = [...grouped.keys()].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  return grouped;
+}
 
-  return [
-    frontmatter({ title: 'Generated Catalog by Genre', lastUpdated }),
-    '# Generated Catalog by Genre',
+function renderGenreGroups(grouped, genres) {
+  return genres.flatMap((genre) => [
+    `## ${genre}`,
     '',
-    'Grouped by provider-normalized genre. Ownership or access does not imply watched status or liking.',
+    ...renderItemList(grouped.get(genre).sort(compareItems)),
     '',
-    ...genreNames.flatMap((genre) => [
-      `## ${genre}`,
-      '',
-      ...renderItemList(grouped.get(genre).sort(compareItems)),
-      '',
-    ]),
-  ].join('\n');
+  ]);
 }
 
 function buildByDecade(items, lastUpdated) {
@@ -243,7 +441,9 @@ function buildByDecade(items, lastUpdated) {
     frontmatter({ title: 'Generated Catalog by Decade', lastUpdated }),
     '# Generated Catalog by Decade',
     '',
-    'Grouped by normalized `releaseYear` from the catalog projection. Ownership or access does not imply watched status or liking.',
+    'Grouped by normalized `releaseYear` from the catalog projection.',
+    '',
+    ownershipCaveat,
     '',
     ...labels.flatMap((label) => [
       `## ${label}`,
@@ -264,7 +464,7 @@ function topByRating(items, getRating, minimum, limit) {
     .slice(0, limit);
 }
 
-function buildDiscovery(items, lastUpdated) {
+function buildCriticalHighlights(items, lastUpdated) {
   const imdbHigh = topByRating(
     items,
     (item) => item.ratings?.imdb,
@@ -283,10 +483,6 @@ function buildDiscovery(items, lastUpdated) {
     80,
     25,
   );
-  const strongCoverage = items
-    .filter((item) => ratingCoverageCount(item) >= 3)
-    .sort(compareItems)
-    .slice(0, 30);
   const genreClusters = countBy(items, (item) => item.genres ?? [])
     .filter(([, count]) => count >= 10)
     .slice(0, 15);
@@ -298,31 +494,27 @@ function buildDiscovery(items, lastUpdated) {
 
   return [
     frontmatter({
-      title: 'Generated Catalog Discovery Views',
+      title: 'Generated Catalog Critical Highlights',
       lastUpdated,
     }),
-    '# Generated Catalog Discovery Views',
+    '# Generated Catalog Critical Highlights',
     '',
-    'These are factual catalog discovery views based on public metadata. They are not personalized recommendations and do not imply watched status or liking.',
+    'These are factual browsing views based on public metadata. They are not personalized recommendations. Ownership does not imply watched status, liked status, preference, or recommendation strength.',
     '',
-    '## High IMDb Ratings',
+    '## Strongest IMDb Ratings',
     '',
     ...renderRatedList(imdbHigh, (value) => `${value.toFixed(1)}/10`),
     '',
-    '## High Rotten Tomatoes Critics Scores',
+    '## Strongest Rotten Tomatoes Critics Scores',
     '',
     ...renderRatedList(rtHigh, (value) => `${Math.round(value)}%`),
     '',
-    '## High Metacritic Scores',
+    '## Strongest Metacritic Scores',
     '',
     ...renderRatedList(
       metacriticHigh,
       (value) => `${Math.round(value)}/100`,
     ),
-    '',
-    '## Strong Critical Metadata Coverage',
-    '',
-    ...renderItemList(strongCoverage),
     '',
     '## Genre Clusters',
     '',
@@ -331,6 +523,84 @@ function buildDiscovery(items, lastUpdated) {
     '## Notable Decade Clusters',
     '',
     ...renderCountList(decadeClusters),
+    '',
+  ].join('\n');
+}
+
+function buildCoverageSummary(items, lastUpdated) {
+  const counts = {
+    title: items.filter((item) => item.title).length,
+    releaseYear: items.filter((item) =>
+      Number.isInteger(item.releaseYear),
+    ).length,
+    mediaType: items.filter((item) => item.mediaType).length,
+    genres: items.filter((item) => primaryGenres(item).length > 0)
+      .length,
+    description: items.filter((item) => item.description).length,
+    posterUrl: items.filter((item) => item.posterUrl).length,
+    people: items.filter((item) => item.people).length,
+    imdbId: items.filter((item) => imdbId(item)).length,
+    imdbRating: items.filter((item) => item.ratings?.imdb).length,
+    rottenTomatoesCritics: items.filter(
+      (item) => item.ratings?.rottenTomatoes?.critics,
+    ).length,
+    rottenTomatoesAudience: items.filter(
+      (item) => item.ratings?.rottenTomatoes?.audience,
+    ).length,
+    metacritic: items.filter((item) => item.ratings?.metacritic).length,
+  };
+  const totalRatingFields = items.reduce(
+    (sum, item) => sum + ratingCoverageCount(item),
+    0,
+  );
+  const fullPublicRatingCoverage = items.filter(
+    (item) => ratingCoverageCount(item) >= 3,
+  ).length;
+
+  return [
+    frontmatter({
+      title: 'Generated Catalog Coverage Summary',
+      lastUpdated,
+      uploadToChatGPT: false,
+    }),
+    '# Generated Catalog Coverage Summary',
+    '',
+    'Audit artifact for generated catalog source quality. This document is not runtime retrieval context.',
+    '',
+    '## Metadata Coverage',
+    '',
+    `- Total enriched catalog records: ${items.length}`,
+    `- Records with title: ${counts.title}`,
+    `- Records with release year: ${counts.releaseYear}`,
+    `- Records with media type: ${counts.mediaType}`,
+    `- Records with one or more genres: ${counts.genres}`,
+    `- Records with description: ${counts.description}`,
+    `- Records with poster URL: ${counts.posterUrl}`,
+    `- Records with people metadata: ${counts.people}`,
+    '',
+    '## Rating Coverage',
+    '',
+    `- Records with at least one public rating field: ${items.filter(hasRatingCoverage).length}`,
+    `- Records with IMDb rating: ${counts.imdbRating}`,
+    `- Records with Rotten Tomatoes critics rating: ${counts.rottenTomatoesCritics}`,
+    `- Records with Rotten Tomatoes audience rating: ${counts.rottenTomatoesAudience}`,
+    `- Records with Metacritic rating: ${counts.metacritic}`,
+    `- Records with IMDb, Rotten Tomatoes critics, and Metacritic ratings: ${fullPublicRatingCoverage}`,
+    `- Total populated public rating fields: ${totalRatingFields}`,
+    '',
+    '## Provider Population Statistics',
+    '',
+    `- Records with IMDb ID from canonical identifier: ${counts.imdbId}`,
+    `- Records with provider-enriched descriptions: ${counts.description}`,
+    `- Records with provider-enriched posters: ${counts.posterUrl}`,
+    `- Records with provider-enriched people metadata: ${counts.people}`,
+    '',
+    '## Catalog Completeness Metrics',
+    '',
+    `- Records missing release year: ${items.length - counts.releaseYear}`,
+    `- Records missing genres: ${items.length - counts.genres}`,
+    `- Records missing descriptions: ${items.length - counts.description}`,
+    `- Records missing any public rating field: ${items.length - items.filter(hasRatingCoverage).length}`,
     '',
   ].join('\n');
 }
@@ -350,16 +620,39 @@ export function buildGeneratedSourceDocuments({
   lastUpdated = todayIsoDate(),
 } = {}) {
   const items = asCatalogItems(catalog);
-
-  return {
+  const documents = {
     [generatedSourceFiles.summary]: buildSummary(items, lastUpdated),
-    [generatedSourceFiles.byGenre]: buildByGenre(items, lastUpdated),
     [generatedSourceFiles.byDecade]: buildByDecade(items, lastUpdated),
-    [generatedSourceFiles.discovery]: buildDiscovery(
+    [generatedSourceFiles.criticalHighlights]: buildCriticalHighlights(
+      items,
+      lastUpdated,
+    ),
+    [generatedSourceFiles.coverageSummary]: buildCoverageSummary(
       items,
       lastUpdated,
     ),
   };
+
+  for (const partition of titleIndexPartitions) {
+    documents[partition.filename] = buildTitleIndex({
+      items,
+      lastUpdated,
+      partition,
+    });
+  }
+
+  for (const family of genreFamilies) {
+    documents[family.filename] = buildGenreFamily({
+      items,
+      lastUpdated,
+      family,
+    });
+  }
+
+  documents[generatedSourceFiles.genresUncategorized] =
+    buildUncategorizedGenres(items, lastUpdated);
+
+  return documents;
 }
 
 export async function buildGeneratedSources({
@@ -373,9 +666,15 @@ export async function buildGeneratedSources({
     catalog,
     lastUpdated,
   });
-  const prettierConfig = (await resolveConfig(rootDir)) ?? {};
 
   await fs.mkdir(outputDir, { recursive: true });
+  const prettierConfig =
+    (await resolveConfig(path.join(outputDir, 'catalog-summary.md'))) ??
+    {};
+
+  for (const filename of supersededGeneratedSourceFiles) {
+    await fs.rm(path.join(outputDir, filename), { force: true });
+  }
 
   for (const [filename, content] of Object.entries(documents)) {
     const outputPath = path.join(outputDir, filename);

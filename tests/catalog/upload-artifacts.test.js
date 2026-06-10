@@ -93,11 +93,62 @@ This should not be uploaded.
     expect(bundle).not.toContain('Reference Only');
   });
 
+  it('excludes generated coverage summaries from upload artifacts', async () => {
+    const sourceDirectory = await createTempSourceDirectory();
+    await writeSourceFile(
+      sourceDirectory,
+      'generated/catalog-coverage-summary.md',
+      `
+---
+title: Catalog Coverage Summary
+status: generated
+last_updated: 2026-06-03
+upload_to_chatgpt: false
+generated_from:
+  - data/catalog.json
+---
+
+# Catalog Coverage Summary
+
+Audit-only metadata coverage.
+`,
+    );
+    await writeSourceFile(
+      sourceDirectory,
+      'generated/catalog-title-index-a-f.md',
+      `
+---
+title: Catalog Title Index A-F
+status: generated
+last_updated: 2026-06-03
+upload_to_chatgpt: true
+generated_from:
+  - data/catalog.json
+---
+
+# Catalog Title Index A-F
+
+- Alpha (1999) - movie - Drama - IMDb: tt001
+`,
+    );
+
+    const included = await getBuildableSourceDocuments({
+      sourceDirectory,
+    });
+    const bundle = buildBundle(included);
+
+    expect(included.map((item) => path.basename(item.file))).toEqual([
+      'catalog-title-index-a-f.md',
+    ]);
+    expect(bundle).toContain('Catalog Title Index A-F');
+    expect(bundle).not.toContain('Catalog Coverage Summary');
+  });
+
   it('validates generated runtime source frontmatter used by uploads', async () => {
     const sourceDirectory = await createTempSourceDirectory();
     await writeSourceFile(
       sourceDirectory,
-      'generated/catalog-by-genre.md',
+      'generated/catalog-genres-drama-crime-thriller-mystery.md',
       `
 ---
 title: Catalog By Genre

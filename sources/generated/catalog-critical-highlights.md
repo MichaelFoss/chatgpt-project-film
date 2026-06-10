@@ -1,19 +1,19 @@
 ---
-title: Generated Catalog Discovery Views
+title: Generated Catalog Critical Highlights
 status: generated
-last_updated: 2026-06-03
+last_updated: 2026-06-10
 upload_to_chatgpt: true
 generated_from:
   - data/catalog.json
 ---
 
-# Generated Catalog Discovery Views
+# Generated Catalog Critical Highlights
 
-These are factual catalog discovery views based on public metadata. They
-are not personalized recommendations and do not imply watched status or
-liking.
+These are factual browsing views based on public metadata. They are not
+personalized recommendations. Ownership does not imply watched status,
+liked status, preference, or recommendation strength.
 
-## High IMDb Ratings
+## Strongest IMDb Ratings
 
 - The Godfather (1972) - movie - 9.2/10
 - The Dark Knight (2008) - movie - 9.1/10
@@ -43,7 +43,7 @@ liking.
 - Braveheart (1995) - movie - 8.3/10
 - Eternal Sunshine of the Spotless Mind (2004) - movie - 8.3/10
 
-## High Rotten Tomatoes Critics Scores
+## Strongest Rotten Tomatoes Critics Scores
 
 - Evangelion: 3.0+1.01 Thrice Upon a Time (2021) - movie - 100%
 - Last and First Men (2020) - movie - 100%
@@ -71,7 +71,7 @@ liking.
 - The Godfather Part II (1974) - movie - 96%
 - The Iron Giant (1999) - movie - 96%
 
-## High Metacritic Scores
+## Strongest Metacritic Scores
 
 - Boyhood (2014) - movie - 100/100
 - The Godfather (1972) - movie - 100/100
@@ -99,39 +99,6 @@ liking.
 - Y tu mamá también (2001) - movie - 89/100
 - Anomalisa (2015) - movie - 88/100
 - Black Panther (2018) - movie - 88/100
-
-## Strong Critical Metadata Coverage
-
-- [REC] 3: Genesis (2012) - movie
-- 10 Cloverfield Lane (2016) - movie
-- 127 Hours (2010) - movie
-- 13 Sins (2014) - movie
-- 1408 (2007) - movie
-- 2001: A Space Odyssey (1968) - movie
-- 2012 (2009) - movie
-- 28 Days Later (2002) - movie
-- 28 Weeks Later (2007) - movie
-- 300 (2006) - movie
-- 300: Rise of an Empire (2014) - movie
-- 65 (2023) - movie
-- 7500 (2019) - movie
-- A Dark Song (2016) - movie
-- A Few Good Men (1992) - movie
-- A Ghost Story (2017) - movie
-- A Good Day to Die Hard (2013) - movie
-- A Million Ways to Die in the West (2014) - movie
-- A Quiet Place (2018) - movie
-- A Quiet Place Part II (2020) - movie
-- A Wrinkle in Time (2018) - movie
-- A.I. Artificial Intelligence (2001) - movie
-- Abigail (2024) - movie
-- Action Point (2018) - movie
-- Ad Astra (2019) - movie
-- Adaptation. (2002) - movie
-- Afflicted (2013) - movie
-- After Yang (2021) - movie
-- Alien: Covenant (2017) - movie
-- Alien: Romulus (2024) - movie
 
 ## Genre Clusters
 

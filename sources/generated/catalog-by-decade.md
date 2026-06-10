@@ -1,7 +1,7 @@
 ---
 title: Generated Catalog by Decade
 status: generated
-last_updated: 2026-06-03
+last_updated: 2026-06-10
 upload_to_chatgpt: true
 generated_from:
   - data/catalog.json
@@ -10,7 +10,9 @@ generated_from:
 # Generated Catalog by Decade
 
 Grouped by normalized `releaseYear` from the catalog projection.
-Ownership or access does not imply watched status or liking.
+
+Ownership does not imply watched status, liked status, or recommendation
+strength.
 
 ## 1960s
 
