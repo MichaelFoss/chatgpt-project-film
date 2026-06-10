@@ -1,7 +1,7 @@
 ---
 title: Data Model
 status: current
-last_updated: 2026-06-01
+last_updated: 2026-06-10
 upload_to_chatgpt: false
 ---
 
@@ -17,6 +17,7 @@ This document specifies:
 - canonical identifiers
 - canonical state structure
 - catalog generation strategy
+- title reaction generation strategy
 - metadata enrichment strategy
 - configuration strategy
 
@@ -41,7 +42,6 @@ The repository does not currently model:
 - individual seasons
 - cast preferences
 - actor preferences
-- review text
 - recommendation algorithms
 
 ## Canonical Identity
@@ -126,6 +126,77 @@ events/catalog.events.ndjson
 One JSON object exists per line.
 
 Future event streams may be added when justified.
+
+### Title Reaction Event Stream
+
+The title reaction implementation uses:
+
+```text
+events/title-reactions.events.ndjson
+```
+
+One JSON object exists per line. Events must reference an existing
+`canonicalId` from `data/catalog.json`; no title lookup, fuzzy matching,
+or unknown-title resolution is performed during reaction builds.
+
+Conceptual structure:
+
+```ts
+type TitleReactionEvent = {
+  eventId: string;
+  type: 'title.reaction.updated';
+  occurredAt: string;
+  canonicalId: string;
+  rating?: number;
+  watchStatus?: 'completed' | 'incomplete' | 'abandoned' | 'planned';
+  memoryConfidence?: 'high' | 'medium' | 'low';
+  reasonTags?: string[];
+  notes?: string;
+  householdSuitability?: 'any' | 'kid' | 'teen' | 'adult';
+  spoilerDiscussion?: 'premise-only' | 'known-safe' | 'full';
+};
+```
+
+At least one optional update field must be present. Reaction events do
+not include human-readable title fields; generated sources join display
+titles from `data/catalog.json`.
+
+`rating` is a personal-fit rating, not an objective quality score. It
+must be an integer from `1` through `10`:
+
+- `1-2`: strong negative personal fit
+- `3-4`: negative personal fit
+- `5-6`: mixed or neutral personal fit
+- `7-8`: positive personal fit
+- `9-10`: strong positive personal fit
+
+`watchStatus` uses only:
+
+- `completed`: watched enough to evaluate as complete for recommendation
+  purposes
+- `incomplete`: started but not finished; not necessarily negative
+- `abandoned`: intentionally stopped; usually a cautionary signal
+- `planned`: intends to watch; not preference evidence yet
+
+`householdSuitability` uses only `any`, `kid`, `teen`, or `adult`. This
+is a household-specific judgment and must not be inferred from provider
+metadata.
+
+`spoilerDiscussion` uses only `premise-only`, `known-safe`, or `full`.
+Missing spoiler discussion should be treated conservatively and must not
+weaken the project’s global spoiler-safe behavior.
+
+Build title reactions with:
+
+```bash
+yarn build:title-reactions
+```
+
+Then regenerate runtime source documents with:
+
+```bash
+yarn build:sources
+```
 
 ### Current Catalog Membership State
 
@@ -454,6 +525,30 @@ than omitting `genres`.
 
 Ratings should preserve provider-native string formats and should be
 treated as advisory context rather than preference truth.
+
+### Title Reaction Storage
+
+Title reaction state is stored under:
+
+```text
+data/title-reactions.json
+```
+
+This projection is generated from:
+
+- `events/title-reactions.events.ndjson`
+- `data/catalog.json`
+
+Projection applies title reaction events in file order. Later events
+overwrite supplied scalar fields for the same `canonicalId`; supplied
+`reasonTags` and `notes` replace previous values. The projection stores
+event IDs for auditability and does not copy catalog title metadata.
+
+Generated recommendation context is emitted to:
+
+```text
+sources/generated/title-reactions-summary.md
+```
 
 ### Catalog Exclusions
 

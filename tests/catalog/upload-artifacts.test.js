@@ -174,4 +174,35 @@ generated_from:
       fileCount: 1,
     });
   });
+
+  it('includes generated title reaction summaries marked for upload', async () => {
+    const sourceDirectory = await createTempSourceDirectory();
+    await writeSourceFile(
+      sourceDirectory,
+      'generated/title-reactions-summary.md',
+      `
+---
+title: Generated Title Reactions Summary
+status: generated
+last_updated: 2026-06-10
+upload_to_chatgpt: true
+generated_from:
+  - data/title-reactions.json
+  - data/catalog.json
+---
+
+# Generated Title Reactions Summary
+
+- Total reacted titles: 0
+`,
+    );
+
+    const included = await getBuildableSourceDocuments({
+      sourceDirectory,
+    });
+
+    expect(included.map((item) => path.basename(item.file))).toEqual([
+      'title-reactions-summary.md',
+    ]);
+  });
 });

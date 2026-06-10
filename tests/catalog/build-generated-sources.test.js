@@ -69,6 +69,7 @@ describe('buildGeneratedSources', () => {
       'catalog-title-index-a-f.md',
       'catalog-title-index-g-m.md',
       'catalog-title-index-n-z.md',
+      'title-reactions-summary.md',
     ]);
 
     for (const file of files) {
@@ -81,7 +82,11 @@ describe('buildGeneratedSources', () => {
       expect(parsed.data.upload_to_chatgpt).toBe(
         path.basename(file) !== 'catalog-coverage-summary.md',
       );
-      expect(parsed.data.generated_from).toEqual(['data/catalog.json']);
+      expect(parsed.data.generated_from).toEqual(
+        path.basename(file) === 'title-reactions-summary.md'
+          ? ['data/title-reactions.json', 'data/catalog.json']
+          : ['data/catalog.json'],
+      );
       expect(parsed.data.title).toEqual(expect.any(String));
     }
   });

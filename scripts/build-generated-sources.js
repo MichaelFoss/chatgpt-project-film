@@ -5,6 +5,7 @@ import { format, resolveConfig } from 'prettier';
 
 const generatedSourceFiles = {
   summary: 'catalog-summary.md',
+  titleReactionsSummary: 'title-reactions-summary.md',
   byDecade: 'catalog-by-decade.md',
   titleIndexAF: 'catalog-title-index-a-f.md',
   titleIndexGM: 'catalog-title-index-g-m.md',
@@ -152,7 +153,12 @@ function countBy(items, getKeys) {
   });
 }
 
-function frontmatter({ title, lastUpdated, uploadToChatGPT = true }) {
+function frontmatter({
+  title,
+  lastUpdated,
+  uploadToChatGPT = true,
+  generatedFrom = ['data/catalog.json'],
+}) {
   return [
     '---',
     `title: ${title}`,
@@ -160,7 +166,7 @@ function frontmatter({ title, lastUpdated, uploadToChatGPT = true }) {
     `last_updated: ${lastUpdated}`,
     `upload_to_chatgpt: ${uploadToChatGPT ? 'true' : 'false'}`,
     'generated_from:',
-    '  - data/catalog.json',
+    ...generatedFrom.map((source) => `  - ${source}`),
     '---',
     '',
   ].join('\n');
@@ -605,6 +611,230 @@ function buildCoverageSummary(items, lastUpdated) {
   ].join('\n');
 }
 
+function asReactionItems(titleReactions, catalog) {
+  if (
+    !titleReactions ||
+    typeof titleReactions !== 'object' ||
+    Array.isArray(titleReactions)
+  ) {
+    return [];
+  }
+
+  return Object.values(titleReactions)
+    .filter((reaction) => {
+      return (
+        reaction &&
+        typeof reaction === 'object' &&
+        !Array.isArray(reaction) &&
+        catalog[reaction.canonicalId]
+      );
+    })
+    .map((reaction) => ({
+      reaction,
+      item: catalog[reaction.canonicalId],
+    }))
+    .sort((a, b) => compareItems(a.item, b.item));
+}
+
+function reactionTitle(entry) {
+  return formatItem(entry.item);
+}
+
+function reactionLine(entry) {
+  const parts = [];
+  const { reaction } = entry;
+
+  if (Number.isInteger(reaction.rating)) {
+    parts.push(`rating ${reaction.rating}/10`);
+  }
+
+  if (reaction.watchStatus) {
+    parts.push(`watch status ${reaction.watchStatus}`);
+  }
+
+  if (reaction.memoryConfidence) {
+    parts.push(`memory confidence ${reaction.memoryConfidence}`);
+  }
+
+  if (reaction.householdSuitability) {
+    parts.push(`household ${reaction.householdSuitability}`);
+  }
+
+  if (reaction.spoilerDiscussion) {
+    parts.push(`spoilers ${reaction.spoilerDiscussion}`);
+  }
+
+  if (
+    Array.isArray(reaction.reasonTags) &&
+    reaction.reasonTags.length > 0
+  ) {
+    parts.push(`tags ${reaction.reasonTags.join(', ')}`);
+  }
+
+  if (reaction.notes) {
+    parts.push(`notes: ${reaction.notes}`);
+  }
+
+  return `- ${reactionTitle(entry)} - ${parts.join('; ')}`;
+}
+
+function renderReactionEntries(entries) {
+  if (entries.length === 0) {
+    return ['- None'];
+  }
+
+  return entries.map(reactionLine);
+}
+
+function renderReactionCountSection(entries, field, heading) {
+  const grouped = new Map();
+
+  for (const entry of entries) {
+    const value = entry.reaction[field];
+
+    if (!value) {
+      continue;
+    }
+
+    if (!grouped.has(value)) {
+      grouped.set(value, []);
+    }
+
+    grouped.get(value).push(entry);
+  }
+
+  if (grouped.size === 0) {
+    return [];
+  }
+
+  return [
+    `## ${heading}`,
+    '',
+    ...[...grouped.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .flatMap(([value, valueEntries]) => [
+        `### ${value}`,
+        '',
+        ...renderReactionEntries(
+          valueEntries.sort((a, b) => compareItems(a.item, b.item)),
+        ),
+        '',
+      ]),
+  ];
+}
+
+function renderReasonTagSummary(entries) {
+  const counts = countBy(entries, (entry) =>
+    Array.isArray(entry.reaction.reasonTags)
+      ? entry.reaction.reasonTags
+      : [],
+  );
+
+  if (counts.length === 0) {
+    return [];
+  }
+
+  return ['## Reason Tag Summary', '', ...renderCountList(counts), ''];
+}
+
+function buildTitleReactionsSummary({
+  catalog,
+  titleReactions,
+  lastUpdated,
+}) {
+  const entries = asReactionItems(titleReactions, catalog);
+  const withRatings = entries.filter((entry) =>
+    Number.isInteger(entry.reaction.rating),
+  );
+  const highestRated = [...withRatings]
+    .sort(
+      (a, b) =>
+        b.reaction.rating - a.reaction.rating ||
+        compareItems(a.item, b.item),
+    )
+    .slice(0, 20);
+  const lowestRated = [...withRatings]
+    .sort(
+      (a, b) =>
+        a.reaction.rating - b.reaction.rating ||
+        compareItems(a.item, b.item),
+    )
+    .slice(0, 20);
+  const byStatus = (status) =>
+    entries
+      .filter((entry) => entry.reaction.watchStatus === status)
+      .sort((a, b) => compareItems(a.item, b.item));
+
+  return [
+    frontmatter({
+      title: 'Generated Title Reactions Summary',
+      lastUpdated,
+      generatedFrom: ['data/title-reactions.json', 'data/catalog.json'],
+    }),
+    '# Generated Title Reactions Summary',
+    '',
+    '## Scope Caveats',
+    '',
+    '- Ratings are personal-fit ratings, not objective quality scores.',
+    '- Ownership/access is separate from watched status, preference, liking, and recommendation strength.',
+    '- Missing reaction records do not imply preference, watched status, or suitability.',
+    '',
+    '## Reaction Coverage',
+    '',
+    `- Total reacted titles: ${entries.length}`,
+    '',
+    '## Rating Interpretation',
+    '',
+    '- 1-2: strong negative personal fit',
+    '- 3-4: negative personal fit',
+    '- 5-6: mixed or neutral personal fit',
+    '- 7-8: positive personal fit',
+    '- 9-10: strong positive personal fit',
+    '',
+    entries.length === 0
+      ? 'No title reactions are currently recorded.'
+      : null,
+    entries.length === 0 ? '' : null,
+    '## Highest-Rated Titles',
+    '',
+    ...renderReactionEntries(highestRated),
+    '',
+    '## Lowest-Rated Titles',
+    '',
+    ...renderReactionEntries(lowestRated),
+    '',
+    '## Abandoned Titles',
+    '',
+    ...renderReactionEntries(byStatus('abandoned')),
+    '',
+    '## Incomplete Titles',
+    '',
+    ...renderReactionEntries(byStatus('incomplete')),
+    '',
+    '## Planned Titles',
+    '',
+    ...renderReactionEntries(byStatus('planned')),
+    '',
+    ...renderReactionCountSection(
+      entries,
+      'householdSuitability',
+      'Household Suitability',
+    ),
+    ...renderReactionCountSection(
+      entries,
+      'spoilerDiscussion',
+      'Spoiler Discussion Allowances',
+    ),
+    ...renderReasonTagSummary(entries),
+    '## Per-Title Reactions',
+    '',
+    ...renderReactionEntries(entries),
+    '',
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+}
+
 function renderRatedList(entries, formatRating) {
   if (entries.length === 0) {
     return ['- None'];
@@ -616,12 +846,19 @@ function renderRatedList(entries, formatRating) {
 }
 
 export function buildGeneratedSourceDocuments({
-  catalog,
+  catalog = {},
+  titleReactions = {},
   lastUpdated = todayIsoDate(),
 } = {}) {
   const items = asCatalogItems(catalog);
   const documents = {
     [generatedSourceFiles.summary]: buildSummary(items, lastUpdated),
+    [generatedSourceFiles.titleReactionsSummary]:
+      buildTitleReactionsSummary({
+        catalog,
+        titleReactions,
+        lastUpdated,
+      }),
     [generatedSourceFiles.byDecade]: buildByDecade(items, lastUpdated),
     [generatedSourceFiles.criticalHighlights]: buildCriticalHighlights(
       items,
@@ -658,12 +895,30 @@ export function buildGeneratedSourceDocuments({
 export async function buildGeneratedSources({
   rootDir = process.cwd(),
   catalogPath = path.join(rootDir, 'data', 'catalog.json'),
+  titleReactionsPath = path.join(
+    rootDir,
+    'data',
+    'title-reactions.json',
+  ),
   outputDir = path.join(rootDir, 'sources', 'generated'),
   lastUpdated = todayIsoDate(),
 } = {}) {
   const catalog = JSON.parse(await fs.readFile(catalogPath, 'utf8'));
+  let titleReactions = {};
+
+  try {
+    titleReactions = JSON.parse(
+      await fs.readFile(titleReactionsPath, 'utf8'),
+    );
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
   const documents = buildGeneratedSourceDocuments({
     catalog,
+    titleReactions,
     lastUpdated,
   });
 
