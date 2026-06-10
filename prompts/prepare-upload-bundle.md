@@ -9,7 +9,7 @@ This prompt is not required for the normal upload workflow. The normal
 workflow is deterministic:
 
 ```bash
-yarn check
+yarn run check
 git add .
 git commit -m "Describe the source update"
 yarn build
@@ -36,12 +36,14 @@ Example:
 baseball-cards.build-2026-05-17-0003.md
 ```
 
-Project instructions are copied to this file only when they need to be
-updated:
+Project instructions are always copied to this deterministic artifact:
 
 ```text
 dist/project-instructions.md
 ```
+
+The generated upload instructions still report whether ChatGPT Project
+Instructions need to be updated.
 
 If generated build artifacts need to be restored without creating a new
 build tag, use:

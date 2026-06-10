@@ -225,7 +225,7 @@ set deterministically.
 Normal workflow:
 
 ```bash
-yarn check
+yarn run check
 git add .
 git commit -m "Describe the source update"
 yarn build
@@ -251,15 +251,17 @@ A successful `yarn build`:
 - appends build tags to generated upload filenames
 - uses immutable generated upload filenames to preserve runtime
   provenance
-- copies project instructions into `dist/project-instructions.md` only
-  when required
+- always copies project instructions into `dist/project-instructions.md`
+  for paste-ready first-time setup and reference workflows
 - writes operational upload instructions into
   `dist/upload-instructions.md`
 - generates `dist/chatgpt-upload-bundle.md` for auditing, portability,
   and reference workflows
 
 If no upload-impacting files changed since the prior build tag, no new
-build tag is created.
+build tag is created. The project instructions artifact is still
+regenerated so first-time ChatGPT Project creation always has a
+paste-ready instructions file.
 
 Generated upload filenames intentionally include the build tag where the
 source file last changed.
@@ -335,3 +337,11 @@ Template improvements may be manually copied or cherry-picked into
 downstream projects when useful.
 
 Downstream projects are expected to evolve independently over time.
+
+The template-update helper does not special-case `instructions/`,
+project-instruction artifacts, or `dist/`. It fetches the template
+remote, cherry-picks the requested source commit, and records a ledger
+entry in `template-updates.md`. Generated `dist/` artifacts remain
+script-owned and ignored by Git, so this always-generated instructions
+artifact should integrate through the build scripts rather than by
+committing generated files.

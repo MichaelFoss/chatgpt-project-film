@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import {
   buildTagPrefix,
@@ -9,6 +10,7 @@ import {
   getLatestBuildTag,
   outputFile,
   parseBuildTag,
+  copyProjectInstructions,
   projectInstructionsOutputFile,
   projectInstructionsPath,
   toProjectPath,
@@ -90,7 +92,7 @@ async function getChangedFilesSinceBuildTag(latestBuildTag) {
     .sort();
 }
 
-function buildUploadInstructions({
+export function buildUploadInstructions({
   buildTag,
   changedBuildableItems,
   projectInstructionsChanged,
@@ -120,7 +122,7 @@ function buildUploadInstructions({
     '## Project Instructions Update',
     '',
     projectInstructionsChanged
-      ? 'Update the ChatGPT Project Instructions from:'
+      ? 'Required:'
       : 'No ChatGPT Project Instructions update is required.',
     '',
     projectInstructionsChanged
@@ -169,8 +171,10 @@ async function main() {
   );
 
   if (existingBuildTagAtHead) {
+    await copyProjectInstructions();
     console.log(`HEAD is already built: ${existingBuildTagAtHead}`);
-    console.log('Nothing to do.');
+    console.log(`Wrote ${projectInstructionsOutputFile}`);
+    console.log('No new build tag or upload checklist is required.');
     return;
   }
 
@@ -191,6 +195,7 @@ async function main() {
     changedBuildableItems.length > 0 || projectInstructionsChanged;
 
   if (!hasUploadImpact) {
+    await copyProjectInstructions();
     console.log('No ChatGPT Project upload changes detected.');
 
     if (latestBuildTag) {
@@ -201,6 +206,7 @@ async function main() {
       );
     }
 
+    console.log(`Wrote ${projectInstructionsOutputFile}`);
     console.log('Nothing to upload.');
     return;
   }
@@ -216,7 +222,6 @@ async function main() {
   await writeDistArtifacts({
     included: changedBuildableItems,
     uploadInstructions,
-    copyProjectInstructionsFile: projectInstructionsChanged,
     cleanOutputDir: false,
     getBuildTag: () => buildTag,
   });
@@ -271,7 +276,12 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

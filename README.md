@@ -91,7 +91,7 @@ and should not perform provider lookups.
 For normal source updates:
 
 ```bash
-yarn check
+yarn run check
 git add .
 git commit -m "Describe the source update"
 yarn build
@@ -155,8 +155,8 @@ The build workflow:
 - copies changed uploadable source files into `dist/uploads/`
 - packages both manual and generated source documents for upload
 - appends build tags to generated upload filenames
-- copies project instructions into `dist/project-instructions.md` for
-  upload/reference workflows
+- always copies project instructions into `dist/project-instructions.md`
+  for first-time setup, upload, and reference workflows
 - generates `dist/upload-instructions.md` describing exactly what must
   be uploaded to ChatGPT
 - generates `dist/chatgpt-upload-bundle.md` for auditing, portability,
@@ -242,6 +242,11 @@ yarn apply-template-update <template-ref> [description]
 The helper ensures a `template` remote exists, fetches it, cherry-picks
 the requested ref, and records the applied update in
 `template-updates.md`.
+
+The helper does not have special ownership rules for `instructions/` or
+generated project-instruction artifacts. Template updates apply as
+normal Git cherry-picks, and `dist/` remains generated script output
+that should not be committed.
 
 ### Initial Rollout
 

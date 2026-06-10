@@ -87,7 +87,6 @@ async function main() {
   await writeDistArtifacts({
     included,
     uploadInstructions,
-    copyProjectInstructionsFile: true,
     cleanOutputDir: true,
     getBuildTag: (item) => item.buildTag ?? latestBuildTag,
   });
