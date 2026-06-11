@@ -4,14 +4,15 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
-  createSimulatedReactionEvent,
+  createTitleReactionEvent,
   formatVisibleReactionChoices,
-  formatSimulatedReactionEvent,
+  formatReactionWriteSummary,
   formatReactionTitle,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
   promptForReaction,
+  ratingForReaction,
   readReactionCatalog,
   readReactionState,
   runReactionSession,
@@ -31,6 +32,7 @@ async function createTempProject({
   );
   tempDirs.push(rootDir);
   await fs.mkdir(path.join(rootDir, 'data'), { recursive: true });
+  await fs.mkdir(path.join(rootDir, 'events'), { recursive: true });
   await fs.writeFile(
     path.join(rootDir, 'data', 'catalog.json'),
     `${JSON.stringify(catalog, null, 2)}\n`,
@@ -39,6 +41,11 @@ async function createTempProject({
   await fs.writeFile(
     path.join(rootDir, 'data', 'title-reactions.json'),
     `${JSON.stringify(reactions, null, 2)}\n`,
+    'utf8',
+  );
+  await fs.writeFile(
+    path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+    '',
     'utf8',
   );
   return rootDir;
@@ -324,52 +331,69 @@ describe('reaction CLI', () => {
     });
   });
 
-  it('creates a simulated reaction event in memory', () => {
+  it('creates a title reaction event in memory', () => {
     expect(
-      createSimulatedReactionEvent(
-        testCatalog()['imdb:tt001'],
-        'liked',
-      ),
+      createTitleReactionEvent(testCatalog()['imdb:tt001'], 'liked', {
+        eventId: 'evt-1',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+      }),
     ).toEqual({
+      eventId: 'evt-1',
+      type: 'title.reaction.updated',
+      occurredAt: '2026-06-10T12:00:00.000Z',
       canonicalId: 'imdb:tt001',
-      title: 'Alpha',
-      reaction: 'liked',
+      rating: 8,
     });
   });
 
-  it('formats simulated event output as a dry run', () => {
-    const output = formatSimulatedReactionEvent({
-      canonicalId: 'imdb:tt001',
-      title: 'Alpha',
-      reaction: 'liked',
-    });
-
-    expect(output).toContain('Simulated event write');
-    expect(output).toContain('no file was written');
-    expect(output).toContain('"canonicalId": "imdb:tt001"');
-    expect(output).toContain('"title": "Alpha"');
-    expect(output).toContain('"reaction": "liked"');
+  it('maps visible reaction choices to personal-fit ratings', () => {
+    expect(ratingForReaction('loved')).toBe(10);
+    expect(ratingForReaction('liked')).toBe(8);
+    expect(ratingForReaction('mixed')).toBe(5);
+    expect(ratingForReaction('disliked')).toBe(3);
+    expect(ratingForReaction('hated')).toBe(1);
   });
 
-  it('does not write files when creating and formatting simulated events', async () => {
+  it('formats real write output without implementation details', () => {
+    const output = formatReactionWriteSummary({
+      eventsWritten: 1,
+      events: [
+        {
+          canonicalId: 'imdb:tt001',
+          title: 'Alpha',
+          rating: 8,
+        },
+      ],
+    });
+
+    expect(output).toContain('Wrote 1 title reaction event(s).');
+    expect(output).toContain('Alpha: rating 8/10 (imdb:tt001)');
+    expect(output).not.toContain('eventId');
+    expect(output).not.toContain('occurredAt');
+  });
+
+  it('does not write files when creating and formatting events', async () => {
     const rootDir = await createTempProject();
-    const before = await fs.readdir(path.join(rootDir, 'data'));
+    const before = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
 
-    const event = createSimulatedReactionEvent(
+    const event = createTitleReactionEvent(
       testCatalog()['imdb:tt001'],
       'loved',
     );
-    formatSimulatedReactionEvent(event);
+    formatReactionWriteSummary({
+      eventsWritten: 1,
+      events: [{ ...event, title: 'Alpha' }],
+    });
 
     await expect(
       fs.readFile(
         path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
         'utf8',
       ),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(
-      fs.readdir(path.join(rootDir, 'data')),
-    ).resolves.toEqual(before);
+    ).resolves.toBe(before);
   });
 
   it('uses default limit 1 for a reaction session', async () => {
@@ -385,10 +409,23 @@ describe('reaction CLI', () => {
     expect(result).toMatchObject({
       status: 'completed',
       processedCount: 1,
+      eventsWritten: 1,
     });
     expect(result.bufferedEvents).toHaveLength(1);
+    expect(result.bufferedEvents[0]).toMatchObject({
+      type: 'title.reaction.updated',
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+      rating: 8,
+    });
     expect(output.join('\n')).toContain('Alpha (2001)');
     expect(output.join('\n')).not.toContain('Beta (2002)');
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toContain('"canonicalId":"imdb:tt001"');
   });
 
   it('supports --limit n session selection behavior', async () => {
@@ -448,11 +485,11 @@ describe('reaction CLI', () => {
       processedCount: 2,
     });
     expect(result.bufferedEvents).toEqual([
-      {
+      expect.objectContaining({
         canonicalId: 'imdb:tt002',
         title: 'Beta',
-        reaction: 'liked',
-      },
+        rating: 8,
+      }),
     ]);
     expect(output.join('\n')).toContain('Alpha (2001)');
     expect(output.join('\n')).toContain('Beta (2002)');
@@ -477,11 +514,17 @@ describe('reaction CLI', () => {
       processedCount: 1,
     });
     expect(output.join('\n')).toContain(
-      'Reaction session aborted. No simulated events were saved or written.',
+      'Reaction session aborted. No events were written.',
     );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
   });
 
-  it('quit save and quit prints buffer and excludes the current title', async () => {
+  it('quit save and quit writes buffer and excludes the current title', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
@@ -498,14 +541,21 @@ describe('reaction CLI', () => {
     expect(result).toMatchObject({
       status: 'saved-and-quit',
       processedCount: 1,
+      eventsWritten: 1,
     });
     expect(result.bufferedEvents).toHaveLength(1);
-    expect(text).toContain('"canonicalId": "imdb:tt001"');
-    expect(text).not.toContain('"canonicalId": "imdb:tt002"');
+    expect(text).toContain('Wrote 1 title reaction event(s).');
+    expect(text).toContain('Alpha: rating 8/10 (imdb:tt001)');
+    expect(text).not.toContain('imdb:tt002');
     expect(text).toContain(
       'Save & Quit selected. Current title was not written: Beta.',
     );
-    expect(text).toContain('No file was written.');
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    expect(eventText).toContain('"canonicalId":"imdb:tt001"');
+    expect(eventText).not.toContain('imdb:tt002');
   });
 
   it('quit cancel returns to the same title prompt', async () => {
@@ -528,11 +578,11 @@ describe('reaction CLI', () => {
       processedCount: 1,
     });
     expect(result.bufferedEvents).toEqual([
-      {
+      expect.objectContaining({
         canonicalId: 'imdb:tt001',
         title: 'Alpha',
-        reaction: 'mixed',
-      },
+        rating: 5,
+      }),
     ]);
     expect(
       promptedTitles.filter((message) =>
@@ -572,47 +622,81 @@ describe('reaction CLI', () => {
     });
 
     expect(result.bufferedEvents).toEqual([
-      {
+      expect.objectContaining({
         canonicalId: 'imdb:tt002',
         title: 'Beta',
-        reaction: 'liked',
-      },
+        rating: 8,
+      }),
     ]);
   });
 
-  it('keeps session behavior file-free', async () => {
+  it('writes events append-only and rebuilds the projection on completion', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
+    const existingEvent =
+      '{"eventId":"evt-existing","type":"title.reaction.updated","occurredAt":"2026-06-09T12:00:00.000Z","canonicalId":"imdb:tt003","rating":10}\n';
+    await fs.writeFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      existingEvent,
+      'utf8',
+    );
     const catalogBefore = await fs.readFile(
       path.join(rootDir, 'data', 'catalog.json'),
       'utf8',
     );
-    const reactionsBefore = await fs.readFile(
-      path.join(rootDir, 'data', 'title-reactions.json'),
-      'utf8',
-    );
 
-    await captureReactionSession({
+    const { result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', 'none'],
+      args: ['--limit', '2'],
       reactionPrompt: async () => 'liked',
     });
-
-    await expect(
-      fs.readFile(path.join(rootDir, 'data', 'catalog.json'), 'utf8'),
-    ).resolves.toBe(catalogBefore);
-    await expect(
-      fs.readFile(
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    const eventLines = eventText.trim().split('\n');
+    const projection = JSON.parse(
+      await fs.readFile(
         path.join(rootDir, 'data', 'title-reactions.json'),
         'utf8',
       ),
-    ).resolves.toBe(reactionsBefore);
+    );
+
+    expect(result.eventsWritten).toBe(2);
+    expect(eventText.startsWith(existingEvent)).toBe(true);
+    expect(eventLines).toHaveLength(3);
+    expect(
+      eventLines.map((line) => JSON.parse(line).canonicalId),
+    ).toEqual(['imdb:tt003', 'imdb:tt001', 'imdb:tt002']);
+    expect(projection['imdb:tt001']).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 8,
+    });
+    expect(projection['imdb:tt002']).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      rating: 8,
+    });
     await expect(
-      fs.readFile(
-        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
-        'utf8',
-      ),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
+      fs.readFile(path.join(rootDir, 'data', 'catalog.json'), 'utf8'),
+    ).resolves.toBe(catalogBefore);
+  });
+
+  it('does not duplicate writes from a single session', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--limit', '2'],
+      reactionPrompt: async () => 'liked',
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+
+    expect(eventText.trim().split('\n')).toHaveLength(2);
   });
 });

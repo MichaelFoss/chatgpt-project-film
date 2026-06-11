@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CatalogBuildError } from './catalog-build-error.js';
-import { parseNdjson } from './catalog-events.js';
+import { appendEvents, parseNdjson } from './catalog-events.js';
 import { isNonEmptyString } from './catalog-utils.js';
 import { writeGeneratedJsonFile } from './json-file.js';
 
@@ -234,6 +234,38 @@ export async function readTitleReactionEvents(eventsPath) {
   }
 
   return parseNdjson(text, eventsPath);
+}
+
+export async function appendTitleReactionEvents({
+  eventsPath,
+  events,
+  catalog,
+} = {}) {
+  if (!eventsPath) {
+    throw new CatalogBuildError('eventsPath is required.');
+  }
+
+  if (!Array.isArray(events)) {
+    throw new CatalogBuildError(
+      'Title reaction events must be an array.',
+    );
+  }
+
+  if (events.length === 0) {
+    return {
+      eventsAppended: 0,
+      outputPathWritten: null,
+    };
+  }
+
+  const existingEvents = await readTitleReactionEvents(eventsPath);
+  validateTitleReactionEvents([...existingEvents, ...events], catalog);
+  await appendEvents(eventsPath, events);
+
+  return {
+    eventsAppended: events.length,
+    outputPathWritten: eventsPath,
+  };
 }
 
 export async function buildTitleReactions({

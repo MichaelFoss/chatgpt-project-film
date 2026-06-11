@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -10,6 +11,11 @@ import {
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { CatalogBuildError } from './catalog-build-error.js';
 import { readCatalog } from './catalog-query.js';
+import {
+  appendTitleReactionEvents,
+  buildTitleReactions,
+  titleReactionEventType,
+} from './title-reactions.js';
 
 const defaultLimit = 1;
 const reactionOptions = [
@@ -27,6 +33,13 @@ const quitConfirmationOptions = [
   { key: 's', label: 'Save & Quit', value: 'save-and-quit' },
   { key: 'c', label: 'Cancel', value: 'cancel' },
 ];
+const reactionRatings = {
+  loved: 10,
+  liked: 8,
+  mixed: 5,
+  disliked: 3,
+  hated: 1,
+};
 
 const singleKeyChoicePrompt = createPrompt((config, done) => {
   const [status, setStatus] = useState('idle');
@@ -306,34 +319,52 @@ export async function promptForQuitConfirmation({
   return quitPrompt(createQuitConfirmationPromptConfig({ message }));
 }
 
-export function createSimulatedReactionEvent(item, reaction) {
+export function ratingForReaction(reaction) {
+  const rating = reactionRatings[reaction];
+
+  if (!rating) {
+    throw new CatalogBuildError(`Unsupported reaction: ${reaction}`);
+  }
+
+  return rating;
+}
+
+export function createTitleReactionEvent(
+  item,
+  reaction,
+  {
+    eventId = randomUUID(),
+    occurredAt = new Date().toISOString(),
+  } = {},
+) {
   return {
+    eventId,
+    type: titleReactionEventType,
+    occurredAt,
     canonicalId: item.canonicalId,
-    title: item.title,
-    reaction,
+    rating: ratingForReaction(reaction),
   };
 }
 
-export function formatSimulatedReactionEvent(event) {
-  return [
-    'Simulated event write (dry run; no file was written):',
-    JSON.stringify(event, null, 2),
-  ].join('\n');
-}
+export function formatReactionWriteSummary(report) {
+  const lines = [
+    `Wrote ${report.eventsWritten} title reaction event(s).`,
+  ];
 
-export function formatBufferedSimulatedReactionEvents(events) {
-  if (events.length === 0) {
-    return 'No simulated events to write (dry run; no file was written).';
+  if (report.eventsWritten > 0) {
+    lines.push(
+      ...report.events.map(
+        (event) =>
+          `- ${event.title}: rating ${event.rating}/10 (${event.canonicalId})`,
+      ),
+    );
   }
 
-  return [
-    ...events.map((event) => formatSimulatedReactionEvent(event)),
-    'Dry run complete; no file was written.',
-  ].join('\n');
+  return lines.join('\n');
 }
 
 export function formatAbortMessage() {
-  return 'Reaction session aborted. No simulated events were saved or written.';
+  return 'Reaction session aborted. No events were written.';
 }
 
 export function formatSaveAndQuitCurrentTitleMessage(item) {
@@ -342,6 +373,32 @@ export function formatSaveAndQuitCurrentTitleMessage(item) {
 
 export function hasReachedSessionLimit(processedCount, limit) {
   return limit !== 'none' && processedCount >= limit;
+}
+
+async function persistReactionEvents({
+  rootDir,
+  catalog,
+  bufferedEvents,
+}) {
+  const eventsPath = path.join(
+    rootDir,
+    'events',
+    'title-reactions.events.ndjson',
+  );
+
+  const appendReport = await appendTitleReactionEvents({
+    eventsPath,
+    events: bufferedEvents.map(({ title, ...event }) => event),
+    catalog,
+  });
+  const projectionReport = await buildTitleReactions({ rootDir });
+
+  return {
+    ...appendReport,
+    projectionReport,
+    eventsWritten: appendReport.eventsAppended,
+    events: bufferedEvents,
+  };
 }
 
 export async function runReactionSession({
@@ -402,14 +459,18 @@ export async function runReactionSession({
         }
 
         if (quitAction === 'save-and-quit') {
-          writeOutput(
-            formatBufferedSimulatedReactionEvents(bufferedEvents),
-          );
+          const report = await persistReactionEvents({
+            rootDir,
+            catalog,
+            bufferedEvents,
+          });
+
+          writeOutput(formatReactionWriteSummary(report));
           writeOutput(formatSaveAndQuitCurrentTitleMessage(item));
-          writeOutput('No file was written.');
           return {
             status: 'saved-and-quit',
             bufferedEvents,
+            eventsWritten: report.eventsWritten,
             processedCount,
           };
         }
@@ -417,19 +478,28 @@ export async function runReactionSession({
         continue;
       }
 
-      const event = createSimulatedReactionEvent(item, reaction);
-      bufferedEvents.push(event);
+      const event = createTitleReactionEvent(item, reaction);
+      bufferedEvents.push({
+        ...event,
+        title: item.title,
+      });
       processedTitleIds.add(item.canonicalId);
       processedCount += 1;
       needsReaction = false;
     }
   }
 
-  writeOutput(formatBufferedSimulatedReactionEvents(bufferedEvents));
+  const report = await persistReactionEvents({
+    rootDir,
+    catalog,
+    bufferedEvents,
+  });
+  writeOutput(formatReactionWriteSummary(report));
 
   return {
     status: 'completed',
     bufferedEvents,
+    eventsWritten: report.eventsWritten,
     processedCount,
   };
 }

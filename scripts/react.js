@@ -2,27 +2,29 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionPromptConfig,
-  createSimulatedReactionEvent,
+  createTitleReactionEvent,
   createReactionCommand,
   formatVisibleReactionChoices,
-  formatSimulatedReactionEvent,
+  formatReactionWriteSummary,
   formatReactionTitle,
   parseReactionCliArgs,
+  ratingForReaction,
   runReactionSession,
 } from './lib/reaction-cli.js';
 
 export {
   createReactionPromptConfig,
-  createSimulatedReactionEvent,
+  createTitleReactionEvent,
   createReactionCommand,
   formatVisibleReactionChoices,
-  formatSimulatedReactionEvent,
+  formatReactionWriteSummary,
   formatReactionTitle,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
   promptForQuitConfirmation,
   promptForReaction,
+  ratingForReaction,
   readReactionCatalog,
   readReactionState,
   runReactionSession,
