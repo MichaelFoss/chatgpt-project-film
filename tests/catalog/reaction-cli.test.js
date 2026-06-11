@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createSimulatedReactionEvent,
+  formatVisibleReactionChoices,
   formatSimulatedReactionEvent,
   formatReactionTitle,
   getReactionPromptChoices,
@@ -13,6 +14,7 @@ import {
   readReactionCatalog,
   readReactionState,
   selectFirstUnreactedTitle,
+  selectReactionChoiceByKey,
   selectReactionTitle,
 } from '../../scripts/react.js';
 
@@ -222,19 +224,42 @@ describe('reaction CLI', () => {
 
   it('maps reaction prompt choices to internal reaction values', async () => {
     expect(getReactionPromptChoices()).toEqual([
-      { name: 'Loved', value: 'loved' },
-      { name: 'Liked', value: 'liked' },
-      { name: 'Mixed', value: 'mixed' },
-      { name: 'Disliked', value: 'disliked' },
-      { name: 'Hated', value: 'hated' },
+      { key: '1', name: 'Loved', value: 'loved' },
+      { key: '2', name: 'Liked', value: 'liked' },
+      { key: '3', name: 'Mixed', value: 'mixed' },
+      { key: '4', name: 'Disliked', value: 'disliked' },
+      { key: '5', name: 'Hated', value: 'hated' },
     ]);
 
     const reaction = await promptForReaction({
       reactionPrompt: async ({ choices }) =>
-        choices.find((choice) => choice.name === 'Mixed').value,
+        selectReactionChoiceByKey(choices, '3').value,
     });
 
     expect(reaction).toBe('mixed');
+  });
+
+  it('maps a single visible keypress to a reaction', () => {
+    const choices = getReactionPromptChoices();
+
+    expect(selectReactionChoiceByKey(choices, '1')).toEqual({
+      key: '1',
+      name: 'Loved',
+      value: 'loved',
+    });
+    expect(selectReactionChoiceByKey(choices, '5')).toEqual({
+      key: '5',
+      name: 'Hated',
+      value: 'hated',
+    });
+    expect(selectReactionChoiceByKey(choices, 'enter')).toBeNull();
+    expect(selectReactionChoiceByKey(choices, '')).toBeNull();
+  });
+
+  it('generates visible reaction choices for every available option', () => {
+    expect(formatVisibleReactionChoices()).toBe(
+      '[1] Loved [2] Liked [3] Mixed [4] Disliked [5] Hated',
+    );
   });
 
   it('does not configure a default reaction value', async () => {

@@ -1,18 +1,88 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { rawlist } from '@inquirer/prompts';
+import {
+  createPrompt,
+  makeTheme,
+  useKeypress,
+  usePrefix,
+  useState,
+} from '@inquirer/core';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { CatalogBuildError } from './catalog-build-error.js';
 import { readCatalog } from './catalog-query.js';
 
 const defaultLimit = 1;
 const reactionOptions = [
-  { label: 'Loved', value: 'loved' },
-  { label: 'Liked', value: 'liked' },
-  { label: 'Mixed', value: 'mixed' },
-  { label: 'Disliked', value: 'disliked' },
-  { label: 'Hated', value: 'hated' },
+  { key: '1', label: 'Loved', value: 'loved' },
+  { key: '2', label: 'Liked', value: 'liked' },
+  { key: '3', label: 'Mixed', value: 'mixed' },
+  { key: '4', label: 'Disliked', value: 'disliked' },
+  { key: '5', label: 'Hated', value: 'hated' },
 ];
+
+const singleKeyReactionPrompt = createPrompt((config, done) => {
+  const [status, setStatus] = useState('idle');
+  const [selectedKey, setSelectedKey] = useState('');
+  const [error, setError] = useState('');
+  const theme = makeTheme(config.theme);
+  const prefix = usePrefix({ status, theme });
+
+  useKeypress((event, readline) => {
+    const input = normalizeReactionInput(
+      event.sequence ?? readline.line,
+    );
+    const selectedChoice = selectReactionChoiceByKey(
+      config.choices,
+      input,
+    );
+
+    if (selectedChoice) {
+      setSelectedKey(selectedChoice.key);
+      setStatus('done');
+      done(selectedChoice.value);
+      return;
+    }
+
+    setError(
+      input
+        ? `"${input}" is not an available reaction.`
+        : 'Press one of the visible reaction keys.',
+    );
+  });
+
+  const message = theme.style.message(config.message, status);
+
+  if (status === 'done') {
+    const selectedChoice = selectReactionChoiceByKey(
+      config.choices,
+      selectedKey,
+    );
+    return `${prefix} ${message} ${theme.style.answer(
+      selectedChoice?.name ?? selectedKey,
+    )}`;
+  }
+
+  return [
+    `${prefix} ${message}`,
+    [
+      formatVisibleReactionChoices(config.choices),
+      error ? theme.style.error(error) : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  ];
+});
+
+function normalizeReactionInput(input) {
+  return String(input ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+export function selectReactionChoiceByKey(choices, input) {
+  const key = normalizeReactionInput(input);
+  return choices.find((choice) => choice.key === key) ?? null;
+}
 
 function parseLimit(value) {
   if (value === 'none') {
@@ -166,10 +236,19 @@ export function formatReactionTitle(item) {
 }
 
 export function getReactionPromptChoices() {
-  return reactionOptions.map(({ label, value }) => ({
+  return reactionOptions.map(({ key, label, value }) => ({
+    key,
     name: label,
     value,
   }));
+}
+
+export function formatVisibleReactionChoices(
+  choices = getReactionPromptChoices(),
+) {
+  return choices
+    .map((choice) => `[${choice.key}] ${choice.name}`)
+    .join(' ');
 }
 
 export function createReactionPromptConfig({
@@ -182,7 +261,7 @@ export function createReactionPromptConfig({
 }
 
 export async function promptForReaction({
-  reactionPrompt = rawlist,
+  reactionPrompt = singleKeyReactionPrompt,
   message,
 } = {}) {
   return reactionPrompt(createReactionPromptConfig({ message }));

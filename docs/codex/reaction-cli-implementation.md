@@ -76,7 +76,7 @@ Use:
 
 ```txt
 commander
-@inquirer/prompts
+@inquirer/core
 ```
 
 Do not build custom argument parsing.

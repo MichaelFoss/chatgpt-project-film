@@ -4,6 +4,7 @@ import {
   createReactionPromptConfig,
   createSimulatedReactionEvent,
   createReactionCommand,
+  formatVisibleReactionChoices,
   formatSimulatedReactionEvent,
   formatReactionTitle,
   parseReactionCliArgs,
@@ -17,6 +18,7 @@ export {
   createReactionPromptConfig,
   createSimulatedReactionEvent,
   createReactionCommand,
+  formatVisibleReactionChoices,
   formatSimulatedReactionEvent,
   formatReactionTitle,
   getReactionPromptChoices,
@@ -24,6 +26,7 @@ export {
   promptForReaction,
   readReactionCatalog,
   readReactionState,
+  selectReactionChoiceByKey,
   selectFirstUnreactedTitle,
   selectReactionTitle,
 } from './lib/reaction-cli.js';
