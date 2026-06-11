@@ -190,6 +190,34 @@ Quit
 
 Naming can change during implementation.
 
+### Reaction Input Model
+
+Reaction selection should use a single interactive choice list.
+
+When additional actions are introduced (for example Skip and Quit), they
+should appear in the same selection list as reaction choices.
+
+Example:
+
+```txt
+Loved
+Liked
+Mixed
+Disliked
+Hated
+Skip
+Quit
+```
+
+Do not use keyboard shortcuts for reaction actions.
+
+Do not require users to memorize command keys.
+
+Users should be able to complete the entire interaction through visible
+menu choices.
+
+Custom keypress handling is explicitly out of scope for the MVP.
+
 ## Buffered Writes
 
 All reactions are stored in memory during a session.
