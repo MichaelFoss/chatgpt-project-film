@@ -3,8 +3,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  createReactionPromptConfig,
+  createSimulatedReactionEvent,
+  formatSimulatedReactionEvent,
   formatReactionTitle,
+  getReactionPromptChoices,
   parseReactionCliArgs,
+  promptForReaction,
   readReactionCatalog,
   readReactionState,
   selectFirstUnreactedTitle,
@@ -213,5 +218,84 @@ describe('reaction CLI', () => {
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
     ).not.toContain('9.9');
+  });
+
+  it('maps reaction prompt choices to internal reaction values', async () => {
+    expect(getReactionPromptChoices()).toEqual([
+      { name: 'Loved', value: 'loved' },
+      { name: 'Liked', value: 'liked' },
+      { name: 'Mixed', value: 'mixed' },
+      { name: 'Disliked', value: 'disliked' },
+      { name: 'Hated', value: 'hated' },
+    ]);
+
+    const reaction = await promptForReaction({
+      reactionPrompt: async ({ choices }) =>
+        choices.find((choice) => choice.name === 'Mixed').value,
+    });
+
+    expect(reaction).toBe('mixed');
+  });
+
+  it('does not configure a default reaction value', async () => {
+    const promptConfig = createReactionPromptConfig();
+
+    expect(promptConfig).not.toHaveProperty('default');
+    expect(promptConfig.choices).toEqual(getReactionPromptChoices());
+
+    await promptForReaction({
+      reactionPrompt: async (config) => {
+        expect(config).not.toHaveProperty('default');
+        return 'liked';
+      },
+    });
+  });
+
+  it('creates a simulated reaction event in memory', () => {
+    expect(
+      createSimulatedReactionEvent(
+        testCatalog()['imdb:tt001'],
+        'liked',
+      ),
+    ).toEqual({
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+      reaction: 'liked',
+    });
+  });
+
+  it('formats simulated event output as a dry run', () => {
+    const output = formatSimulatedReactionEvent({
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+      reaction: 'liked',
+    });
+
+    expect(output).toContain('Simulated event write');
+    expect(output).toContain('no file was written');
+    expect(output).toContain('"canonicalId": "imdb:tt001"');
+    expect(output).toContain('"title": "Alpha"');
+    expect(output).toContain('"reaction": "liked"');
+  });
+
+  it('does not write files when creating and formatting simulated events', async () => {
+    const rootDir = await createTempProject();
+    const before = await fs.readdir(path.join(rootDir, 'data'));
+
+    const event = createSimulatedReactionEvent(
+      testCatalog()['imdb:tt001'],
+      'loved',
+    );
+    formatSimulatedReactionEvent(event);
+
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      fs.readdir(path.join(rootDir, 'data')),
+    ).resolves.toEqual(before);
   });
 });

@@ -1,10 +1,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { rawlist } from '@inquirer/prompts';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { CatalogBuildError } from './catalog-build-error.js';
 import { readCatalog } from './catalog-query.js';
 
 const defaultLimit = 1;
+const reactionOptions = [
+  { label: 'Loved', value: 'loved' },
+  { label: 'Liked', value: 'liked' },
+  { label: 'Mixed', value: 'mixed' },
+  { label: 'Disliked', value: 'disliked' },
+  { label: 'Hated', value: 'hated' },
+];
 
 function parseLimit(value) {
   if (value === 'none') {
@@ -155,6 +163,44 @@ export function formatReactionTitle(item) {
   lines.push(metadata.join(' · '));
 
   return lines.join('\n');
+}
+
+export function getReactionPromptChoices() {
+  return reactionOptions.map(({ label, value }) => ({
+    name: label,
+    value,
+  }));
+}
+
+export function createReactionPromptConfig({
+  message = 'Reaction',
+} = {}) {
+  return {
+    message,
+    choices: getReactionPromptChoices(),
+  };
+}
+
+export async function promptForReaction({
+  reactionPrompt = rawlist,
+  message,
+} = {}) {
+  return reactionPrompt(createReactionPromptConfig({ message }));
+}
+
+export function createSimulatedReactionEvent(item, reaction) {
+  return {
+    canonicalId: item.canonicalId,
+    title: item.title,
+    reaction,
+  };
+}
+
+export function formatSimulatedReactionEvent(event) {
+  return [
+    'Simulated event write (dry run; no file was written):',
+    JSON.stringify(event, null, 2),
+  ].join('\n');
 }
 
 export async function selectReactionTitle(options = {}) {

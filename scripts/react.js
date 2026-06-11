@@ -1,18 +1,27 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  createReactionPromptConfig,
+  createSimulatedReactionEvent,
   createReactionCommand,
+  formatSimulatedReactionEvent,
   formatReactionTitle,
   parseReactionCliArgs,
+  promptForReaction,
   readReactionCatalog,
   readReactionState,
   selectReactionTitle,
 } from './lib/reaction-cli.js';
 
 export {
+  createReactionPromptConfig,
+  createSimulatedReactionEvent,
   createReactionCommand,
+  formatSimulatedReactionEvent,
   formatReactionTitle,
+  getReactionPromptChoices,
   parseReactionCliArgs,
+  promptForReaction,
   readReactionCatalog,
   readReactionState,
   selectFirstUnreactedTitle,
@@ -24,6 +33,14 @@ async function main() {
     parseReactionCliArgs(process.argv.slice(2));
     const item = await selectReactionTitle();
     console.log(formatReactionTitle(item));
+
+    if (!item) {
+      return;
+    }
+
+    const reaction = await promptForReaction();
+    const event = createSimulatedReactionEvent(item, reaction);
+    console.log(formatSimulatedReactionEvent(event));
   } catch (error) {
     if (error.code === 'commander.helpDisplayed') {
       createReactionCommand().parse(process.argv);
