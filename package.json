@@ -16,6 +16,7 @@
     "catalog:list": "node scripts/catalog-list.js",
     "catalog:show": "node scripts/catalog-show.js",
     "catalog:search": "node scripts/catalog-search.js",
+    "react": "node scripts/react.js",
     "plex:import": "node scripts/plex-import.js",
     "plex:plan": "node scripts/plex-plan.js",
     "build:catalog": "node scripts/build-catalog.js",
@@ -53,6 +54,8 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
+    "commander": "^15.0.0",
     "dotenv": "^17.4.2"
   }
 }

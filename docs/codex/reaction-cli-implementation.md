@@ -146,7 +146,7 @@ No writing occurs.
 --random
 --id <canonicalId>
 --help
--?
+-h
 ```
 
 Note:
