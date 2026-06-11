@@ -2,16 +2,28 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionCommand,
+  formatReactionTitle,
   parseReactionCliArgs,
+  readReactionCatalog,
+  readReactionState,
+  selectReactionTitle,
 } from './lib/reaction-cli.js';
 
-export { createReactionCommand, parseReactionCliArgs };
+export {
+  createReactionCommand,
+  formatReactionTitle,
+  parseReactionCliArgs,
+  readReactionCatalog,
+  readReactionState,
+  selectFirstUnreactedTitle,
+  selectReactionTitle,
+} from './lib/reaction-cli.js';
 
 async function main() {
   try {
-    const options = parseReactionCliArgs(process.argv.slice(2));
-    console.log('Reaction CLI parsed arguments.');
-    console.log(JSON.stringify(options, null, 2));
+    parseReactionCliArgs(process.argv.slice(2));
+    const item = await selectReactionTitle();
+    console.log(formatReactionTitle(item));
   } catch (error) {
     if (error.code === 'commander.helpDisplayed') {
       createReactionCommand().parse(process.argv);

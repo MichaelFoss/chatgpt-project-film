@@ -1,5 +1,78 @@
-import { describe, expect, it } from 'vitest';
-import { parseReactionCliArgs } from '../../scripts/react.js';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  formatReactionTitle,
+  parseReactionCliArgs,
+  readReactionCatalog,
+  readReactionState,
+  selectFirstUnreactedTitle,
+  selectReactionTitle,
+} from '../../scripts/react.js';
+
+const tempDirs = [];
+
+async function createTempProject({
+  catalog = testCatalog(),
+  reactions = {},
+} = {}) {
+  const rootDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'film-reaction-cli-'),
+  );
+  tempDirs.push(rootDir);
+  await fs.mkdir(path.join(rootDir, 'data'), { recursive: true });
+  await fs.writeFile(
+    path.join(rootDir, 'data', 'catalog.json'),
+    `${JSON.stringify(catalog, null, 2)}\n`,
+    'utf8',
+  );
+  await fs.writeFile(
+    path.join(rootDir, 'data', 'title-reactions.json'),
+    `${JSON.stringify(reactions, null, 2)}\n`,
+    'utf8',
+  );
+  return rootDir;
+}
+
+function testCatalog() {
+  return {
+    'imdb:tt001': {
+      canonicalId: 'imdb:tt001',
+      mediaType: 'movie',
+      title: 'Alpha',
+      releaseYear: 2001,
+      description: 'This plot summary must not appear.',
+      genres: ['Action', 'Sci-Fi'],
+      ratings: {
+        imdb: '9.9',
+      },
+    },
+    'imdb:tt002': {
+      canonicalId: 'imdb:tt002',
+      mediaType: 'series',
+      title: 'Beta',
+      releaseYear: 2002,
+      description: 'Another plot summary must not appear.',
+      genres: ['Drama'],
+    },
+  };
+}
+
+function reaction(canonicalId) {
+  return {
+    canonicalId,
+    updatedAt: '2026-06-10T12:00:00.000Z',
+    eventIds: [`evt-${canonicalId}`],
+    rating: 8,
+  };
+}
+
+afterEach(async () => {
+  await Promise.all(
+    tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true })),
+  );
+});
 
 describe('reaction CLI', () => {
   it('parses the default reaction options', () => {
@@ -59,5 +132,86 @@ describe('reaction CLI', () => {
     ).toThrow(
       "error: option '--random' cannot be used with option '--id <canonicalId>'",
     );
+  });
+
+  it('loads the generated catalog', async () => {
+    const rootDir = await createTempProject();
+
+    await expect(readReactionCatalog({ rootDir })).resolves.toEqual(
+      testCatalog(),
+    );
+  });
+
+  it('loads current reaction state from the generated projection', async () => {
+    const reactions = {
+      'imdb:tt001': reaction('imdb:tt001'),
+    };
+    const rootDir = await createTempProject({ reactions });
+
+    await expect(readReactionState({ rootDir })).resolves.toEqual(
+      reactions,
+    );
+  });
+
+  it('selects the first unreacted title in catalog order', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+
+    await expect(
+      selectReactionTitle({ rootDir }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+    expect(
+      selectFirstUnreactedTitle(testCatalog(), {
+        'imdb:tt001': reaction('imdb:tt001'),
+      }),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+  });
+
+  it('returns a user-friendly message when all titles are reacted', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+        'imdb:tt002': reaction('imdb:tt002'),
+      },
+    });
+
+    const item = await selectReactionTitle({ rootDir });
+
+    expect(item).toBeNull();
+    expect(formatReactionTitle(item)).toBe(
+      'No unreacted titles found.',
+    );
+  });
+
+  it('handles an empty catalog as no eligible title', async () => {
+    const rootDir = await createTempProject({ catalog: {} });
+
+    const item = await selectReactionTitle({ rootDir });
+
+    expect(item).toBeNull();
+    expect(formatReactionTitle(item)).toBe(
+      'No unreacted titles found.',
+    );
+  });
+
+  it('formats only identifying metadata for a selected title', () => {
+    expect(formatReactionTitle(testCatalog()['imdb:tt001'])).toBe(
+      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+    );
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('plot summary');
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('9.9');
   });
 });

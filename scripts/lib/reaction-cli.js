@@ -1,4 +1,8 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { Command, InvalidArgumentError, Option } from 'commander';
+import { CatalogBuildError } from './catalog-build-error.js';
+import { readCatalog } from './catalog-query.js';
 
 const defaultLimit = 1;
 
@@ -68,4 +72,94 @@ export function parseReactionCliArgs(args) {
     random: Boolean(options.random),
     id: options.id ?? null,
   };
+}
+
+export async function readReactionCatalog(options = {}) {
+  return readCatalog(options);
+}
+
+export async function readReactionState({
+  rootDir = process.cwd(),
+  reactionsPath = path.join(rootDir, 'data', 'title-reactions.json'),
+} = {}) {
+  let text;
+
+  try {
+    text = await fs.readFile(reactionsPath, 'utf8');
+  } catch (error) {
+    throw new CatalogBuildError(
+      `Unable to read title reaction state at ${reactionsPath}: ${error.message}`,
+    );
+  }
+
+  try {
+    const reactions = JSON.parse(text);
+
+    if (
+      !reactions ||
+      typeof reactions !== 'object' ||
+      Array.isArray(reactions)
+    ) {
+      throw new Error('title reaction state must be a JSON object');
+    }
+
+    return reactions;
+  } catch (error) {
+    throw new CatalogBuildError(
+      `Invalid title reaction state JSON at ${reactionsPath}: ${error.message}`,
+    );
+  }
+}
+
+export function getReactedTitleIds(reactions) {
+  return new Set(Object.keys(reactions));
+}
+
+export function selectFirstUnreactedTitle(catalog, reactions) {
+  const reactedTitleIds = getReactedTitleIds(reactions);
+
+  return (
+    Object.values(catalog).find(
+      (item) => !reactedTitleIds.has(item.canonicalId),
+    ) ?? null
+  );
+}
+
+function formatMediaType(mediaType) {
+  if (mediaType === 'movie') {
+    return 'Movie';
+  }
+
+  if (mediaType === 'series') {
+    return 'TV';
+  }
+
+  return mediaType;
+}
+
+export function formatReactionTitle(item) {
+  if (!item) {
+    return 'No unreacted titles found.';
+  }
+
+  const year = Number.isInteger(item.releaseYear)
+    ? ` (${item.releaseYear})`
+    : '';
+  const lines = [`${item.title}${year}`];
+  const metadata = [formatMediaType(item.mediaType)];
+
+  if (Array.isArray(item.genres) && item.genres.length > 0) {
+    metadata.push(item.genres.join(', '));
+  }
+
+  lines.push(metadata.join(' · '));
+
+  return lines.join('\n');
+}
+
+export async function selectReactionTitle(options = {}) {
+  const catalog = await readReactionCatalog(options);
+  const reactions = await readReactionState(options);
+
+  return selectFirstUnreactedTitle(catalog, reactions);
 }
