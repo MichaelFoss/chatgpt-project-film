@@ -42,6 +42,12 @@ yarn catalog:list --title="Guardians of the Galaxy: Vol. 2"
 yarn catalog:search --genre='*comedy'
 ```
 
+`yarn reactions:list` is a read-only view over
+`data/title-reactions.json` joined with `data/catalog.json`. It does not
+read the title reaction event stream. Use `--rating loved`, `--liked`,
+`--mixed`, `--disliked`, or `--hated` to list only one recorded reaction
+rating group.
+
 `yarn enrich:metadata:plan` is a legacy read-only planner. It reports
 metadata gaps and planned lookups without contacting providers or
 writing files. `yarn enrich:metadata:write` is deprecated and fails

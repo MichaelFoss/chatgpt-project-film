@@ -17,6 +17,7 @@
     "catalog:show": "node scripts/catalog-show.js",
     "catalog:search": "node scripts/catalog-search.js",
     "react": "node scripts/react.js",
+    "reactions:list": "node scripts/reaction-list.js",
     "plex:import": "node scripts/plex-import.js",
     "plex:plan": "node scripts/plex-plan.js",
     "build:catalog": "node scripts/build-catalog.js",

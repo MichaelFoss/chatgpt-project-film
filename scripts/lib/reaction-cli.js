@@ -22,6 +22,7 @@ import {
   buildTitleReactions,
   titleReactionEventType,
 } from './title-reactions.js';
+import { ratingForReaction } from './reaction-ratings.js';
 
 const defaultLimit = 1;
 const reactionOptions = [
@@ -42,14 +43,6 @@ const quitConfirmationOptions = [
 const searchSelectionKeys = '123456789abcdefghijklmnopqrstuvwxyz'.split(
   '',
 );
-const reactionRatings = {
-  loved: 10,
-  liked: 8,
-  mixed: 5,
-  disliked: 3,
-  hated: 1,
-};
-
 const singleKeyChoicePrompt = createPrompt((config, done) => {
   const [status, setStatus] = useState('idle');
   const [selectedKey, setSelectedKey] = useState('');
@@ -585,16 +578,6 @@ async function resolveTargetReactionTitle({
   }
 
   return null;
-}
-
-export function ratingForReaction(reaction) {
-  const rating = reactionRatings[reaction];
-
-  if (!rating) {
-    throw new CatalogBuildError(`Unsupported reaction: ${reaction}`);
-  }
-
-  return rating;
 }
 
 export function createTitleReactionEvent(

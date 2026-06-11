@@ -10,9 +10,9 @@ import {
   formatReactionWriteSummary,
   formatReactionTitle,
   parseReactionCliArgs,
-  ratingForReaction,
   runReactionSession,
 } from './lib/reaction-cli.js';
+export { ratingForReaction } from './lib/reaction-ratings.js';
 
 export {
   createReactionPromptConfig,
@@ -31,7 +31,6 @@ export {
   promptForSearchSelection,
   promptForQuitConfirmation,
   promptForReaction,
-  ratingForReaction,
   readReactionCatalog,
   readReactionState,
   runReactionSession,
