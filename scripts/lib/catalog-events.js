@@ -40,6 +40,19 @@ export async function readEvents(eventsPath) {
   return parseNdjson(text, eventsPath);
 }
 
+export async function appendEvents(eventsPath, events) {
+  if (events.length === 0) {
+    return;
+  }
+
+  const existingText = await fs.readFile(eventsPath, 'utf8');
+  const prefix =
+    existingText.length > 0 && !existingText.endsWith('\n') ? '\n' : '';
+  const lines = events.map((event) => JSON.stringify(event)).join('\n');
+
+  await fs.appendFile(eventsPath, `${prefix}${lines}\n`, 'utf8');
+}
+
 export function validateCatalogAddEvent(event, index) {
   const label = `event ${index + 1}`;
 

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CatalogBuildError } from './catalog-build-error.js';
 import {
+  appendEvents,
   readEvents,
   replayCatalogAddEvents,
   validateCatalogAddEvent,
@@ -307,19 +308,6 @@ function planCatalogImportItems({ items, existingCanonicalIds, now }) {
   return report;
 }
 
-async function appendCatalogEvents(eventsPath, events) {
-  if (events.length === 0) {
-    return;
-  }
-
-  const existingText = await fs.readFile(eventsPath, 'utf8');
-  const prefix =
-    existingText.length > 0 && !existingText.endsWith('\n') ? '\n' : '';
-  const lines = events.map((event) => JSON.stringify(event)).join('\n');
-
-  await fs.appendFile(eventsPath, `${prefix}${lines}\n`, 'utf8');
-}
-
 export async function importCatalogItems({
   rootDir = process.cwd(),
   eventsPath = path.join(rootDir, 'events', 'catalog.events.ndjson'),
@@ -358,7 +346,7 @@ export async function importCatalogItems({
     });
 
     if (mode === 'write') {
-      await appendCatalogEvents(eventsPath, report.plannedEvents);
+      await appendEvents(eventsPath, report.plannedEvents);
       report.eventsAppended = report.plannedEvents.length;
 
       if (report.eventsAppended > 0) {

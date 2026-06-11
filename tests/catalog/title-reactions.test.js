@@ -5,6 +5,7 @@ import matter from 'gray-matter';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildGeneratedSourceDocuments } from '../../scripts/build-generated-sources.js';
 import {
+  appendTitleReactionEvents,
   buildTitleReactions,
   projectTitleReactions,
   validateTitleReactionEvents,
@@ -251,6 +252,70 @@ describe('title reaction events', () => {
       reactionRecordsWritten: 0,
     });
     expect(projection).toEqual({});
+  });
+
+  it('appends title reaction events without replacing existing events', async () => {
+    const rootDir = await createTempProject();
+    await writeCatalog(rootDir);
+    await writeEvents(
+      rootDir,
+      `${JSON.stringify(event({ eventId: 'evt-existing' }))}\n`,
+    );
+    const eventsPath = path.join(
+      rootDir,
+      'events',
+      'title-reactions.events.ndjson',
+    );
+
+    const report = await appendTitleReactionEvents({
+      eventsPath,
+      catalog: testCatalog(),
+      events: [
+        event({
+          eventId: 'evt-new',
+          canonicalId: 'imdb:tt002',
+          rating: 9,
+        }),
+      ],
+    });
+    const eventText = await fs.readFile(eventsPath, 'utf8');
+
+    expect(report).toMatchObject({
+      eventsAppended: 1,
+      outputPathWritten: eventsPath,
+    });
+    expect(eventText.trim().split('\n')).toHaveLength(2);
+    expect(eventText).toContain('evt-existing');
+    expect(eventText).toContain('evt-new');
+  });
+
+  it('rejects duplicate appended event IDs before writing', async () => {
+    const rootDir = await createTempProject();
+    await writeCatalog(rootDir);
+    await writeEvents(
+      rootDir,
+      `${JSON.stringify(event({ eventId: 'evt-existing' }))}\n`,
+    );
+    const eventsPath = path.join(
+      rootDir,
+      'events',
+      'title-reactions.events.ndjson',
+    );
+    const before = await fs.readFile(eventsPath, 'utf8');
+
+    await expect(
+      appendTitleReactionEvents({
+        eventsPath,
+        catalog: testCatalog(),
+        events: [
+          event({
+            eventId: 'evt-existing',
+            canonicalId: 'imdb:tt002',
+          }),
+        ],
+      }),
+    ).rejects.toThrow('Duplicate eventId found: evt-existing');
+    await expect(fs.readFile(eventsPath, 'utf8')).resolves.toBe(before);
   });
 
   it('does not make provider, Plex, or network calls during reaction builds', async () => {
