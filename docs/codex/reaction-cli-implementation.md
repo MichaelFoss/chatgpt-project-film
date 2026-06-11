@@ -192,31 +192,31 @@ Naming can change during implementation.
 
 ### Reaction Input Model
 
-Reaction selection should use a single interactive choice list.
+Reaction selection should optimize for single-keystroke interaction.
 
-When additional actions are introduced (for example Skip and Quit), they
-should appear in the same selection list as reaction choices.
+For small fixed-choice prompts, users should be able to press one
+visible key and continue without pressing Enter.
+
+All available reaction actions must be visibly displayed.
 
 Example:
 
 ```txt
-Loved
-Liked
-Mixed
-Disliked
-Hated
-Skip
-Quit
+[1] Loved  [2] Liked  [3] Mixed  [4] Disliked  [5] Hated
+[s] Skip   [q] Quit
 ```
 
-Do not use keyboard shortcuts for reaction actions.
+Do not require users to memorize hidden commands.
 
-Do not require users to memorize command keys.
+Keyboard shortcuts are allowed when every available shortcut is shown on
+screen.
 
-Users should be able to complete the entire interaction through visible
-menu choices.
+Skip and Quit should remain part of the same visible reaction decision
+surface when introduced.
 
-Custom keypress handling is explicitly out of scope for the MVP.
+No reaction option should be preselected or treated as a default.
+
+The user must make an explicit input choice for every recorded reaction.
 
 ## Buffered Writes
 
@@ -404,6 +404,24 @@ Tasks:
 Deliverable:
 
 End-to-end dry run.
+
+---
+
+### Phase 3.5
+
+Single-Key Reaction Input
+
+Tasks:
+
+- replace Enter-submitted reaction selection with single-key selection
+- keep all available choices visible on screen
+- keep reaction input free of defaults
+- preserve the Phase 3 dry-run behavior
+
+Deliverable:
+
+A user can record one dry-run reaction with a single visible keypress
+and no Enter key.
 
 ---
 
