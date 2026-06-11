@@ -5,9 +5,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createTitleReactionEvent,
+  findReactionTitleById,
+  formatSearchResults,
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  getSearchSelectionChoices,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
@@ -16,7 +19,9 @@ import {
   readReactionCatalog,
   readReactionState,
   runReactionSession,
+  searchReactionCatalog,
   selectFirstUnreactedTitle,
+  selectReactionTitleFromSearch,
   selectReactionChoiceByKey,
   selectReactionTitle,
 } from '../../scripts/react.js';
@@ -88,6 +93,26 @@ function extendedCatalog() {
   };
 }
 
+function largeSearchCatalog(size = 36) {
+  return Object.fromEntries(
+    Array.from({ length: size }, (_, index) => {
+      const number = String(index + 1).padStart(2, '0');
+      const canonicalId = `imdb:match${number}`;
+
+      return [
+        canonicalId,
+        {
+          canonicalId,
+          mediaType: 'movie',
+          title: `Match ${number}`,
+          releaseYear: 2000 + index,
+          genres: ['Drama'],
+        },
+      ];
+    }),
+  );
+}
+
 function reaction(canonicalId) {
   return {
     canonicalId,
@@ -121,6 +146,7 @@ describe('reaction CLI', () => {
       tv: false,
       random: false,
       id: null,
+      search: false,
     });
   });
 
@@ -133,6 +159,7 @@ describe('reaction CLI', () => {
       tv: false,
       random: true,
       id: null,
+      search: false,
     });
     expect(parseReactionCliArgs(['--limit', 'none', '--tv'])).toEqual({
       limit: 'none',
@@ -140,6 +167,7 @@ describe('reaction CLI', () => {
       tv: true,
       random: false,
       id: null,
+      search: false,
     });
     expect(parseReactionCliArgs(['--id', 'imdb:tt0133093'])).toEqual({
       limit: 1,
@@ -147,6 +175,15 @@ describe('reaction CLI', () => {
       tv: false,
       random: false,
       id: 'imdb:tt0133093',
+      search: false,
+    });
+    expect(parseReactionCliArgs(['--search'])).toEqual({
+      limit: 1,
+      movies: false,
+      tv: false,
+      random: false,
+      id: null,
+      search: true,
     });
   });
 
@@ -170,6 +207,16 @@ describe('reaction CLI', () => {
       parseReactionCliArgs(['--random', '--id', 'imdb:tt0133093']),
     ).toThrow(
       "error: option '--random' cannot be used with option '--id <canonicalId>'",
+    );
+    expect(() =>
+      parseReactionCliArgs(['--id', 'imdb:tt0133093', '--search']),
+    ).toThrow(
+      "error: option '--id <canonicalId>' cannot be used with option '--search'",
+    );
+    expect(() =>
+      parseReactionCliArgs(['--random', '--search']),
+    ).toThrow(
+      "error: option '--random' cannot be used with option '--search'",
     );
   });
 
@@ -252,6 +299,64 @@ describe('reaction CLI', () => {
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
     ).not.toContain('9.9');
+  });
+
+  it('formats search results without summaries or ratings', () => {
+    const items = Object.values(testCatalog());
+
+    expect(formatSearchResults(items)).toBe(
+      [
+        '[1] Alpha (2001) | Movie | imdb:tt001',
+        '[2] Beta (2002) | TV | imdb:tt002',
+      ].join('\n'),
+    );
+    expect(formatSearchResults(items)).not.toContain('plot summary');
+    expect(formatSearchResults(items)).not.toContain('9.9');
+    expect(getSearchSelectionChoices(items)).toEqual([
+      {
+        key: '1',
+        name: 'Alpha (2001) | Movie | imdb:tt001',
+        value: 'imdb:tt001',
+      },
+      {
+        key: '2',
+        name: 'Beta (2002) | TV | imdb:tt002',
+        value: 'imdb:tt002',
+      },
+    ]);
+    expect(
+      formatVisibleReactionChoices(getSearchSelectionChoices(items)),
+    ).toBe(
+      [
+        '[1] Alpha (2001) | Movie | imdb:tt001',
+        '[2] Beta (2002) | TV | imdb:tt002',
+      ].join('\n'),
+    );
+  });
+
+  it('formats large search results without silently hiding matches', () => {
+    const items = Object.values(largeSearchCatalog());
+    const output = formatSearchResults(items);
+    const choices = getSearchSelectionChoices(items);
+
+    expect(choices).toHaveLength(36);
+    expect(choices[0]).toMatchObject({
+      key: '1',
+      value: 'imdb:match01',
+    });
+    expect(choices[34]).toMatchObject({
+      key: '35',
+      value: 'imdb:match35',
+    });
+    expect(choices[35]).toMatchObject({
+      key: '36',
+      value: 'imdb:match36',
+    });
+    expect(output).toContain(
+      '[36] Match 36 (2035) | Movie | imdb:match36',
+    );
+    expect(output).not.toContain('Showing 35 of 36 matches');
+    expect(output.split('\n')).toHaveLength(36);
   });
 
   it('maps reaction prompt choices to internal reaction values', async () => {
@@ -628,6 +733,286 @@ describe('reaction CLI', () => {
         rating: 8,
       }),
     ]);
+  });
+
+  it('reacts to a valid canonical ID and ignores normal unreacted selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+
+    await expect(
+      findReactionTitleById({ rootDir, canonicalId: 'imdb:tt003' }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt003'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+      eventsWritten: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+        rating: 8,
+      }),
+    ]);
+    expect(output.join('\n')).toContain('Gamma (2003)');
+    expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
+  it('fails invalid ID targeting without writing events', async () => {
+    const rootDir = await createTempProject();
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: {
+          limit: 1,
+          movies: false,
+          tv: false,
+          random: false,
+          id: '   ',
+          search: false,
+        },
+        reactionPrompt: async () => 'liked',
+      }),
+    ).rejects.toThrow(
+      'Invalid canonical ID. Provide a non-empty canonical ID.',
+    );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('fails missing ID targeting without writing events', async () => {
+    const rootDir = await createTempProject();
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: ['--id', 'imdb:missing'],
+        reactionPrompt: async () => 'liked',
+      }),
+    ).rejects.toThrow(
+      'No catalog title found for canonical ID: imdb:missing',
+    );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('re-reacts to an already reacted title by ID append-only and updates projection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+    const existingEvent =
+      '{"eventId":"evt-existing","type":"title.reaction.updated","occurredAt":"2026-06-09T12:00:00.000Z","canonicalId":"imdb:tt001","rating":3}\n';
+    await fs.writeFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      existingEvent,
+      'utf8',
+    );
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 'loved',
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    const eventLines = eventText.trim().split('\n');
+    const projection = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'title-reactions.json'),
+        'utf8',
+      ),
+    );
+
+    expect(result.eventsWritten).toBe(1);
+    expect(eventText.startsWith(existingEvent)).toBe(true);
+    expect(eventLines).toHaveLength(2);
+    expect(
+      eventLines.map((line) => JSON.parse(line).canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt001']);
+    expect(projection['imdb:tt001']).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 10,
+    });
+    expect(projection['imdb:tt001'].eventIds).toHaveLength(2);
+  });
+
+  it('searches the catalog and reacts to the selected result', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const output = [];
+
+    await expect(
+      searchReactionCatalog({ rootDir, query: 'ga' }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+      }),
+    ]);
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => 'ga',
+        selectionPrompt: async ({ choices }) => choices[0].value,
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--search'],
+      searchPrompt: async () => 'ga',
+      selectionPrompt: async ({ choices }) => choices[0].value,
+      reactionPrompt: async () => 'mixed',
+    });
+
+    expect(output.join('\n')).toContain(
+      '[1] Gamma (2003) | Movie | imdb:tt003',
+    );
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+        rating: 5,
+      }),
+    ]);
+  });
+
+  it('selects from search results larger than the single-key range', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(),
+    });
+    const output = [];
+    let promptedChoices = [];
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => 'Match',
+        selectionPrompt: async ({ choices }) => {
+          promptedChoices = choices;
+          return choices[35].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:match36',
+      title: 'Match 36',
+    });
+
+    expect(promptedChoices).toHaveLength(36);
+    expect(promptedChoices[35]).toMatchObject({
+      key: '36',
+      value: 'imdb:match36',
+    });
+    expect(output.join('\n')).toContain(
+      '[36] Match 36 (2035) | Movie | imdb:match36',
+    );
+  });
+
+  it('search selection supports re-reaction', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+    const existingEvent =
+      '{"eventId":"evt-existing","type":"title.reaction.updated","occurredAt":"2026-06-09T12:00:00.000Z","canonicalId":"imdb:tt001","rating":3}\n';
+    await fs.writeFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      existingEvent,
+      'utf8',
+    );
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--search'],
+      searchPrompt: async () => 'alpha',
+      selectionPrompt: async ({ choices }) => choices[0].value,
+      reactionPrompt: async () => 'hated',
+    });
+    const projection = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'title-reactions.json'),
+        'utf8',
+      ),
+    );
+
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt001',
+        rating: 1,
+      }),
+    ]);
+    expect(projection['imdb:tt001']).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 1,
+    });
+    expect(projection['imdb:tt001'].eventIds).toHaveLength(2);
+  });
+
+  it('fails search paths without writing events', async () => {
+    const rootDir = await createTempProject();
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: ['--search'],
+        searchPrompt: async () => '   ',
+        selectionPrompt: async ({ choices }) => choices[0].value,
+        reactionPrompt: async () => 'liked',
+      }),
+    ).rejects.toThrow('Search query must not be empty.');
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: ['--search'],
+        searchPrompt: async () => 'missing',
+        selectionPrompt: async ({ choices }) => choices[0].value,
+        reactionPrompt: async () => 'liked',
+      }),
+    ).rejects.toThrow('No catalog titles found for search: missing');
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
   });
 
   it('writes events append-only and rebuilds the projection on completion', async () => {

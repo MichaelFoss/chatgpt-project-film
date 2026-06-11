@@ -4,6 +4,8 @@ import {
   createReactionPromptConfig,
   createTitleReactionEvent,
   createReactionCommand,
+  findReactionTitleById,
+  formatSearchResults,
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
@@ -19,17 +21,24 @@ export {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  findReactionTitleById,
+  formatSearchResults,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
+  getSearchSelectionChoices,
   parseReactionCliArgs,
+  promptForSearchQuery,
+  promptForSearchSelection,
   promptForQuitConfirmation,
   promptForReaction,
   ratingForReaction,
   readReactionCatalog,
   readReactionState,
   runReactionSession,
+  searchReactionCatalog,
   selectReactionChoiceByKey,
   selectFirstUnreactedTitle,
+  selectReactionTitleFromSearch,
   selectReactionTitle,
 } from './lib/reaction-cli.js';
 
@@ -42,7 +51,16 @@ async function main() {
       return;
     }
 
-    if (error.code?.startsWith('commander.')) {
+    if (
+      error instanceof Error &&
+      error.code?.startsWith('commander.')
+    ) {
+      console.error(error.message);
+      process.exitCode = 1;
+      return;
+    }
+
+    if (error.name === 'CatalogBuildError') {
       console.error(error.message);
       process.exitCode = 1;
       return;

@@ -266,6 +266,17 @@ export function parseCatalogSearchCliArgs(args) {
   });
 }
 
+export function createCatalogTitleSearchFilters(title) {
+  if (!isNonEmptyString(title)) {
+    throw new CatalogBuildError(searchUsage);
+  }
+
+  return {
+    ...createEmptyFilters(),
+    title: [title.trim()],
+  };
+}
+
 export function parseCatalogShowCliArgs(args) {
   const positional = [];
   let json = false;

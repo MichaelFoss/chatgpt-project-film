@@ -10,7 +10,13 @@ import {
 } from '@inquirer/core';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { CatalogBuildError } from './catalog-build-error.js';
-import { readCatalog } from './catalog-query.js';
+import {
+  createCatalogTitleSearchFilters,
+  readCatalog,
+  searchCatalog,
+  showCatalogItem,
+} from './catalog-query.js';
+import { isNonEmptyString } from './catalog-utils.js';
 import {
   appendTitleReactionEvents,
   buildTitleReactions,
@@ -33,6 +39,9 @@ const quitConfirmationOptions = [
   { key: 's', label: 'Save & Quit', value: 'save-and-quit' },
   { key: 'c', label: 'Cancel', value: 'cancel' },
 ];
+const searchSelectionKeys = '123456789abcdefghijklmnopqrstuvwxyz'.split(
+  '',
+);
 const reactionRatings = {
   loved: 10,
   liked: 8,
@@ -94,6 +103,65 @@ const singleKeyChoicePrompt = createPrompt((config, done) => {
   ];
 });
 
+const singleLineTextPrompt = createPrompt((config, done) => {
+  const [status, setStatus] = useState('idle');
+  const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+  const theme = makeTheme(config.theme);
+  const prefix = usePrefix({ status, theme });
+
+  useKeypress((event) => {
+    if (event.name === 'return' || event.name === 'enter') {
+      const trimmed = value.trim();
+
+      if (trimmed.length === 0) {
+        setError('Enter a search query.');
+        return;
+      }
+
+      const validation = config.validate?.(trimmed);
+
+      if (typeof validation === 'string') {
+        setError(validation);
+        return;
+      }
+
+      if (validation === false) {
+        setError('Enter a valid value.');
+        return;
+      }
+
+      setStatus('done');
+      done(config.transform ? config.transform(trimmed) : trimmed);
+      return;
+    }
+
+    if (event.name === 'backspace') {
+      setValue(value.slice(0, -1));
+      setError('');
+      return;
+    }
+
+    if (event.sequence && event.sequence >= ' ') {
+      setValue(`${value}${event.sequence}`);
+      setError('');
+    }
+  });
+
+  const message = theme.style.message(config.message, status);
+
+  if (status === 'done') {
+    return `${prefix} ${message} ${theme.style.answer(value.trim())}`;
+  }
+
+  return [
+    `${prefix} ${message} ${value}`,
+    error ? theme.style.error(error) : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+});
+
 function normalizeReactionInput(input) {
   return String(input ?? '')
     .trim()
@@ -141,14 +209,21 @@ export function createReactionCommand() {
       ),
     )
     .addOption(
-      new Option(
-        '--random',
-        'randomize eligible title selection',
-      ).conflicts('id'),
+      new Option('--random', 'randomize eligible title selection')
+        .conflicts('id')
+        .conflicts('search'),
     )
-    .option(
-      '--id <canonicalId>',
-      'react to a specific canonical title ID',
+    .addOption(
+      new Option(
+        '--id <canonicalId>',
+        'react to a specific canonical title ID',
+      ).conflicts('search'),
+    )
+    .addOption(
+      new Option(
+        '--search',
+        'search the catalog and react to a selected title',
+      ).conflicts('id'),
     )
     .action(() => {});
 }
@@ -170,6 +245,7 @@ export function parseReactionCliArgs(args) {
     tv: Boolean(options.tv),
     random: Boolean(options.random),
     id: options.id ?? null,
+    search: Boolean(options.search),
   };
 }
 
@@ -208,6 +284,30 @@ export async function readReactionState({
       `Invalid title reaction state JSON at ${reactionsPath}: ${error.message}`,
     );
   }
+}
+
+export async function findReactionTitleById({
+  rootDir = process.cwd(),
+  canonicalId,
+} = {}) {
+  if (!isNonEmptyString(canonicalId)) {
+    throw new CatalogBuildError(
+      'Invalid canonical ID. Provide a non-empty canonical ID.',
+    );
+  }
+
+  const item = await showCatalogItem({
+    rootDir,
+    canonicalId: canonicalId.trim(),
+  });
+
+  if (!item) {
+    throw new CatalogBuildError(
+      `No catalog title found for canonical ID: ${canonicalId.trim()}`,
+    );
+  }
+
+  return item;
 }
 
 export function getReactedTitleIds(reactions) {
@@ -263,6 +363,38 @@ export function formatReactionTitle(item) {
   return lines.join('\n');
 }
 
+export function formatSearchResultTitle(item) {
+  const year = Number.isInteger(item.releaseYear)
+    ? ` (${item.releaseYear})`
+    : '';
+  const mediaType = formatMediaType(item.mediaType);
+
+  return `${item.title}${year} | ${mediaType} | ${item.canonicalId}`;
+}
+
+export function getSearchSelectionChoices(items) {
+  const useSingleKeySelection =
+    items.length <= searchSelectionKeys.length;
+
+  return items.map((item, index) => ({
+    key: useSingleKeySelection
+      ? searchSelectionKeys[index]
+      : String(index + 1),
+    name: formatSearchResultTitle(item),
+    value: item.canonicalId,
+  }));
+}
+
+export function formatSearchResults(items) {
+  if (items.length === 0) {
+    return 'No catalog items found.';
+  }
+
+  return getSearchSelectionChoices(items)
+    .map((choice) => `[${choice.key}] ${choice.name}`)
+    .join('\n');
+}
+
 export function getReactionPromptChoices() {
   return reactionOptions.map(({ key, label, value }) => ({
     key,
@@ -274,9 +406,13 @@ export function getReactionPromptChoices() {
 export function formatVisibleReactionChoices(
   choices = getReactionPromptChoices(),
 ) {
+  const separator = choices.some((choice) => choice.name.length > 24)
+    ? '\n'
+    : ' ';
+
   return choices
     .map((choice) => `[${choice.key}] ${choice.name}`)
-    .join(' ');
+    .join(separator);
 }
 
 export function createReactionPromptConfig({
@@ -317,6 +453,107 @@ export async function promptForQuitConfirmation({
   message,
 } = {}) {
   return quitPrompt(createQuitConfirmationPromptConfig({ message }));
+}
+
+export async function promptForSearchQuery({
+  searchPrompt = singleLineTextPrompt,
+  message = 'Search catalog',
+} = {}) {
+  return searchPrompt({ message });
+}
+
+export async function promptForSearchSelection({
+  items,
+  selectionPrompt,
+  message = 'Select title',
+} = {}) {
+  const choices = getSearchSelectionChoices(items);
+  const prompt =
+    selectionPrompt ??
+    (items.length <= searchSelectionKeys.length
+      ? singleKeyChoicePrompt
+      : numericChoicePrompt);
+
+  return prompt({
+    message,
+    choices,
+  });
+}
+
+async function numericChoicePrompt({ message, choices }) {
+  return singleLineTextPrompt({
+    message,
+    validate(value) {
+      return choices.some((choice) => choice.key === value)
+        ? true
+        : `Enter a number from 1 to ${choices.length}.`;
+    },
+    transform(value) {
+      return choices.find((choice) => choice.key === value).value;
+    },
+  });
+}
+
+export async function searchReactionCatalog({
+  rootDir = process.cwd(),
+  query,
+} = {}) {
+  if (!isNonEmptyString(query)) {
+    throw new CatalogBuildError('Search query must not be empty.');
+  }
+
+  const filters = createCatalogTitleSearchFilters(query);
+  return searchCatalog({ rootDir, filters });
+}
+
+export async function selectReactionTitleFromSearch({
+  rootDir = process.cwd(),
+  searchPrompt,
+  selectionPrompt,
+  writeOutput = (message) => console.log(message),
+} = {}) {
+  const query = await promptForSearchQuery({ searchPrompt });
+  const items = await searchReactionCatalog({ rootDir, query });
+
+  if (items.length === 0) {
+    throw new CatalogBuildError(
+      `No catalog titles found for search: ${query.trim()}`,
+    );
+  }
+
+  writeOutput(formatSearchResults(items));
+  const canonicalId = await promptForSearchSelection({
+    items,
+    selectionPrompt,
+  });
+
+  return findReactionTitleById({ rootDir, canonicalId });
+}
+
+async function resolveTargetReactionTitle({
+  rootDir,
+  options,
+  searchPrompt,
+  selectionPrompt,
+  writeOutput,
+}) {
+  if (options.id) {
+    return findReactionTitleById({
+      rootDir,
+      canonicalId: options.id,
+    });
+  }
+
+  if (options.search) {
+    return selectReactionTitleFromSearch({
+      rootDir,
+      searchPrompt,
+      selectionPrompt,
+      writeOutput,
+    });
+  }
+
+  return null;
 }
 
 export function ratingForReaction(reaction) {
@@ -406,6 +643,8 @@ export async function runReactionSession({
   args = [],
   reactionPrompt,
   quitPrompt,
+  searchPrompt,
+  selectionPrompt,
   writeOutput = (message) => console.log(message),
 } = {}) {
   const options = Array.isArray(args)
@@ -415,14 +654,23 @@ export async function runReactionSession({
   const reactions = await readReactionState({ rootDir });
   const processedTitleIds = new Set();
   const bufferedEvents = [];
+  const targetItem = await resolveTargetReactionTitle({
+    rootDir,
+    options,
+    searchPrompt,
+    selectionPrompt,
+    writeOutput,
+  });
   let processedCount = 0;
 
-  while (!hasReachedSessionLimit(processedCount, options.limit)) {
-    const item = selectFirstUnreactedTitle(
-      catalog,
-      reactions,
-      processedTitleIds,
-    );
+  while (
+    targetItem
+      ? processedCount === 0
+      : !hasReachedSessionLimit(processedCount, options.limit)
+  ) {
+    const item =
+      targetItem ??
+      selectFirstUnreactedTitle(catalog, reactions, processedTitleIds);
 
     if (!item) {
       if (processedCount === 0) {
