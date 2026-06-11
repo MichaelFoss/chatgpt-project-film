@@ -8,10 +8,7 @@ import {
   formatSimulatedReactionEvent,
   formatReactionTitle,
   parseReactionCliArgs,
-  promptForReaction,
-  readReactionCatalog,
-  readReactionState,
-  selectReactionTitle,
+  runReactionSession,
 } from './lib/reaction-cli.js';
 
 export {
@@ -21,11 +18,14 @@ export {
   formatVisibleReactionChoices,
   formatSimulatedReactionEvent,
   formatReactionTitle,
+  getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
+  promptForQuitConfirmation,
   promptForReaction,
   readReactionCatalog,
   readReactionState,
+  runReactionSession,
   selectReactionChoiceByKey,
   selectFirstUnreactedTitle,
   selectReactionTitle,
@@ -33,17 +33,7 @@ export {
 
 async function main() {
   try {
-    parseReactionCliArgs(process.argv.slice(2));
-    const item = await selectReactionTitle();
-    console.log(formatReactionTitle(item));
-
-    if (!item) {
-      return;
-    }
-
-    const reaction = await promptForReaction();
-    const event = createSimulatedReactionEvent(item, reaction);
-    console.log(formatSimulatedReactionEvent(event));
+    await runReactionSession({ args: process.argv.slice(2) });
   } catch (error) {
     if (error.code === 'commander.helpDisplayed') {
       createReactionCommand().parse(process.argv);

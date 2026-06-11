@@ -18,9 +18,17 @@ const reactionOptions = [
   { key: '3', label: 'Mixed', value: 'mixed' },
   { key: '4', label: 'Disliked', value: 'disliked' },
   { key: '5', label: 'Hated', value: 'hated' },
+  { key: 's', label: 'Skip', value: 'skip' },
+  { key: 'q', label: 'Quit', value: 'quit' },
 ];
 
-const singleKeyReactionPrompt = createPrompt((config, done) => {
+const quitConfirmationOptions = [
+  { key: 'a', label: 'Abort', value: 'abort' },
+  { key: 's', label: 'Save & Quit', value: 'save-and-quit' },
+  { key: 'c', label: 'Cancel', value: 'cancel' },
+];
+
+const singleKeyChoicePrompt = createPrompt((config, done) => {
   const [status, setStatus] = useState('idle');
   const [selectedKey, setSelectedKey] = useState('');
   const [error, setError] = useState('');
@@ -45,8 +53,8 @@ const singleKeyReactionPrompt = createPrompt((config, done) => {
 
     setError(
       input
-        ? `"${input}" is not an available reaction.`
-        : 'Press one of the visible reaction keys.',
+        ? `"${input}" is not an available choice.`
+        : 'Press one of the visible choice keys.',
     );
   });
 
@@ -193,8 +201,15 @@ export function getReactedTitleIds(reactions) {
   return new Set(Object.keys(reactions));
 }
 
-export function selectFirstUnreactedTitle(catalog, reactions) {
-  const reactedTitleIds = getReactedTitleIds(reactions);
+export function selectFirstUnreactedTitle(
+  catalog,
+  reactions,
+  excludedTitleIds = new Set(),
+) {
+  const reactedTitleIds = new Set([
+    ...getReactedTitleIds(reactions),
+    ...excludedTitleIds,
+  ]);
 
   return (
     Object.values(catalog).find(
@@ -261,10 +276,34 @@ export function createReactionPromptConfig({
 }
 
 export async function promptForReaction({
-  reactionPrompt = singleKeyReactionPrompt,
+  reactionPrompt = singleKeyChoicePrompt,
   message,
 } = {}) {
   return reactionPrompt(createReactionPromptConfig({ message }));
+}
+
+export function getQuitConfirmationChoices() {
+  return quitConfirmationOptions.map(({ key, label, value }) => ({
+    key,
+    name: label,
+    value,
+  }));
+}
+
+export function createQuitConfirmationPromptConfig({
+  message = 'Quit reaction session?',
+} = {}) {
+  return {
+    message,
+    choices: getQuitConfirmationChoices(),
+  };
+}
+
+export async function promptForQuitConfirmation({
+  quitPrompt = singleKeyChoicePrompt,
+  message,
+} = {}) {
+  return quitPrompt(createQuitConfirmationPromptConfig({ message }));
 }
 
 export function createSimulatedReactionEvent(item, reaction) {
@@ -280,6 +319,119 @@ export function formatSimulatedReactionEvent(event) {
     'Simulated event write (dry run; no file was written):',
     JSON.stringify(event, null, 2),
   ].join('\n');
+}
+
+export function formatBufferedSimulatedReactionEvents(events) {
+  if (events.length === 0) {
+    return 'No simulated events to write (dry run; no file was written).';
+  }
+
+  return [
+    ...events.map((event) => formatSimulatedReactionEvent(event)),
+    'Dry run complete; no file was written.',
+  ].join('\n');
+}
+
+export function formatAbortMessage() {
+  return 'Reaction session aborted. No simulated events were saved or written.';
+}
+
+export function formatSaveAndQuitCurrentTitleMessage(item) {
+  return `Save & Quit selected. Current title was not written: ${item.title}.`;
+}
+
+export function hasReachedSessionLimit(processedCount, limit) {
+  return limit !== 'none' && processedCount >= limit;
+}
+
+export async function runReactionSession({
+  rootDir = process.cwd(),
+  args = [],
+  reactionPrompt,
+  quitPrompt,
+  writeOutput = (message) => console.log(message),
+} = {}) {
+  const options = Array.isArray(args)
+    ? parseReactionCliArgs(args)
+    : args;
+  const catalog = await readReactionCatalog({ rootDir });
+  const reactions = await readReactionState({ rootDir });
+  const processedTitleIds = new Set();
+  const bufferedEvents = [];
+  let processedCount = 0;
+
+  while (!hasReachedSessionLimit(processedCount, options.limit)) {
+    const item = selectFirstUnreactedTitle(
+      catalog,
+      reactions,
+      processedTitleIds,
+    );
+
+    if (!item) {
+      if (processedCount === 0) {
+        writeOutput(formatReactionTitle(null));
+      }
+      break;
+    }
+
+    writeOutput(formatReactionTitle(item));
+
+    let needsReaction = true;
+    while (needsReaction) {
+      const reaction = await promptForReaction({ reactionPrompt });
+
+      if (reaction === 'skip') {
+        processedTitleIds.add(item.canonicalId);
+        processedCount += 1;
+        needsReaction = false;
+        continue;
+      }
+
+      if (reaction === 'quit') {
+        const quitAction = await promptForQuitConfirmation({
+          quitPrompt,
+        });
+
+        if (quitAction === 'abort') {
+          writeOutput(formatAbortMessage());
+          return {
+            status: 'aborted',
+            bufferedEvents: [],
+            processedCount,
+          };
+        }
+
+        if (quitAction === 'save-and-quit') {
+          writeOutput(
+            formatBufferedSimulatedReactionEvents(bufferedEvents),
+          );
+          writeOutput(formatSaveAndQuitCurrentTitleMessage(item));
+          writeOutput('No file was written.');
+          return {
+            status: 'saved-and-quit',
+            bufferedEvents,
+            processedCount,
+          };
+        }
+
+        continue;
+      }
+
+      const event = createSimulatedReactionEvent(item, reaction);
+      bufferedEvents.push(event);
+      processedTitleIds.add(item.canonicalId);
+      processedCount += 1;
+      needsReaction = false;
+    }
+  }
+
+  writeOutput(formatBufferedSimulatedReactionEvents(bufferedEvents));
+
+  return {
+    status: 'completed',
+    bufferedEvents,
+    processedCount,
+  };
 }
 
 export async function selectReactionTitle(options = {}) {

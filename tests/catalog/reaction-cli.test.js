@@ -8,11 +8,13 @@ import {
   formatVisibleReactionChoices,
   formatSimulatedReactionEvent,
   formatReactionTitle,
+  getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
   promptForReaction,
   readReactionCatalog,
   readReactionState,
+  runReactionSession,
   selectFirstUnreactedTitle,
   selectReactionChoiceByKey,
   selectReactionTitle,
@@ -66,6 +68,19 @@ function testCatalog() {
   };
 }
 
+function extendedCatalog() {
+  return {
+    ...testCatalog(),
+    'imdb:tt003': {
+      canonicalId: 'imdb:tt003',
+      mediaType: 'movie',
+      title: 'Gamma',
+      releaseYear: 2003,
+      genres: ['Comedy'],
+    },
+  };
+}
+
 function reaction(canonicalId) {
   return {
     canonicalId,
@@ -73,6 +88,16 @@ function reaction(canonicalId) {
     eventIds: [`evt-${canonicalId}`],
     rating: 8,
   };
+}
+
+async function captureReactionSession(options) {
+  const output = [];
+  const result = await runReactionSession({
+    writeOutput: (message) => output.push(message),
+    ...options,
+  });
+
+  return { output, result };
 }
 
 afterEach(async () => {
@@ -229,6 +254,8 @@ describe('reaction CLI', () => {
       { key: '3', name: 'Mixed', value: 'mixed' },
       { key: '4', name: 'Disliked', value: 'disliked' },
       { key: '5', name: 'Hated', value: 'hated' },
+      { key: 's', name: 'Skip', value: 'skip' },
+      { key: 'q', name: 'Quit', value: 'quit' },
     ]);
 
     const reaction = await promptForReaction({
@@ -252,14 +279,35 @@ describe('reaction CLI', () => {
       name: 'Hated',
       value: 'hated',
     });
+    expect(selectReactionChoiceByKey(choices, 's')).toEqual({
+      key: 's',
+      name: 'Skip',
+      value: 'skip',
+    });
+    expect(selectReactionChoiceByKey(choices, 'q')).toEqual({
+      key: 'q',
+      name: 'Quit',
+      value: 'quit',
+    });
     expect(selectReactionChoiceByKey(choices, 'enter')).toBeNull();
     expect(selectReactionChoiceByKey(choices, '')).toBeNull();
   });
 
   it('generates visible reaction choices for every available option', () => {
     expect(formatVisibleReactionChoices()).toBe(
-      '[1] Loved [2] Liked [3] Mixed [4] Disliked [5] Hated',
+      '[1] Loved [2] Liked [3] Mixed [4] Disliked [5] Hated [s] Skip [q] Quit',
     );
+  });
+
+  it('generates visible quit confirmation choices', () => {
+    expect(getQuitConfirmationChoices()).toEqual([
+      { key: 'a', name: 'Abort', value: 'abort' },
+      { key: 's', name: 'Save & Quit', value: 'save-and-quit' },
+      { key: 'c', name: 'Cancel', value: 'cancel' },
+    ]);
+    expect(
+      formatVisibleReactionChoices(getQuitConfirmationChoices()),
+    ).toBe('[a] Abort [s] Save & Quit [c] Cancel');
   });
 
   it('does not configure a default reaction value', async () => {
@@ -322,5 +370,249 @@ describe('reaction CLI', () => {
     await expect(
       fs.readdir(path.join(rootDir, 'data')),
     ).resolves.toEqual(before);
+  });
+
+  it('uses default limit 1 for a reaction session', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toHaveLength(1);
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
+  it('supports --limit n session selection behavior', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['liked', 'mixed', 'hated'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '3'],
+      reactionPrompt: async () => reactions.shift(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 3,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt002', 'imdb:tt003']);
+    expect(output.join('\n')).toContain('Gamma (2003)');
+  });
+
+  it('supports --limit none until no eligible titles remain', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', 'none'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 3,
+    });
+    expect(result.bufferedEvents).toHaveLength(3);
+  });
+
+  it('does not create an event for skip and advances session progress', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['skip', 'liked'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '2'],
+      reactionPrompt: async () => reactions.shift(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+    });
+    expect(result.bufferedEvents).toEqual([
+      {
+        canonicalId: 'imdb:tt002',
+        title: 'Beta',
+        reaction: 'liked',
+      },
+    ]);
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).toContain('Beta (2002)');
+  });
+
+  it('quit abort discards the session buffer', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['liked', 'quit'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '3'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'abort',
+    });
+
+    expect(result).toEqual({
+      status: 'aborted',
+      bufferedEvents: [],
+      processedCount: 1,
+    });
+    expect(output.join('\n')).toContain(
+      'Reaction session aborted. No simulated events were saved or written.',
+    );
+  });
+
+  it('quit save and quit prints buffer and excludes the current title', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['liked', 'quit'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '3'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'save-and-quit',
+    });
+    const text = output.join('\n');
+
+    expect(result).toMatchObject({
+      status: 'saved-and-quit',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toHaveLength(1);
+    expect(text).toContain('"canonicalId": "imdb:tt001"');
+    expect(text).not.toContain('"canonicalId": "imdb:tt002"');
+    expect(text).toContain(
+      'Save & Quit selected. Current title was not written: Beta.',
+    );
+    expect(text).toContain('No file was written.');
+  });
+
+  it('quit cancel returns to the same title prompt', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['quit', 'mixed'];
+    const promptedTitles = [];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '1'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'cancel',
+      writeOutput: (message) => promptedTitles.push(message),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      {
+        canonicalId: 'imdb:tt001',
+        title: 'Alpha',
+        reaction: 'mixed',
+      },
+    ]);
+    expect(
+      promptedTitles.filter((message) =>
+        message.includes('Alpha (2001)'),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('excludes titles already reacted during the current run', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '2'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt002']);
+  });
+
+  it('excludes existing reacted titles from the generated projection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '1'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result.bufferedEvents).toEqual([
+      {
+        canonicalId: 'imdb:tt002',
+        title: 'Beta',
+        reaction: 'liked',
+      },
+    ]);
+  });
+
+  it('keeps session behavior file-free', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const catalogBefore = await fs.readFile(
+      path.join(rootDir, 'data', 'catalog.json'),
+      'utf8',
+    );
+    const reactionsBefore = await fs.readFile(
+      path.join(rootDir, 'data', 'title-reactions.json'),
+      'utf8',
+    );
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--limit', 'none'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    await expect(
+      fs.readFile(path.join(rootDir, 'data', 'catalog.json'), 'utf8'),
+    ).resolves.toBe(catalogBefore);
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'data', 'title-reactions.json'),
+        'utf8',
+      ),
+    ).resolves.toBe(reactionsBefore);
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });
