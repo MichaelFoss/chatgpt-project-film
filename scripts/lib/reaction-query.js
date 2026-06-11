@@ -15,6 +15,11 @@ export const reactionListUsage = [
   '  yarn reactions:list [--loved|--liked|--mixed|--disliked|--hated]',
 ].join('\n');
 
+export const reactionExportUsage = [
+  'Usage:',
+  '  yarn reactions:export [--json]',
+].join('\n');
+
 const ratingFlags = new Map([
   ['--loved', 'loved'],
   ['--liked', 'liked'],
@@ -112,6 +117,25 @@ export function parseReactionListCliArgs(args) {
   return { ratingBand };
 }
 
+export function parseReactionExportCliArgs(args) {
+  let json = false;
+
+  for (const arg of args) {
+    if (arg === '--json') {
+      json = true;
+      continue;
+    }
+
+    throw new CatalogBuildError(
+      arg.startsWith('--')
+        ? `${reactionExportUsage} Unknown flag: ${arg}`
+        : reactionExportUsage,
+    );
+  }
+
+  return { json };
+}
+
 export function getReactionQueryItems({
   catalog,
   reactions,
@@ -182,6 +206,10 @@ export async function listReactions({
   return getReactionQueryItems({ catalog, reactions, ratingBand });
 }
 
+export async function exportReactions(options = {}) {
+  return listReactions(options);
+}
+
 export function formatReactionQueryItems(
   items,
   { ratingBand = null } = {},
@@ -203,6 +231,14 @@ export function formatReactionQueryItems(
       ].join(' | '),
     )
     .join('\n');
+}
+
+export function formatReactionExportItems(items) {
+  return formatReactionQueryItems(items);
+}
+
+export function formatReactionExportJson(items) {
+  return JSON.stringify(items, null, 2);
 }
 
 export function getReactionRatingOptions() {

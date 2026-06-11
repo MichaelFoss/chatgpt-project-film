@@ -18,6 +18,7 @@
     "catalog:search": "node scripts/catalog-search.js",
     "react": "node scripts/react.js",
     "reactions:list": "node scripts/reaction-list.js",
+    "reactions:export": "node scripts/reaction-export.js",
     "reactions:stats": "node scripts/reaction-stats.js",
     "plex:import": "node scripts/plex-import.js",
     "plex:plan": "node scripts/plex-plan.js",
