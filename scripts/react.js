@@ -37,7 +37,9 @@ export {
   runReactionSession,
   searchReactionCatalog,
   selectReactionChoiceByKey,
+  selectEligibleReactionTitles,
   selectFirstUnreactedTitle,
+  selectRandomUnreactedTitle,
   selectReactionTitleFromSearch,
   selectReactionTitle,
 } from './lib/reaction-cli.js';

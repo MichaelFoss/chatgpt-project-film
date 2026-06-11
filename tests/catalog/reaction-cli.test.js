@@ -21,6 +21,8 @@ import {
   runReactionSession,
   searchReactionCatalog,
   selectFirstUnreactedTitle,
+  selectEligibleReactionTitles,
+  selectRandomUnreactedTitle,
   selectReactionTitleFromSearch,
   selectReactionChoiceByKey,
   selectReactionTitle,
@@ -257,6 +259,90 @@ describe('reaction CLI', () => {
         'imdb:tt001': reaction('imdb:tt001'),
       }),
     ).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+  });
+
+  it('selects random titles only from the eligible title pool', () => {
+    const catalog = extendedCatalog();
+    const reactions = {
+      'imdb:tt001': reaction('imdb:tt001'),
+    };
+    const excludedTitleIds = new Set(['imdb:tt002']);
+
+    expect(
+      selectEligibleReactionTitles(
+        catalog,
+        reactions,
+        excludedTitleIds,
+      ).map((item) => item.canonicalId),
+    ).toEqual(['imdb:tt003']);
+    expect(
+      selectRandomUnreactedTitle(
+        catalog,
+        reactions,
+        excludedTitleIds,
+        () => 0,
+      ),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+  });
+
+  it('selects first, middle, and last eligible titles from deterministic random values', () => {
+    const catalog = extendedCatalog();
+    const reactions = {};
+
+    expect(
+      selectRandomUnreactedTitle(
+        catalog,
+        reactions,
+        new Set(),
+        () => 0,
+      ),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+    });
+    expect(
+      selectRandomUnreactedTitle(
+        catalog,
+        reactions,
+        new Set(),
+        () => 0.4,
+      ),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+    expect(
+      selectRandomUnreactedTitle(
+        catalog,
+        reactions,
+        new Set(),
+        () => 0.999,
+      ),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+  });
+
+  it('never selects previously reacted titles in random mode', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+
+    const item = await selectReactionTitle({
+      rootDir,
+      random: true,
+    });
+
+    expect(item).toMatchObject({
       canonicalId: 'imdb:tt002',
       title: 'Beta',
     });
@@ -573,6 +659,75 @@ describe('reaction CLI', () => {
     expect(result.bufferedEvents).toHaveLength(3);
   });
 
+  it('supports --limit n with random mode without reselecting in-session titles', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', '3'],
+      reactionPrompt: async () => 'liked',
+    });
+    const selectedIds = result.bufferedEvents.map(
+      (event) => event.canonicalId,
+    );
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 3,
+    });
+    expect(new Set(selectedIds)).toHaveProperty('size', 3);
+    expect(selectedIds.sort()).toEqual([
+      'imdb:tt001',
+      'imdb:tt002',
+      'imdb:tt003',
+    ]);
+  });
+
+  it('uses the random selector during random-mode session selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const randomValues = [0.999, 0];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', '2'],
+      random: () => randomValues.shift(),
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt003', 'imdb:tt001']);
+  });
+
+  it('supports --limit none with random mode until no eligible titles remain', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', 'none'],
+      reactionPrompt: async () => 'liked',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 3,
+      eventsWritten: 3,
+    });
+    expect(
+      new Set(result.bufferedEvents.map((event) => event.canonicalId)),
+    ).toHaveProperty('size', 3);
+  });
+
   it('does not create an event for skip and advances session progress', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -600,6 +755,36 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).toContain('Beta (2002)');
   });
 
+  it('prevents random-mode skipped titles from being reselected during the same session', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['skip', 'liked'];
+    const promptedTitles = [];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', '2'],
+      reactionPrompt: async () => reactions.shift(),
+      writeOutput: (message) => {
+        if (message.includes('\n') && !message.startsWith('Wrote ')) {
+          promptedTitles.push(message);
+        }
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+      eventsWritten: 1,
+    });
+    expect(promptedTitles).toHaveLength(2);
+    expect(new Set(promptedTitles)).toHaveProperty('size', 2);
+    expect(result.bufferedEvents[0].title).not.toBe(
+      promptedTitles[0].split('\n')[0].replace(/ \(\d{4}\)$/, ''),
+    );
+  });
+
   it('quit abort discards the session buffer', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -609,6 +794,35 @@ describe('reaction CLI', () => {
     const { output, result } = await captureReactionSession({
       rootDir,
       args: ['--limit', '3'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'abort',
+    });
+
+    expect(result).toEqual({
+      status: 'aborted',
+      bufferedEvents: [],
+      processedCount: 1,
+    });
+    expect(output.join('\n')).toContain(
+      'Reaction session aborted. No events were written.',
+    );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('random-mode abort writes nothing', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['liked', 'quit'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', '3'],
       reactionPrompt: async () => reactions.shift(),
       quitPrompt: async () => 'abort',
     });
@@ -661,6 +875,37 @@ describe('reaction CLI', () => {
     );
     expect(eventText).toContain('"canonicalId":"imdb:tt001"');
     expect(eventText).not.toContain('imdb:tt002');
+  });
+
+  it('random-mode save and quit preserves buffered write behavior', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['liked', 'quit'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--limit', '3'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'save-and-quit',
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+
+    expect(result).toMatchObject({
+      status: 'saved-and-quit',
+      processedCount: 1,
+      eventsWritten: 1,
+    });
+    expect(result.bufferedEvents).toHaveLength(1);
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title reaction event(s).',
+    );
+    expect(eventText).toContain(
+      `"canonicalId":"${result.bufferedEvents[0].canonicalId}"`,
+    );
   });
 
   it('quit cancel returns to the same title prompt', async () => {
@@ -770,6 +1015,36 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Gamma (2003)');
     expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
+  it('ID targeting bypasses random behavior', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: {
+        limit: 1,
+        movies: false,
+        tv: false,
+        random: true,
+        id: 'imdb:tt001',
+        search: false,
+      },
+      reactionPrompt: async () => 'loved',
+    });
+
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt001',
+        title: 'Alpha',
+        rating: 10,
+      }),
+    ]);
   });
 
   it('fails invalid ID targeting without writing events', async () => {
@@ -902,6 +1177,38 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).toContain(
       '[1] Gamma (2003) | Movie | imdb:tt003',
     );
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+        rating: 5,
+      }),
+    ]);
+  });
+
+  it('search targeting bypasses random behavior', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt003': reaction('imdb:tt003'),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: {
+        limit: 1,
+        movies: false,
+        tv: false,
+        random: true,
+        id: null,
+        search: true,
+      },
+      searchPrompt: async () => 'gamma',
+      selectionPrompt: async ({ choices }) => choices[0].value,
+      reactionPrompt: async () => 'mixed',
+    });
+
     expect(result.bufferedEvents).toEqual([
       expect.objectContaining({
         canonicalId: 'imdb:tt003',

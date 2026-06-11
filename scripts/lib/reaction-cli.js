@@ -314,7 +314,7 @@ export function getReactedTitleIds(reactions) {
   return new Set(Object.keys(reactions));
 }
 
-export function selectFirstUnreactedTitle(
+export function selectEligibleReactionTitles(
   catalog,
   reactions,
   excludedTitleIds = new Set(),
@@ -324,11 +324,42 @@ export function selectFirstUnreactedTitle(
     ...excludedTitleIds,
   ]);
 
-  return (
-    Object.values(catalog).find(
-      (item) => !reactedTitleIds.has(item.canonicalId),
-    ) ?? null
+  return Object.values(catalog).filter(
+    (item) => !reactedTitleIds.has(item.canonicalId),
   );
+}
+
+export function selectFirstUnreactedTitle(
+  catalog,
+  reactions,
+  excludedTitleIds = new Set(),
+) {
+  return (
+    selectEligibleReactionTitles(
+      catalog,
+      reactions,
+      excludedTitleIds,
+    )[0] ?? null
+  );
+}
+
+export function selectRandomUnreactedTitle(
+  catalog,
+  reactions,
+  excludedTitleIds = new Set(),
+  random = Math.random,
+) {
+  const eligibleTitles = selectEligibleReactionTitles(
+    catalog,
+    reactions,
+    excludedTitleIds,
+  );
+
+  if (eligibleTitles.length === 0) {
+    return null;
+  }
+
+  return eligibleTitles[Math.floor(random() * eligibleTitles.length)];
 }
 
 function formatMediaType(mediaType) {
@@ -645,6 +676,7 @@ export async function runReactionSession({
   quitPrompt,
   searchPrompt,
   selectionPrompt,
+  random = Math.random,
   writeOutput = (message) => console.log(message),
 } = {}) {
   const options = Array.isArray(args)
@@ -670,7 +702,18 @@ export async function runReactionSession({
   ) {
     const item =
       targetItem ??
-      selectFirstUnreactedTitle(catalog, reactions, processedTitleIds);
+      (options.random
+        ? selectRandomUnreactedTitle(
+            catalog,
+            reactions,
+            processedTitleIds,
+            random,
+          )
+        : selectFirstUnreactedTitle(
+            catalog,
+            reactions,
+            processedTitleIds,
+          ));
 
     if (!item) {
       if (processedCount === 0) {
@@ -755,6 +798,10 @@ export async function runReactionSession({
 export async function selectReactionTitle(options = {}) {
   const catalog = await readReactionCatalog(options);
   const reactions = await readReactionState(options);
+
+  if (options.random) {
+    return selectRandomUnreactedTitle(catalog, reactions);
+  }
 
   return selectFirstUnreactedTitle(catalog, reactions);
 }
