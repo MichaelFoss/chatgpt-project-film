@@ -102,6 +102,7 @@ describe('reaction stats command', () => {
         reactionCoveragePercentage: '0.0%',
       },
       reactionDistribution: {
+        exceptional: { count: 0, percentage: '0.0%' },
         loved: { count: 0, percentage: '0.0%' },
         liked: { count: 0, percentage: '0.0%' },
         mixed: { count: 0, percentage: '0.0%' },
@@ -180,6 +181,7 @@ describe('reaction stats command', () => {
     });
 
     expect(Object.keys(stats.reactionDistribution)).toEqual([
+      'exceptional',
       'loved',
       'liked',
       'mixed',
@@ -187,8 +189,9 @@ describe('reaction stats command', () => {
       'hated',
     ]);
     expect(stats.reactionDistribution).toEqual({
+      exceptional: { count: 1, percentage: '20.0%' },
       loved: { count: 1, percentage: '20.0%' },
-      liked: { count: 1, percentage: '20.0%' },
+      liked: { count: 0, percentage: '0.0%' },
       mixed: { count: 1, percentage: '20.0%' },
       disliked: { count: 1, percentage: '20.0%' },
       hated: { count: 1, percentage: '20.0%' },
@@ -216,8 +219,9 @@ describe('reaction stats command', () => {
         '- Reaction coverage: 60.0%',
         '',
         'Reaction distribution:',
+        '- exceptional: 1 (33.3%)',
         '- loved: 1 (33.3%)',
-        '- liked: 1 (33.3%)',
+        '- liked: 0 (0.0%)',
         '- mixed: 1 (33.3%)',
         '- disliked: 0 (0.0%)',
         '- hated: 0 (0.0%)',

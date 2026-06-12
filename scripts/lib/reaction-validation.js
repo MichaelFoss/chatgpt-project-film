@@ -3,9 +3,7 @@ import { CatalogBuildError } from './catalog-build-error.js';
 import { isNonEmptyString } from './catalog-utils.js';
 import { readCatalog } from './catalog-query.js';
 import { readReactionState } from './reaction-cli.js';
-import { reactionRatings } from './reaction-ratings.js';
-
-const canonicalRatingValues = Object.values(reactionRatings);
+import { isValidReactionRating } from './reaction-ratings.js';
 
 function assertProjectionObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -40,10 +38,6 @@ function hasRecordField(record, fieldName) {
     !Array.isArray(record) &&
     Object.hasOwn(record, fieldName)
   );
-}
-
-function isCanonicalRatingValue(value) {
-  return canonicalRatingValues.includes(value);
 }
 
 function createEmptyProblems() {
@@ -124,7 +118,7 @@ export function validateReactionProjection({
     } else {
       const rating = getRecordField(record, 'rating');
 
-      if (!isCanonicalRatingValue(rating)) {
+      if (!isValidReactionRating(rating)) {
         problems.invalidRatings.push({ key, rating });
         invalidRecordKeys.add(key);
       }

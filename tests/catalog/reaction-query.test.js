@@ -107,8 +107,8 @@ describe('reaction query command', () => {
     expect(reactionListUsage).toBe(
       [
         'Usage:',
-        '  yarn reactions:list [--rating <loved|liked|mixed|disliked|hated>]',
-        '  yarn reactions:list [--loved|--liked|--mixed|--disliked|--hated]',
+        '  yarn reactions:list [--rating <exceptional|loved|liked|mixed|disliked|hated>]',
+        '  yarn reactions:list [--exceptional|--loved|--liked|--mixed|--disliked|--hated]',
       ].join('\n'),
     );
   });
@@ -139,17 +139,17 @@ describe('reaction query command', () => {
   it('filters by each supported rating band', () => {
     const reactions = {
       'imdb:tt001': reaction('imdb:tt001', 10),
-      'imdb:tt002': reaction('imdb:tt002', 8),
+      'imdb:tt002': reaction('imdb:tt002', 9),
       'imdb:tt003': reaction('imdb:tt003', 5),
-      'imdb:tt004': reaction('imdb:tt004', 3),
-      'imdb:tt005': reaction('imdb:tt005', 1),
+      'imdb:tt004': reaction('imdb:tt004', 4),
+      'imdb:tt005': reaction('imdb:tt005', 2),
     };
 
     expect(
       getReactionQueryItems({
         catalog,
         reactions,
-        ratingBand: 'loved',
+        ratingBand: 'exceptional',
       }),
     ).toEqual([
       expect.objectContaining({
@@ -161,10 +161,29 @@ describe('reaction query command', () => {
       getReactionQueryItems({
         catalog,
         reactions,
+        ratingBand: 'loved',
+      }),
+    ).toEqual([
+      expect.objectContaining({ canonicalId: 'imdb:tt002', rating: 9 }),
+    ]);
+    expect(
+      getReactionQueryItems({
+        catalog,
+        reactions,
+        ratingBand: 'liked',
+      }),
+    ).toEqual([]);
+    expect(
+      getReactionQueryItems({
+        catalog,
+        reactions: {
+          ...reactions,
+          'imdb:tt002': reaction('imdb:tt002', 6),
+        },
         ratingBand: 'liked',
       }),
     ).toEqual([
-      expect.objectContaining({ canonicalId: 'imdb:tt002', rating: 8 }),
+      expect.objectContaining({ canonicalId: 'imdb:tt002', rating: 6 }),
     ]);
     expect(
       getReactionQueryItems({
@@ -182,7 +201,7 @@ describe('reaction query command', () => {
         ratingBand: 'disliked',
       }),
     ).toEqual([
-      expect.objectContaining({ canonicalId: 'imdb:tt004', rating: 3 }),
+      expect.objectContaining({ canonicalId: 'imdb:tt004', rating: 4 }),
     ]);
     expect(
       getReactionQueryItems({
@@ -191,14 +210,16 @@ describe('reaction query command', () => {
         ratingBand: 'hated',
       }),
     ).toEqual([
-      expect.objectContaining({ canonicalId: 'imdb:tt005', rating: 1 }),
+      expect.objectContaining({ canonicalId: 'imdb:tt005', rating: 2 }),
     ]);
   });
 
   it('parses rating filters and rejects multiple rating bands', () => {
     expect(parseReactionListCliArgs([])).toEqual({ ratingBand: null });
-    expect(parseReactionListCliArgs(['--rating', 'loved'])).toEqual({
-      ratingBand: 'loved',
+    expect(
+      parseReactionListCliArgs(['--rating', 'exceptional']),
+    ).toEqual({
+      ratingBand: 'exceptional',
     });
     expect(parseReactionListCliArgs(['--rating=liked'])).toEqual({
       ratingBand: 'liked',
@@ -238,7 +259,7 @@ describe('reaction query command', () => {
       process.execPath,
       [
         path.join(repositoryRootDir, 'scripts', 'reaction-list.js'),
-        '--liked',
+        '--loved',
       ],
       { cwd: rootDir },
     );

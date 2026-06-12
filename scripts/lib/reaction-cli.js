@@ -22,17 +22,12 @@ import {
   buildTitleReactions,
   titleReactionEventType,
 } from './title-reactions.js';
-import { ratingForReaction } from './reaction-ratings.js';
+import { ratingForReaction, ratingScale } from './reaction-ratings.js';
 
 const defaultLimit = 1;
-const reactionOptions = [
-  { key: '1', label: 'Loved', value: 'loved' },
-  { key: '2', label: 'Liked', value: 'liked' },
-  { key: '3', label: 'Mixed', value: 'mixed' },
-  { key: '4', label: 'Disliked', value: 'disliked' },
-  { key: '5', label: 'Hated', value: 'hated' },
-  { key: 's', label: 'Skip', value: 'skip' },
-  { key: 'q', label: 'Quit', value: 'quit' },
+const reactionControlOptions = [
+  { key: 's', name: 'Skip', value: 'skip' },
+  { key: 'q', name: 'Quit', value: 'quit' },
 ];
 
 const quitConfirmationOptions = [
@@ -88,7 +83,9 @@ const singleKeyChoicePrompt = createPrompt((config, done) => {
   return [
     `${prefix} ${message}`,
     [
-      formatVisibleReactionChoices(config.choices),
+      config.formatChoices
+        ? config.formatChoices(config.choices)
+        : formatVisibleReactionChoices(config.choices),
       error ? theme.style.error(error) : '',
     ]
       .filter(Boolean)
@@ -420,11 +417,26 @@ export function formatSearchResults(items) {
 }
 
 export function getReactionPromptChoices() {
-  return reactionOptions.map(({ key, label, value }) => ({
-    key,
-    name: label,
-    value,
-  }));
+  return [
+    ...ratingScale.map(({ key, rating, label }) => ({
+      key,
+      name: label || String(rating),
+      value: rating,
+    })),
+    ...reactionControlOptions,
+  ];
+}
+
+export function formatVisibleRatingScale() {
+  return [
+    ...ratingScale.map(({ key, label }) =>
+      label ? `[${key}] ${label}` : `[${key}]`,
+    ),
+    '',
+    reactionControlOptions
+      .map((choice) => `[${choice.key}] ${choice.name}`)
+      .join('  '),
+  ].join('\n');
 }
 
 export function formatVisibleReactionChoices(
@@ -440,11 +452,12 @@ export function formatVisibleReactionChoices(
 }
 
 export function createReactionPromptConfig({
-  message = 'Reaction',
+  message = 'Rate this title:',
 } = {}) {
   return {
     message,
     choices: getReactionPromptChoices(),
+    formatChoices: formatVisibleRatingScale,
   };
 }
 
@@ -582,7 +595,7 @@ async function resolveTargetReactionTitle({
 
 export function createTitleReactionEvent(
   item,
-  reaction,
+  rating,
   {
     eventId = randomUUID(),
     occurredAt = new Date().toISOString(),
@@ -593,7 +606,7 @@ export function createTitleReactionEvent(
     type: titleReactionEventType,
     occurredAt,
     canonicalId: item.canonicalId,
-    rating: ratingForReaction(reaction),
+    rating: ratingForReaction(rating),
   };
 }
 
