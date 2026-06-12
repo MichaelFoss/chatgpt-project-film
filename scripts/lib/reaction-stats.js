@@ -4,10 +4,10 @@ import { readCatalog } from './catalog-query.js';
 import { readReactionState } from './reaction-cli.js';
 import {
   ratingMatchesReactionBand,
-  reactionRatings,
+  reactionRatingBands,
 } from './reaction-ratings.js';
 
-const reactionBands = Object.keys(reactionRatings);
+const reactionBands = Object.keys(reactionRatingBands);
 
 function assertProjectionObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

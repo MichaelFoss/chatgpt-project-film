@@ -7,6 +7,7 @@ import {
   createTitleReactionEvent,
   findReactionTitleById,
   formatSearchResults,
+  formatVisibleRatingScale,
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
@@ -445,37 +446,49 @@ describe('reaction CLI', () => {
     expect(output.split('\n')).toHaveLength(36);
   });
 
-  it('maps reaction prompt choices to internal reaction values', async () => {
+  it('maps rating prompt choices to explicit numeric values', async () => {
     expect(getReactionPromptChoices()).toEqual([
-      { key: '1', name: 'Loved', value: 'loved' },
-      { key: '2', name: 'Liked', value: 'liked' },
-      { key: '3', name: 'Mixed', value: 'mixed' },
-      { key: '4', name: 'Disliked', value: 'disliked' },
-      { key: '5', name: 'Hated', value: 'hated' },
+      { key: '0', name: 'Exceptional', value: 10 },
+      { key: '9', name: 'Loved', value: 9 },
+      { key: '8', name: '8', value: 8 },
+      { key: '7', name: 'Liked', value: 7 },
+      { key: '6', name: '6', value: 6 },
+      { key: '5', name: 'Mixed', value: 5 },
+      { key: '4', name: '4', value: 4 },
+      { key: '3', name: 'Disliked', value: 3 },
+      { key: '2', name: '2', value: 2 },
+      { key: '1', name: 'Hated', value: 1 },
       { key: 's', name: 'Skip', value: 'skip' },
       { key: 'q', name: 'Quit', value: 'quit' },
     ]);
 
     const reaction = await promptForReaction({
       reactionPrompt: async ({ choices }) =>
-        selectReactionChoiceByKey(choices, '3').value,
+        selectReactionChoiceByKey(choices, '0').value,
     });
 
-    expect(reaction).toBe('mixed');
+    expect(reaction).toBe(10);
   });
 
-  it('maps a single visible keypress to a reaction', () => {
+  it('maps single visible keypresses to ratings and control actions', () => {
     const choices = getReactionPromptChoices();
+
+    expect(selectReactionChoiceByKey(choices, '0')).toEqual({
+      key: '0',
+      name: 'Exceptional',
+      value: 10,
+    });
+
+    for (let rating = 1; rating <= 9; rating += 1) {
+      expect(
+        selectReactionChoiceByKey(choices, String(rating)).value,
+      ).toBe(rating);
+    }
 
     expect(selectReactionChoiceByKey(choices, '1')).toEqual({
       key: '1',
-      name: 'Loved',
-      value: 'loved',
-    });
-    expect(selectReactionChoiceByKey(choices, '5')).toEqual({
-      key: '5',
       name: 'Hated',
-      value: 'hated',
+      value: 1,
     });
     expect(selectReactionChoiceByKey(choices, 's')).toEqual({
       key: 's',
@@ -492,8 +505,47 @@ describe('reaction CLI', () => {
   });
 
   it('generates visible reaction choices for every available option', () => {
-    expect(formatVisibleReactionChoices()).toBe(
-      '[1] Loved [2] Liked [3] Mixed [4] Disliked [5] Hated [s] Skip [q] Quit',
+    const promptConfig = createReactionPromptConfig();
+    const expectedOutput = [
+      '[0] Exceptional',
+      '[9] Loved',
+      '[8]',
+      '[7] Liked',
+      '[6]',
+      '[5] Mixed',
+      '[4]',
+      '[3] Disliked',
+      '[2]',
+      '[1] Hated',
+      '',
+      '[s] Skip  [q] Quit',
+    ].join('\n');
+
+    expect(promptConfig.message).toBe('Rate this title:');
+    expect(formatVisibleRatingScale()).toBe(expectedOutput);
+    expect(promptConfig.formatChoices(promptConfig.choices)).toBe(
+      expectedOutput,
+    );
+  });
+
+  it('keeps generic choice rendering reusable for non-rating prompts', () => {
+    expect(
+      formatVisibleReactionChoices(getReactionPromptChoices()),
+    ).toBe(
+      [
+        '[0] Exceptional',
+        '[9] Loved',
+        '[8] 8',
+        '[7] Liked',
+        '[6] 6',
+        '[5] Mixed',
+        '[4] 4',
+        '[3] Disliked',
+        '[2] 2',
+        '[1] Hated',
+        '[s] Skip',
+        '[q] Quit',
+      ].join(' '),
     );
   });
 
@@ -513,36 +565,46 @@ describe('reaction CLI', () => {
 
     expect(promptConfig).not.toHaveProperty('default');
     expect(promptConfig.choices).toEqual(getReactionPromptChoices());
+    expect(promptConfig.formatChoices).toBe(formatVisibleRatingScale);
 
     await promptForReaction({
       reactionPrompt: async (config) => {
         expect(config).not.toHaveProperty('default');
-        return 'liked';
+        return 8;
       },
     });
   });
 
   it('creates a title reaction event in memory', () => {
-    expect(
-      createTitleReactionEvent(testCatalog()['imdb:tt001'], 'liked', {
+    const event = createTitleReactionEvent(
+      testCatalog()['imdb:tt001'],
+      9,
+      {
         eventId: 'evt-1',
         occurredAt: '2026-06-10T12:00:00.000Z',
-      }),
-    ).toEqual({
+      },
+    );
+
+    expect(event).toEqual({
       eventId: 'evt-1',
       type: 'title.reaction.updated',
       occurredAt: '2026-06-10T12:00:00.000Z',
       canonicalId: 'imdb:tt001',
-      rating: 8,
+      rating: 9,
     });
+    expect(event).not.toHaveProperty('sentiment');
+    expect(event).not.toHaveProperty('label');
+    expect(event).not.toHaveProperty('bucket');
   });
 
-  it('maps visible reaction choices to personal-fit ratings', () => {
-    expect(ratingForReaction('loved')).toBe(10);
-    expect(ratingForReaction('liked')).toBe(8);
-    expect(ratingForReaction('mixed')).toBe(5);
-    expect(ratingForReaction('disliked')).toBe(3);
-    expect(ratingForReaction('hated')).toBe(1);
+  it('accepts only supported personal-fit ratings', () => {
+    for (let rating = 1; rating <= 10; rating += 1) {
+      expect(ratingForReaction(rating)).toBe(rating);
+    }
+
+    expect(ratingForReaction('9')).toBe(9);
+    expect(() => ratingForReaction(0)).toThrow('Unsupported reaction');
+    expect(() => ratingForReaction(11)).toThrow('Unsupported reaction');
   });
 
   it('formats real write output without implementation details', () => {
@@ -572,7 +634,7 @@ describe('reaction CLI', () => {
 
     const event = createTitleReactionEvent(
       testCatalog()['imdb:tt001'],
-      'loved',
+      10,
     );
     formatReactionWriteSummary({
       eventsWritten: 1,
@@ -594,7 +656,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result).toMatchObject({
@@ -623,7 +685,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['liked', 'mixed', 'hated'];
+    const reactions = [8, 5, 1];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -649,7 +711,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--limit', 'none'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result).toMatchObject({
@@ -667,7 +729,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--random', '--limit', '3'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
     const selectedIds = result.bufferedEvents.map(
       (event) => event.canonicalId,
@@ -695,7 +757,7 @@ describe('reaction CLI', () => {
       rootDir,
       args: ['--random', '--limit', '2'],
       random: () => randomValues.shift(),
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result).toMatchObject({
@@ -715,7 +777,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--random', '--limit', 'none'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result).toMatchObject({
@@ -732,7 +794,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['skip', 'liked'];
+    const reactions = ['skip', 8];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -759,7 +821,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['skip', 'liked'];
+    const reactions = ['skip', 8];
     const promptedTitles = [];
 
     const { result } = await captureReactionSession({
@@ -789,7 +851,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['liked', 'quit'];
+    const reactions = [8, 'quit'];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -818,7 +880,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['liked', 'quit'];
+    const reactions = [8, 'quit'];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -847,7 +909,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['liked', 'quit'];
+    const reactions = [8, 'quit'];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -881,7 +943,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['liked', 'quit'];
+    const reactions = [8, 'quit'];
 
     const { output, result } = await captureReactionSession({
       rootDir,
@@ -912,7 +974,7 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
-    const reactions = ['quit', 'mixed'];
+    const reactions = ['quit', 5];
     const promptedTitles = [];
 
     const { result } = await captureReactionSession({
@@ -949,7 +1011,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--limit', '2'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(
@@ -968,7 +1030,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--limit', '1'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result.bufferedEvents).toEqual([
@@ -998,7 +1060,7 @@ describe('reaction CLI', () => {
     const { output, result } = await captureReactionSession({
       rootDir,
       args: ['--id', 'imdb:tt003'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
 
     expect(result).toMatchObject({
@@ -1035,7 +1097,7 @@ describe('reaction CLI', () => {
         id: 'imdb:tt001',
         search: false,
       },
-      reactionPrompt: async () => 'loved',
+      reactionPrompt: async () => 10,
     });
 
     expect(result.bufferedEvents).toEqual([
@@ -1061,7 +1123,7 @@ describe('reaction CLI', () => {
           id: '   ',
           search: false,
         },
-        reactionPrompt: async () => 'liked',
+        reactionPrompt: async () => 8,
       }),
     ).rejects.toThrow(
       'Invalid canonical ID. Provide a non-empty canonical ID.',
@@ -1081,7 +1143,7 @@ describe('reaction CLI', () => {
       captureReactionSession({
         rootDir,
         args: ['--id', 'imdb:missing'],
-        reactionPrompt: async () => 'liked',
+        reactionPrompt: async () => 8,
       }),
     ).rejects.toThrow(
       'No catalog title found for canonical ID: imdb:missing',
@@ -1112,7 +1174,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--id', 'imdb:tt001'],
-      reactionPrompt: async () => 'loved',
+      reactionPrompt: async () => 10,
     });
     const eventText = await fs.readFile(
       path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
@@ -1171,7 +1233,7 @@ describe('reaction CLI', () => {
       args: ['--search'],
       searchPrompt: async () => 'ga',
       selectionPrompt: async ({ choices }) => choices[0].value,
-      reactionPrompt: async () => 'mixed',
+      reactionPrompt: async () => 5,
     });
 
     expect(output.join('\n')).toContain(
@@ -1206,7 +1268,7 @@ describe('reaction CLI', () => {
       },
       searchPrompt: async () => 'gamma',
       selectionPrompt: async ({ choices }) => choices[0].value,
-      reactionPrompt: async () => 'mixed',
+      reactionPrompt: async () => 5,
     });
 
     expect(result.bufferedEvents).toEqual([
@@ -1270,7 +1332,7 @@ describe('reaction CLI', () => {
       args: ['--search'],
       searchPrompt: async () => 'alpha',
       selectionPrompt: async ({ choices }) => choices[0].value,
-      reactionPrompt: async () => 'hated',
+      reactionPrompt: async () => 1,
     });
     const projection = JSON.parse(
       await fs.readFile(
@@ -1301,7 +1363,7 @@ describe('reaction CLI', () => {
         args: ['--search'],
         searchPrompt: async () => '   ',
         selectionPrompt: async ({ choices }) => choices[0].value,
-        reactionPrompt: async () => 'liked',
+        reactionPrompt: async () => 8,
       }),
     ).rejects.toThrow('Search query must not be empty.');
 
@@ -1311,7 +1373,7 @@ describe('reaction CLI', () => {
         args: ['--search'],
         searchPrompt: async () => 'missing',
         selectionPrompt: async ({ choices }) => choices[0].value,
-        reactionPrompt: async () => 'liked',
+        reactionPrompt: async () => 8,
       }),
     ).rejects.toThrow('No catalog titles found for search: missing');
     await expect(
@@ -1341,7 +1403,7 @@ describe('reaction CLI', () => {
     const { result } = await captureReactionSession({
       rootDir,
       args: ['--limit', '2'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
     const eventText = await fs.readFile(
       path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
@@ -1382,7 +1444,7 @@ describe('reaction CLI', () => {
     await captureReactionSession({
       rootDir,
       args: ['--limit', '2'],
-      reactionPrompt: async () => 'liked',
+      reactionPrompt: async () => 8,
     });
     const eventText = await fs.readFile(
       path.join(rootDir, 'events', 'title-reactions.events.ndjson'),

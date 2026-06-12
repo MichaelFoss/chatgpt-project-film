@@ -85,9 +85,9 @@ describe('reaction validation command', () => {
     const report = validateReactionProjection({
       catalog,
       reactions: {
-        'imdb:tt001': reaction('imdb:tt001', 10),
-        'imdb:tt002': reaction('imdb:tt002', 8),
-        'imdb:tt003': reaction('imdb:tt003', 5),
+        'imdb:tt001': reaction('imdb:tt001', 1),
+        'imdb:tt002': reaction('imdb:tt002', 7),
+        'imdb:tt003': reaction('imdb:tt003', 10),
       },
     });
 
@@ -134,20 +134,35 @@ describe('reaction validation command', () => {
     ]);
   });
 
+  it('accepts all integer ratings from 1 through 10', () => {
+    const reactions = Object.fromEntries(
+      Array.from({ length: 10 }, (_, index) => {
+        const rating = index + 1;
+        return [`entry-${rating}`, reaction('imdb:tt001', rating)];
+      }),
+    );
+
+    const report = validateReactionProjection({ catalog, reactions });
+
+    expect(report.problems.invalidRatings).toEqual([]);
+  });
+
   it('reports invalid ratings without duplicating rating definitions', () => {
     const report = validateReactionProjection({
       catalog,
       reactions: {
-        'imdb:tt001': reaction('imdb:tt001', 7),
-        'imdb:tt002': reaction('imdb:tt002', 'liked'),
+        'imdb:tt001': reaction('imdb:tt001', 0),
+        'imdb:tt002': reaction('imdb:tt002', 11),
+        'imdb:tt003': reaction('imdb:tt003', 'liked'),
       },
     });
 
     expect(report.validRecords).toBe(0);
-    expect(report.invalidRecords).toBe(2);
+    expect(report.invalidRecords).toBe(3);
     expect(report.problems.invalidRatings).toEqual([
-      { key: 'imdb:tt001', rating: 7 },
-      { key: 'imdb:tt002', rating: 'liked' },
+      { key: 'imdb:tt001', rating: 0 },
+      { key: 'imdb:tt002', rating: 11 },
+      { key: 'imdb:tt003', rating: 'liked' },
     ]);
   });
 
@@ -182,7 +197,7 @@ describe('reaction validation command', () => {
     const report = validateReactionProjection({
       catalog,
       reactions: {
-        zeta: reaction('imdb:tt999', 7),
+        zeta: reaction('imdb:tt999', 0),
         alpha: {
           rating: 8,
         },
@@ -211,7 +226,7 @@ describe('reaction validation command', () => {
         'Missing ratings:',
         '- key: beta',
         'Invalid ratings:',
-        '- key: zeta; rating: 7',
+        '- key: zeta; rating: 0',
         'Duplicate reaction entries:',
         '- canonicalId: imdb:tt002; keys: dupeA, dupeB',
       ].join('\n'),

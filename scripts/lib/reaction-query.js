@@ -6,13 +6,13 @@ import { readReactionState } from './reaction-cli.js';
 import {
   isSupportedReactionBand,
   ratingMatchesReactionBand,
-  reactionRatings,
+  reactionRatingBands,
 } from './reaction-ratings.js';
 
 export const reactionListUsage = [
   'Usage:',
-  '  yarn reactions:list [--rating <loved|liked|mixed|disliked|hated>]',
-  '  yarn reactions:list [--loved|--liked|--mixed|--disliked|--hated]',
+  '  yarn reactions:list [--rating <exceptional|loved|liked|mixed|disliked|hated>]',
+  '  yarn reactions:list [--exceptional|--loved|--liked|--mixed|--disliked|--hated]',
 ].join('\n');
 
 export const reactionExportUsage = [
@@ -21,6 +21,7 @@ export const reactionExportUsage = [
 ].join('\n');
 
 const ratingFlags = new Map([
+  ['--exceptional', 'exceptional'],
   ['--loved', 'loved'],
   ['--liked', 'liked'],
   ['--mixed', 'mixed'],
@@ -242,5 +243,5 @@ export function formatReactionExportJson(items) {
 }
 
 export function getReactionRatingOptions() {
-  return Object.keys(reactionRatings);
+  return Object.keys(reactionRatingBands);
 }
