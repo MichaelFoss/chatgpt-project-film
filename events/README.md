@@ -16,8 +16,9 @@ The current title reaction event stream is:
 events/title-reactions.events.ndjson
 ```
 
-Title reaction events may include optional spoiler-free `notes` values.
-Do not manually add empty `notes` strings; blank notes are treated as
-absent by the projection.
+Title reaction events may include optional spoiler-free `notes` values
+and optional free-form `reasons` arrays. Do not manually add empty
+`notes` strings or empty `reasons`; blank values are treated as absent
+by the projection.
 
 Do not manually rewrite historical events.

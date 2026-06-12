@@ -101,6 +101,7 @@ describe('reaction validation command', () => {
         missingRatings: [],
         invalidRatings: [],
         invalidNotes: [],
+        invalidReasons: [],
         duplicateReactionEntries: [],
       },
     });
@@ -185,6 +186,60 @@ describe('reaction validation command', () => {
     ]);
     expect(formatReactionValidationReport(report)).toContain(
       'Invalid notes:\n- key: imdb:tt001; notes: ["not valid"]',
+    );
+  });
+
+  it('accepts casing differences in projected reasons', () => {
+    const report = validateReactionProjection({
+      catalog,
+      reactions: {
+        'imdb:tt001': {
+          ...reaction('imdb:tt001', 8),
+          reasons: ['MCU', 'mcu', 'CGI', 'Hans Zimmer'],
+        },
+      },
+    });
+
+    expect(report.validRecords).toBe(1);
+    expect(report.invalidRecords).toBe(0);
+    expect(report.problems.invalidReasons).toEqual([]);
+  });
+
+  it('reports invalid reasons values', () => {
+    const report = validateReactionProjection({
+      catalog,
+      reactions: {
+        'imdb:tt001': {
+          ...reaction('imdb:tt001', 8),
+          reasons: 'great atmosphere',
+        },
+        'imdb:tt002': {
+          ...reaction('imdb:tt002', 8),
+          reasons: ['great atmosphere', ''],
+        },
+        'imdb:tt003': {
+          ...reaction('imdb:tt003', 8),
+          reasons: ['Great Atmosphere', 'soundtrack', 'soundtrack'],
+        },
+      },
+    });
+
+    expect(report.validRecords).toBe(0);
+    expect(report.invalidRecords).toBe(3);
+    expect(report.problems.invalidReasons).toEqual([
+      { key: 'imdb:tt001', reasons: 'great atmosphere' },
+      { key: 'imdb:tt002', reasons: ['great atmosphere', ''] },
+      {
+        key: 'imdb:tt003',
+        reasons: ['Great Atmosphere', 'soundtrack', 'soundtrack'],
+      },
+    ]);
+    expect(formatReactionValidationReport(report)).toContain(
+      [
+        'Invalid reasons:',
+        '- key: imdb:tt001; reasons: great atmosphere',
+        '- key: imdb:tt002; reasons: ["great atmosphere",""]',
+      ].join('\n'),
     );
   });
 

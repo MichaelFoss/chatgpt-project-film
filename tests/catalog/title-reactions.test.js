@@ -116,10 +116,55 @@ describe('title reaction events', () => {
     ]);
   });
 
+  it('accepts and normalizes optional reasons on rating events', () => {
+    expect(
+      validate([
+        event({
+          reasons: [
+            'Great Atmosphere',
+            'soundtrack, soundtrack',
+            '   ',
+            'Strong Emotional Payoff',
+          ],
+        }),
+      ]),
+    ).toEqual([
+      {
+        eventId: 'evt-1',
+        type: 'title.reaction.updated',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+        canonicalId: 'imdb:tt001',
+        rating: 8,
+        reasons: [
+          'Great Atmosphere',
+          'soundtrack',
+          'Strong Emotional Payoff',
+        ],
+      },
+    ]);
+  });
+
+  it('preserves reason casing and only removes exact duplicates', () => {
+    expect(
+      validate([
+        event({
+          reasons: ['MCU, CGI, Hans Zimmer', 'MCU', 'mcu'],
+        }),
+      ])[0].reasons,
+    ).toEqual(['MCU', 'CGI', 'Hans Zimmer', 'mcu']);
+  });
+
   it('treats empty, whitespace-only, and null notes as absent', () => {
     expect(validate([event({ notes: '' })])).toEqual([event()]);
     expect(validate([event({ notes: '   ' })])).toEqual([event()]);
     expect(validate([event({ notes: null })])).toEqual([event()]);
+  });
+
+  it('treats empty reasons as absent', () => {
+    expect(validate([event({ reasons: [] })])).toEqual([event()]);
+    expect(validate([event({ reasons: [' ', ','] })])).toEqual([
+      event(),
+    ]);
   });
 
   it('accepts a valid minimal event with only watchStatus', () => {
@@ -184,6 +229,14 @@ describe('title reaction events', () => {
     for (const notes of [1, true, ['great']]) {
       expect(() => validate([event({ notes })])).toThrow(
         'notes must be a string',
+      );
+    }
+  });
+
+  it('rejects non-array and non-string reasons values', () => {
+    for (const reasons of ['great', [1], [true]]) {
+      expect(() => validate([event({ reasons })])).toThrow(
+        'reasons must be an array of strings',
       );
     }
   });
@@ -253,6 +306,54 @@ describe('title reaction events', () => {
       updatedAt: '2026-06-10T12:00:00.000Z',
       eventIds: ['evt-1', 'evt-2'],
       rating: 7,
+    });
+  });
+
+  it('uses replace semantics for reasons when a newer rating omits reasons', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 9,
+          reasons: ['great atmosphere', 'soundtrack'],
+        }),
+        event({
+          eventId: 'evt-2',
+          rating: 7,
+        }),
+      ]),
+    );
+
+    expect(projection['imdb:tt001']).toEqual({
+      canonicalId: 'imdb:tt001',
+      updatedAt: '2026-06-10T12:00:00.000Z',
+      eventIds: ['evt-1', 'evt-2'],
+      rating: 7,
+    });
+  });
+
+  it('replaces projected reasons when a newer rating supplies reasons', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 9,
+          reasons: ['great atmosphere', 'soundtrack'],
+        }),
+        event({
+          eventId: 'evt-2',
+          rating: 7,
+          reasons: ['Strong Emotional Payoff'],
+        }),
+      ]),
+    );
+
+    expect(projection['imdb:tt001']).toEqual({
+      canonicalId: 'imdb:tt001',
+      updatedAt: '2026-06-10T12:00:00.000Z',
+      eventIds: ['evt-1', 'evt-2'],
+      rating: 7,
+      reasons: ['Strong Emotional Payoff'],
     });
   });
 
@@ -423,6 +524,26 @@ describe('title reaction generated source', () => {
 
     expect(docs['title-reactions-summary.md']).toContain(
       'Alpha (2001) - movie',
+    );
+  });
+
+  it('includes reaction reasons in generated Markdown when present', () => {
+    const docs = buildGeneratedSourceDocuments({
+      lastUpdated: '2026-06-10',
+      catalog: testCatalog(),
+      titleReactions: {
+        'imdb:tt001': {
+          canonicalId: 'imdb:tt001',
+          updatedAt: '2026-06-10T12:00:00.000Z',
+          eventIds: ['evt-1'],
+          rating: 9,
+          reasons: ['Great Atmosphere', 'soundtrack'],
+        },
+      },
+    });
+
+    expect(docs['title-reactions-summary.md']).toContain(
+      'reasons Great Atmosphere, soundtrack',
     );
   });
 

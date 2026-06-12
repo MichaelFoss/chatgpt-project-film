@@ -120,6 +120,7 @@ describe('reaction query command', () => {
         'imdb:tt001': reaction('imdb:tt001', 10),
         'imdb:tt002': reaction('imdb:tt002', 8, {
           notes: 'Loved the atmosphere and soundtrack.',
+          reasons: ['Great Atmosphere', 'soundtrack'],
         }),
         'imdb:tt003': reaction('imdb:tt003', 5),
         'imdb:tt004': reaction('imdb:tt004', 3),
@@ -140,6 +141,7 @@ describe('reaction query command', () => {
       [
         'Alpha | 2020 | TV | imdb:tt002 | 8/10',
         '  Notes: Loved the atmosphere and soundtrack.',
+        '  Reasons: Great Atmosphere, soundtrack',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Gamma | unknown | Movie | imdb:tt005 | 1/10',
         'Middle | 2005 | Movie | imdb:tt003 | 5/10',

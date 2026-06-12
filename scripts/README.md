@@ -46,15 +46,18 @@ yarn catalog:search --genre='*comedy'
 `data/title-reactions.json` joined with `data/catalog.json`. It does not
 read the title reaction event stream. Use `--rating loved`, `--liked`,
 `--mixed`, `--disliked`, or `--hated` to list only one recorded reaction
-rating group. Reaction notes are shown only when present.
+rating group. Reaction notes are shown only when present. Free-form
+reaction reasons are shown only when present.
 
 `yarn react --id <canonicalId>` can update an already-reacted title.
-When projected notes already exist for that title, the notes prompt is
-prefilled with the current projected value.
+When projected notes or reasons already exist for that title, the
+corresponding prompts are prefilled with the current projected values.
+Reasons are entered as a single comma-separated line.
 
 `yarn reactions:export` reads the same projection and catalog join as
 `yarn reactions:list`. Human-readable and JSON export output include
-optional `notes` values when present and omit them when absent.
+optional `notes` and `reasons` values when present and omit them when
+absent.
 
 `yarn reactions:stats` is a read-only diagnostic view over
 `data/title-reactions.json` joined with `data/catalog.json`. It reports
@@ -65,8 +68,9 @@ stream.
 `yarn reactions:validate` is a read-only diagnostic view over
 `data/title-reactions.json` joined with `data/catalog.json`. It reports
 missing catalog references, missing canonical IDs, missing ratings,
-invalid ratings, detectable duplicate reaction entries, and valid and
-invalid record counts without reading the title reaction event stream.
+invalid ratings, invalid notes, invalid reasons, detectable duplicate
+reaction entries, and valid and invalid record counts without reading
+the title reaction event stream.
 
 `yarn enrich:metadata:plan` is a legacy read-only planner. It reports
 metadata gaps and planned lookups without contacting providers or

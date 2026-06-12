@@ -671,6 +671,10 @@ function reactionLine(entry) {
     parts.push(`tags ${reaction.reasonTags.join(', ')}`);
   }
 
+  if (Array.isArray(reaction.reasons) && reaction.reasons.length > 0) {
+    parts.push(`reasons ${reaction.reasons.join(', ')}`);
+  }
+
   if (reaction.notes) {
     parts.push(`notes: ${reaction.notes}`);
   }

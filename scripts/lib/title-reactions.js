@@ -28,6 +28,7 @@ const updateFields = [
   'memoryConfidence',
   'reasonTags',
   'notes',
+  'reasons',
   'householdSuitability',
   'spoilerDiscussion',
 ];
@@ -50,12 +51,46 @@ function validateEnum({ event, field, allowed, label }) {
 }
 
 function hasPresentReactionUpdateField(event, field) {
+  if (field === 'reasons') {
+    return (
+      hasOwn(event, field) &&
+      (!Array.isArray(event.reasons) ||
+        event.reasons.some((reason) => typeof reason !== 'string') ||
+        normalizeReactionReasons(event.reasons).length > 0)
+    );
+  }
+
   return (
     hasOwn(event, field) &&
     (field !== 'notes' ||
       (typeof event.notes === 'string' &&
         event.notes.trim().length > 0))
   );
+}
+
+export function normalizeReactionReasons(value) {
+  const values = Array.isArray(value) ? value : [value];
+  const seen = new Set();
+  const reasons = [];
+
+  for (const item of values) {
+    if (typeof item !== 'string') {
+      continue;
+    }
+
+    for (const rawReason of item.split(',')) {
+      const reason = rawReason.trim();
+
+      if (reason.length === 0 || seen.has(reason)) {
+        continue;
+      }
+
+      seen.add(reason);
+      reasons.push(reason);
+    }
+  }
+
+  return reasons;
 }
 
 export function validateTitleReactionEvent(event, index, catalog) {
@@ -171,6 +206,16 @@ export function validateTitleReactionEvent(event, index, catalog) {
     );
   }
 
+  if (
+    hasOwn(event, 'reasons') &&
+    (!Array.isArray(event.reasons) ||
+      event.reasons.some((reason) => typeof reason !== 'string'))
+  ) {
+    throw new CatalogBuildError(
+      `${label} reasons must be an array of strings.`,
+    );
+  }
+
   const validated = {
     eventId: event.eventId.trim(),
     type: event.type,
@@ -184,6 +229,16 @@ export function validateTitleReactionEvent(event, index, catalog) {
 
       if (notes.length > 0) {
         validated.notes = notes;
+      }
+
+      continue;
+    }
+
+    if (field === 'reasons') {
+      const reasons = normalizeReactionReasons(event.reasons);
+
+      if (reasons.length > 0) {
+        validated.reasons = reasons;
       }
 
       continue;
@@ -230,12 +285,15 @@ export function projectTitleReactions(events) {
 
     if (hasOwn(event, 'rating')) {
       delete next.notes;
+      delete next.reasons;
     }
 
     for (const field of updateFields) {
       if (hasOwn(event, field)) {
         next[field] =
-          field === 'reasonTags' ? [...event.reasonTags] : event[field];
+          field === 'reasonTags' || field === 'reasons'
+            ? [...event[field]]
+            : event[field];
       }
     }
 

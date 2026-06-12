@@ -20,6 +20,7 @@ import { isNonEmptyString } from './catalog-utils.js';
 import {
   appendTitleReactionEvents,
   buildTitleReactions,
+  normalizeReactionReasons,
   titleReactionEventType,
 } from './title-reactions.js';
 import { ratingForReaction, ratingScale } from './reaction-ratings.js';
@@ -557,6 +558,22 @@ export async function promptForReactionNotes({
   });
 }
 
+export async function promptForReactionReasons({
+  reasonsPrompt = singleLineTextPrompt,
+  message = 'Reasons (optional, comma-separated)',
+  initialValue = '',
+} = {}) {
+  return reasonsPrompt({
+    message,
+    allowEmpty: true,
+    initialValue,
+    transform(value) {
+      const reasons = normalizeReactionReasons(value);
+      return reasons.length > 0 ? reasons : null;
+    },
+  });
+}
+
 export async function promptForSearchSelection({
   items,
   selectionPrompt,
@@ -658,6 +675,7 @@ export function createTitleReactionEvent(
     eventId = randomUUID(),
     occurredAt = new Date().toISOString(),
     notes = null,
+    reasons = null,
   } = {},
 ) {
   const event = {
@@ -670,6 +688,12 @@ export function createTitleReactionEvent(
 
   if (typeof notes === 'string' && notes.trim().length > 0) {
     event.notes = notes.trim();
+  }
+
+  const normalizedReasons = normalizeReactionReasons(reasons);
+
+  if (normalizedReasons.length > 0) {
+    event.reasons = normalizedReasons;
   }
 
   return event;
@@ -735,6 +759,7 @@ export async function runReactionSession({
   args = [],
   reactionPrompt,
   notesPrompt,
+  reasonsPrompt,
   quitPrompt,
   searchPrompt,
   selectionPrompt,
@@ -838,7 +863,16 @@ export async function runReactionSession({
           ? currentReaction.notes
           : '',
       });
-      const event = createTitleReactionEvent(item, reaction, { notes });
+      const reasons = await promptForReactionReasons({
+        reasonsPrompt,
+        initialValue: Array.isArray(currentReaction?.reasons)
+          ? currentReaction.reasons.join(', ')
+          : '',
+      });
+      const event = createTitleReactionEvent(item, reaction, {
+        notes,
+        reasons,
+      });
       bufferedEvents.push({
         ...event,
         title: item.title,

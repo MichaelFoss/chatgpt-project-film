@@ -30,8 +30,9 @@ modify the metadata cache.
 
 Title reaction projection consumes
 `events/title-reactions.events.ndjson` and writes
-`data/title-reactions.json`. Rating notes are optional human notes and
-use replace semantics with the latest rating event.
+`data/title-reactions.json`. Rating notes and free-form reasons are
+optional human recall fields and use replace semantics with the latest
+rating event.
 
 Do not manually edit generated state unless explicitly performing a
 migration or repair workflow.

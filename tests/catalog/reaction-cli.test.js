@@ -131,6 +131,7 @@ async function captureReactionSession(options) {
   const result = await runReactionSession({
     writeOutput: (message) => output.push(message),
     notesPrompt: async () => null,
+    reasonsPrompt: async () => null,
     ...options,
   });
 
@@ -675,6 +676,45 @@ describe('reaction CLI', () => {
     );
   });
 
+  it('captures normalized reasons after notes entry', async () => {
+    const rootDir = await createTempProject();
+    const prompts = [];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => {
+        prompts.push('rating');
+        return 9;
+      },
+      notesPrompt: async () => {
+        prompts.push('notes');
+        return 'Loved the atmosphere.';
+      },
+      reasonsPrompt: async (config) => {
+        prompts.push(config.message);
+        return config.transform(
+          'Great Atmosphere, soundtrack, soundtrack,   , Strong Emotional Payoff',
+        );
+      },
+    });
+
+    expect(prompts).toEqual([
+      'rating',
+      'notes',
+      'Reasons (optional, comma-separated)',
+    ]);
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      notes: 'Loved the atmosphere.',
+      reasons: [
+        'Great Atmosphere',
+        'soundtrack',
+        'Strong Emotional Payoff',
+      ],
+    });
+  });
+
   it('passes existing projected notes as the notes prompt initial value', async () => {
     const rootDir = await createTempProject({
       reactions: {
@@ -696,6 +736,29 @@ describe('reaction CLI', () => {
     });
 
     expect(initialValue).toBe('Great visuals.');
+  });
+
+  it('passes existing projected reasons as the reasons prompt initial value', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          reasons: ['Great Atmosphere', 'soundtrack'],
+        }),
+      },
+    });
+    let initialValue;
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      reasonsPrompt: async (config) => {
+        initialValue = config.initialValue;
+        return config.transform(config.initialValue);
+      },
+    });
+
+    expect(initialValue).toBe('Great Atmosphere, soundtrack');
   });
 
   it('passes an empty notes prompt initial value when no notes exist', async () => {
@@ -736,6 +799,77 @@ describe('reaction CLI', () => {
       rating: 9,
       notes: 'Great visuals.',
     });
+  });
+
+  it('preserves existing reasons when the prefilled reasons prompt is accepted', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          reasons: ['Great Atmosphere', 'soundtrack'],
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      reasonsPrompt: async (config) =>
+        config.transform(config.initialValue),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      reasons: ['Great Atmosphere', 'soundtrack'],
+    });
+  });
+
+  it('replaces existing reasons when edited', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          reasons: ['Great Atmosphere', 'soundtrack'],
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      reasonsPrompt: async (config) =>
+        config.transform('Strong Emotional Payoff, soundtrack'),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      reasons: ['Strong Emotional Payoff', 'soundtrack'],
+    });
+  });
+
+  it('removes reasons from the new event when prefilled reasons are deleted', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          reasons: ['Great Atmosphere', 'soundtrack'],
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 7,
+      reasonsPrompt: async (config) => config.transform(''),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 7,
+    });
+    expect(result.bufferedEvents[0]).not.toHaveProperty('reasons');
   });
 
   it('writes edited prefilled notes', async () => {
@@ -813,6 +947,16 @@ describe('reaction CLI', () => {
     );
 
     expect(event).not.toHaveProperty('notes');
+  });
+
+  it('omits empty optional reasons', async () => {
+    const event = createTitleReactionEvent(
+      testCatalog()['imdb:tt001'],
+      8,
+      { reasons: ' , , ' },
+    );
+
+    expect(event).not.toHaveProperty('reasons');
   });
 
   it('uses default limit 1 for a reaction session', async () => {

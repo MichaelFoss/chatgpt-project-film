@@ -191,6 +191,10 @@ export function getReactionQueryItems({
         ...(isNonEmptyString(reaction.notes)
           ? { notes: reaction.notes }
           : {}),
+        ...(Array.isArray(reaction.reasons) &&
+        reaction.reasons.length > 0
+          ? { reasons: [...reaction.reasons] }
+          : {}),
       };
     })
     .sort(compareReactionItems);
@@ -234,8 +238,18 @@ export function formatReactionQueryItems(
         formatRating(item.rating),
       ].join(' | ');
 
-      return isNonEmptyString(item.notes)
-        ? `${line}\n  Notes: ${item.notes}`
+      const detailLines = [];
+
+      if (isNonEmptyString(item.notes)) {
+        detailLines.push(`  Notes: ${item.notes}`);
+      }
+
+      if (Array.isArray(item.reasons) && item.reasons.length > 0) {
+        detailLines.push(`  Reasons: ${item.reasons.join(', ')}`);
+      }
+
+      return detailLines.length > 0
+        ? [line, ...detailLines].join('\n')
         : line;
     })
     .join('\n');

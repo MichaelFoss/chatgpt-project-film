@@ -32,6 +32,7 @@ export {
   promptForSearchQuery,
   promptForSearchSelection,
   promptForReactionNotes,
+  promptForReactionReasons,
   promptForQuitConfirmation,
   promptForReaction,
   readReactionCatalog,

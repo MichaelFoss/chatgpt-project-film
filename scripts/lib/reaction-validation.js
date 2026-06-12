@@ -40,6 +40,28 @@ function hasRecordField(record, fieldName) {
   );
 }
 
+function hasNormalizedReasonValues(reasons) {
+  if (reasons.length === 0) {
+    return false;
+  }
+
+  const seen = new Set();
+
+  for (const reason of reasons) {
+    if (
+      !isNonEmptyString(reason) ||
+      reason !== reason.trim() ||
+      seen.has(reason)
+    ) {
+      return false;
+    }
+
+    seen.add(reason);
+  }
+
+  return true;
+}
+
 function createEmptyProblems() {
   return {
     missingCatalogReferences: [],
@@ -47,6 +69,7 @@ function createEmptyProblems() {
     missingRatings: [],
     invalidRatings: [],
     invalidNotes: [],
+    invalidReasons: [],
     duplicateReactionEntries: [],
   };
 }
@@ -136,6 +159,18 @@ export function validateReactionProjection({
       invalidRecordKeys.add(key);
     }
 
+    if (hasRecordField(record, 'reasons')) {
+      const reasons = getRecordField(record, 'reasons');
+
+      if (
+        !Array.isArray(reasons) ||
+        !hasNormalizedReasonValues(reasons)
+      ) {
+        problems.invalidReasons.push({ key, reasons });
+        invalidRecordKeys.add(key);
+      }
+    }
+
     if (duplicateRecordKeys.has(key)) {
       invalidRecordKeys.add(key);
     }
@@ -157,6 +192,7 @@ export function validateReactionProjection({
       missingRatings: problems.missingRatings.sort(compareByKey),
       invalidRatings: problems.invalidRatings.sort(compareByKey),
       invalidNotes: problems.invalidNotes.sort(compareByKey),
+      invalidReasons: problems.invalidReasons.sort(compareByKey),
       duplicateReactionEntries: problems.duplicateReactionEntries,
     },
   };
@@ -195,6 +231,7 @@ export function formatReactionValidationReport(report) {
     ...formatMissingRatings(report.problems.missingRatings),
     ...formatInvalidRatings(report.problems.invalidRatings),
     ...formatInvalidNotes(report.problems.invalidNotes),
+    ...formatInvalidReasons(report.problems.invalidReasons),
     ...formatDuplicateReactionEntries(
       report.problems.duplicateReactionEntries,
     ),
@@ -268,6 +305,22 @@ function formatInvalidNotes(problems) {
       (problem) =>
         `- key: ${problem.key}; notes: ${formatProblemValue(
           problem.notes,
+        )}`,
+    ),
+  ];
+}
+
+function formatInvalidReasons(problems) {
+  if (problems.length === 0) {
+    return [];
+  }
+
+  return [
+    'Invalid reasons:',
+    ...problems.map(
+      (problem) =>
+        `- key: ${problem.key}; reasons: ${formatProblemValue(
+          problem.reasons,
         )}`,
     ),
   ];

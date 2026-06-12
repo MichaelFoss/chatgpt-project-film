@@ -152,6 +152,7 @@ type TitleReactionEvent = {
   memoryConfidence?: 'high' | 'medium' | 'low';
   reasonTags?: string[];
   notes?: string;
+  reasons?: string[];
   householdSuitability?: 'any' | 'kid' | 'teen' | 'adult';
   spoilerDiscussion?: 'premise-only' | 'known-safe' | 'full';
 };
@@ -542,9 +543,11 @@ This projection is generated from:
 Projection applies title reaction events in file order. Later events
 overwrite supplied scalar fields for the same `canonicalId`; supplied
 `reasonTags` replace previous values. For rating events, `rating` and
-`notes` use replace semantics together: a newer rating event without
-`notes` removes any previous projected `notes`. The projection stores
-event IDs for auditability and does not copy catalog title metadata.
+`notes` and `reasons` use replace semantics together: a newer rating
+event without `notes` removes any previous projected `notes`, and a
+newer rating event without `reasons` removes any previous projected
+`reasons`. The projection stores event IDs for auditability and does not
+copy catalog title metadata.
 
 Generated recommendation context is emitted to:
 

@@ -234,10 +234,10 @@ Implementation status: implemented.
 
 Records explicit user reactions for catalog titles.
 
-This event may include a personal-fit rating and optional free-form
-notes. Notes are for human recall only and must not be used as
-recommendation logic, analytics input, clustering input, normalization
-input, or preference inference.
+This event may include a personal-fit rating, optional free-form notes,
+and optional free-form reaction reasons. Notes and reasons are for human
+recall only and must not be used as recommendation logic, analytics
+input, clustering input, normalization input, or preference inference.
 
 ### Required Fields
 
@@ -250,14 +250,20 @@ input, or preference inference.
 
 ### Rating Fields
 
-| Field    | Type   | Description                                                 |
-| -------- | ------ | ----------------------------------------------------------- |
-| `rating` | number | Integer personal-fit rating from 1 through 10.              |
-| `notes`  | string | Optional spoiler-free human notes. Blank notes are omitted. |
+| Field     | Type     | Description                                                                    |
+| --------- | -------- | ------------------------------------------------------------------------------ |
+| `rating`  | number   | Integer personal-fit rating from 1 through 10.                                 |
+| `notes`   | string   | Optional spoiler-free human notes. Blank notes are omitted.                    |
+| `reasons` | string[] | Optional free-form reasons. Empty values are normalized away and then omitted. |
 
-When a rating event is projected, `rating` and `notes` use replace
-semantics. A newer rating event without `notes` removes any previous
-projected `notes` for that title.
+When a rating event is projected, `rating`, `notes`, and `reasons` use
+replace semantics. A newer rating event without `notes` removes any
+previous projected `notes` for that title. A newer rating event without
+`reasons` removes any previous projected `reasons`.
+
+`reasons` values are normalized by splitting comma-delimited text,
+trimming whitespace, removing empty values, and removing exact
+duplicates while preserving first-seen order and user-entered casing.
 
 ### Example
 
@@ -268,7 +274,12 @@ projected `notes` for that title.
   "occurredAt": "2026-06-12T00:00:00.000Z",
   "canonicalId": "imdb:tt0133093",
   "rating": 9,
-  "notes": "Loved the atmosphere and soundtrack."
+  "notes": "Loved the atmosphere.",
+  "reasons": [
+    "Great Atmosphere",
+    "strong emotional payoff",
+    "Excellent Soundtrack"
+  ]
 }
 ```
 
