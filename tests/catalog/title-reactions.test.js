@@ -103,6 +103,25 @@ describe('title reaction events', () => {
     ]);
   });
 
+  it('accepts and trims optional notes on rating events', () => {
+    expect(validate([event({ notes: ' Great visuals. ' })])).toEqual([
+      {
+        eventId: 'evt-1',
+        type: 'title.reaction.updated',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+        canonicalId: 'imdb:tt001',
+        rating: 8,
+        notes: 'Great visuals.',
+      },
+    ]);
+  });
+
+  it('treats empty, whitespace-only, and null notes as absent', () => {
+    expect(validate([event({ notes: '' })])).toEqual([event()]);
+    expect(validate([event({ notes: '   ' })])).toEqual([event()]);
+    expect(validate([event({ notes: null })])).toEqual([event()]);
+  });
+
   it('accepts a valid minimal event with only watchStatus', () => {
     expect(
       validate([
@@ -161,6 +180,14 @@ describe('title reaction events', () => {
     }
   });
 
+  it('rejects non-string notes values other than null', () => {
+    for (const notes of [1, true, ['great']]) {
+      expect(() => validate([event({ notes })])).toThrow(
+        'notes must be a string',
+      );
+    }
+  });
+
   it('rejects events with no update fields', () => {
     const badEvent = event();
     delete badEvent.rating;
@@ -203,6 +230,29 @@ describe('title reaction events', () => {
       watchStatus: 'completed',
       reasonTags: ['rewatchable'],
       notes: 'Updated note.',
+    });
+  });
+
+  it('uses replace semantics for notes when a newer rating omits notes', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 9,
+          notes: 'Great visuals.',
+        }),
+        event({
+          eventId: 'evt-2',
+          rating: 7,
+        }),
+      ]),
+    );
+
+    expect(projection['imdb:tt001']).toEqual({
+      canonicalId: 'imdb:tt001',
+      updatedAt: '2026-06-10T12:00:00.000Z',
+      eventIds: ['evt-1', 'evt-2'],
+      rating: 7,
     });
   });
 

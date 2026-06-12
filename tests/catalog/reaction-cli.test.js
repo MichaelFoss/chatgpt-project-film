@@ -116,12 +116,13 @@ function largeSearchCatalog(size = 36) {
   );
 }
 
-function reaction(canonicalId) {
+function reaction(canonicalId, overrides = {}) {
   return {
     canonicalId,
     updatedAt: '2026-06-10T12:00:00.000Z',
     eventIds: [`evt-${canonicalId}`],
     rating: 8,
+    ...overrides,
   };
 }
 
@@ -129,6 +130,7 @@ async function captureReactionSession(options) {
   const output = [];
   const result = await runReactionSession({
     writeOutput: (message) => output.push(message),
+    notesPrompt: async () => null,
     ...options,
   });
 
@@ -647,6 +649,170 @@ describe('reaction CLI', () => {
         'utf8',
       ),
     ).resolves.toBe(before);
+  });
+
+  it('captures notes after selecting a rating', async () => {
+    const rootDir = await createTempProject();
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => 9,
+      notesPrompt: async () => ' Loved the atmosphere and soundtrack. ',
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      notes: 'Loved the atmosphere and soundtrack.',
+    });
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toContain(
+      '"notes":"Loved the atmosphere and soundtrack."',
+    );
+  });
+
+  it('passes existing projected notes as the notes prompt initial value', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          notes: 'Great visuals.',
+        }),
+      },
+    });
+    let initialValue;
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      notesPrompt: async (config) => {
+        initialValue = config.initialValue;
+        return config.transform(config.initialValue);
+      },
+    });
+
+    expect(initialValue).toBe('Great visuals.');
+  });
+
+  it('passes an empty notes prompt initial value when no notes exist', async () => {
+    const rootDir = await createTempProject();
+    let initialValue;
+
+    await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => 9,
+      notesPrompt: async (config) => {
+        initialValue = config.initialValue;
+        return config.transform(config.initialValue);
+      },
+    });
+
+    expect(initialValue).toBe('');
+  });
+
+  it('preserves existing notes when the prefilled notes prompt is accepted', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          notes: 'Great visuals.',
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      notesPrompt: async (config) =>
+        config.transform(config.initialValue),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      notes: 'Great visuals.',
+    });
+  });
+
+  it('writes edited prefilled notes', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          notes: 'Great visuals.',
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 9,
+      notesPrompt: async (config) =>
+        config.transform(`${config.initialValue} Strong soundtrack.`),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      notes: 'Great visuals. Strong soundtrack.',
+    });
+  });
+
+  it('removes notes from the new event when prefilled notes are deleted', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          notes: 'Great visuals.',
+        }),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      reactionPrompt: async () => 7,
+      notesPrompt: async (config) => config.transform(''),
+    });
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 7,
+    });
+    expect(result.bufferedEvents[0]).not.toHaveProperty('notes');
+  });
+
+  it('omits empty optional notes', async () => {
+    const event = createTitleReactionEvent(
+      testCatalog()['imdb:tt001'],
+      8,
+      { notes: '' },
+    );
+
+    expect(event).not.toHaveProperty('notes');
+  });
+
+  it('omits whitespace-only optional notes', async () => {
+    const event = createTitleReactionEvent(
+      testCatalog()['imdb:tt001'],
+      8,
+      { notes: '   ' },
+    );
+
+    expect(event).not.toHaveProperty('notes');
+  });
+
+  it('omits null optional notes', async () => {
+    const event = createTitleReactionEvent(
+      testCatalog()['imdb:tt001'],
+      8,
+      { notes: null },
+    );
+
+    expect(event).not.toHaveProperty('notes');
   });
 
   it('uses default limit 1 for a reaction session', async () => {

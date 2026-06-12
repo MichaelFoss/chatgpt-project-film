@@ -541,7 +541,9 @@ This projection is generated from:
 
 Projection applies title reaction events in file order. Later events
 overwrite supplied scalar fields for the same `canonicalId`; supplied
-`reasonTags` and `notes` replace previous values. The projection stores
+`reasonTags` replace previous values. For rating events, `rating` and
+`notes` use replace semantics together: a newer rating event without
+`notes` removes any previous projected `notes`. The projection stores
 event IDs for auditability and does not copy catalog title metadata.
 
 Generated recommendation context is emitted to:

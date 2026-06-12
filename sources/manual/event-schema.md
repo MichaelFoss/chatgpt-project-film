@@ -1,7 +1,7 @@
 ---
 title: Event Schema
 status: current
-last_updated: 2026-06-01
+last_updated: 2026-06-12
 upload_to_chatgpt: false
 ---
 
@@ -227,6 +227,50 @@ the same import path.
 Catalog ingestion appends valid new `catalog.add` events only. It does
 not build `data/catalog.json`, mutate `data/metadata-cache.json`, or
 perform provider lookups.
+
+## `title.reaction.updated`
+
+Implementation status: implemented.
+
+Records explicit user reactions for catalog titles.
+
+This event may include a personal-fit rating and optional free-form
+notes. Notes are for human recall only and must not be used as
+recommendation logic, analytics input, clustering input, normalization
+input, or preference inference.
+
+### Required Fields
+
+| Field         | Type   | Description                                      |
+| ------------- | ------ | ------------------------------------------------ |
+| `eventId`     | string | Globally unique event identifier.                |
+| `type`        | string | Must be `title.reaction.updated`.                |
+| `occurredAt`  | string | ISO timestamp.                                   |
+| `canonicalId` | string | Existing canonical title ID from `data/catalog`. |
+
+### Rating Fields
+
+| Field    | Type   | Description                                                 |
+| -------- | ------ | ----------------------------------------------------------- |
+| `rating` | number | Integer personal-fit rating from 1 through 10.              |
+| `notes`  | string | Optional spoiler-free human notes. Blank notes are omitted. |
+
+When a rating event is projected, `rating` and `notes` use replace
+semantics. A newer rating event without `notes` removes any previous
+projected `notes` for that title.
+
+### Example
+
+```json
+{
+  "eventId": "reaction-2026-06-12-tt0133093",
+  "type": "title.reaction.updated",
+  "occurredAt": "2026-06-12T00:00:00.000Z",
+  "canonicalId": "imdb:tt0133093",
+  "rating": 9,
+  "notes": "Loved the atmosphere and soundtrack."
+}
+```
 
 ## Spoiler Rules for Events
 

@@ -31,6 +31,7 @@ export {
   parseReactionCliArgs,
   promptForSearchQuery,
   promptForSearchSelection,
+  promptForReactionNotes,
   promptForQuitConfirmation,
   promptForReaction,
   readReactionCatalog,

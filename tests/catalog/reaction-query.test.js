@@ -53,12 +53,13 @@ const catalog = {
   },
 };
 
-function reaction(canonicalId, rating) {
+function reaction(canonicalId, rating, overrides = {}) {
   return {
     canonicalId,
     updatedAt: '2026-06-10T12:00:00.000Z',
     eventIds: [`event-${canonicalId}`],
     rating,
+    ...overrides,
   };
 }
 
@@ -114,7 +115,17 @@ describe('reaction query command', () => {
   });
 
   it('lists reacted titles from projections in deterministic title order', async () => {
-    const rootDir = await createTempProject();
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+        'imdb:tt002': reaction('imdb:tt002', 8, {
+          notes: 'Loved the atmosphere and soundtrack.',
+        }),
+        'imdb:tt003': reaction('imdb:tt003', 5),
+        'imdb:tt004': reaction('imdb:tt004', 3),
+        'imdb:tt005': reaction('imdb:tt005', 1),
+      },
+    });
 
     const items = await listReactions({ rootDir });
 
@@ -128,6 +139,7 @@ describe('reaction query command', () => {
     expect(formatReactionQueryItems(items)).toBe(
       [
         'Alpha | 2020 | TV | imdb:tt002 | 8/10',
+        '  Notes: Loved the atmosphere and soundtrack.',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Gamma | unknown | Movie | imdb:tt005 | 1/10',
         'Middle | 2005 | Movie | imdb:tt003 | 5/10',

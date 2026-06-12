@@ -95,7 +95,9 @@ const singleKeyChoicePrompt = createPrompt((config, done) => {
 
 const singleLineTextPrompt = createPrompt((config, done) => {
   const [status, setStatus] = useState('idle');
-  const [value, setValue] = useState('');
+  const initialValue = String(config.initialValue ?? '');
+  const [value, setValue] = useState(initialValue);
+  const [cursorIndex, setCursorIndex] = useState(initialValue.length);
   const [error, setError] = useState('');
   const theme = makeTheme(config.theme);
   const prefix = usePrefix({ status, theme });
@@ -104,7 +106,7 @@ const singleLineTextPrompt = createPrompt((config, done) => {
     if (event.name === 'return' || event.name === 'enter') {
       const trimmed = value.trim();
 
-      if (trimmed.length === 0) {
+      if (trimmed.length === 0 && config.allowEmpty !== true) {
         setError('Enter a search query.');
         return;
       }
@@ -127,13 +129,53 @@ const singleLineTextPrompt = createPrompt((config, done) => {
     }
 
     if (event.name === 'backspace') {
-      setValue(value.slice(0, -1));
+      if (cursorIndex > 0) {
+        setValue(
+          `${value.slice(0, cursorIndex - 1)}${value.slice(cursorIndex)}`,
+        );
+        setCursorIndex(cursorIndex - 1);
+      }
       setError('');
       return;
     }
 
+    if (event.name === 'delete') {
+      if (cursorIndex < value.length) {
+        setValue(
+          `${value.slice(0, cursorIndex)}${value.slice(cursorIndex + 1)}`,
+        );
+      }
+      setError('');
+      return;
+    }
+
+    if (event.name === 'left') {
+      setCursorIndex(Math.max(0, cursorIndex - 1));
+      return;
+    }
+
+    if (event.name === 'right') {
+      setCursorIndex(Math.min(value.length, cursorIndex + 1));
+      return;
+    }
+
+    if (event.name === 'home') {
+      setCursorIndex(0);
+      return;
+    }
+
+    if (event.name === 'end') {
+      setCursorIndex(value.length);
+      return;
+    }
+
     if (event.sequence && event.sequence >= ' ') {
-      setValue(`${value}${event.sequence}`);
+      setValue(
+        `${value.slice(0, cursorIndex)}${event.sequence}${value.slice(
+          cursorIndex,
+        )}`,
+      );
+      setCursorIndex(cursorIndex + event.sequence.length);
       setError('');
     }
   });
@@ -499,6 +541,22 @@ export async function promptForSearchQuery({
   return searchPrompt({ message });
 }
 
+export async function promptForReactionNotes({
+  notesPrompt = singleLineTextPrompt,
+  message = 'Notes (optional)',
+  initialValue = '',
+} = {}) {
+  return notesPrompt({
+    message,
+    allowEmpty: true,
+    initialValue,
+    transform(value) {
+      const notes = value.trim();
+      return notes.length > 0 ? notes : null;
+    },
+  });
+}
+
 export async function promptForSearchSelection({
   items,
   selectionPrompt,
@@ -599,15 +657,22 @@ export function createTitleReactionEvent(
   {
     eventId = randomUUID(),
     occurredAt = new Date().toISOString(),
+    notes = null,
   } = {},
 ) {
-  return {
+  const event = {
     eventId,
     type: titleReactionEventType,
     occurredAt,
     canonicalId: item.canonicalId,
     rating: ratingForReaction(rating),
   };
+
+  if (typeof notes === 'string' && notes.trim().length > 0) {
+    event.notes = notes.trim();
+  }
+
+  return event;
 }
 
 export function formatReactionWriteSummary(report) {
@@ -669,6 +734,7 @@ export async function runReactionSession({
   rootDir = process.cwd(),
   args = [],
   reactionPrompt,
+  notesPrompt,
   quitPrompt,
   searchPrompt,
   selectionPrompt,
@@ -765,7 +831,14 @@ export async function runReactionSession({
         continue;
       }
 
-      const event = createTitleReactionEvent(item, reaction);
+      const currentReaction = reactions[item.canonicalId];
+      const notes = await promptForReactionNotes({
+        notesPrompt,
+        initialValue: isNonEmptyString(currentReaction?.notes)
+          ? currentReaction.notes
+          : '',
+      });
+      const event = createTitleReactionEvent(item, reaction, { notes });
       bufferedEvents.push({
         ...event,
         title: item.title,

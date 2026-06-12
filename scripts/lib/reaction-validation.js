@@ -46,6 +46,7 @@ function createEmptyProblems() {
     missingCanonicalIds: [],
     missingRatings: [],
     invalidRatings: [],
+    invalidNotes: [],
     duplicateReactionEntries: [],
   };
 }
@@ -124,6 +125,17 @@ export function validateReactionProjection({
       }
     }
 
+    if (
+      hasRecordField(record, 'notes') &&
+      typeof getRecordField(record, 'notes') !== 'string'
+    ) {
+      problems.invalidNotes.push({
+        key,
+        notes: getRecordField(record, 'notes'),
+      });
+      invalidRecordKeys.add(key);
+    }
+
     if (duplicateRecordKeys.has(key)) {
       invalidRecordKeys.add(key);
     }
@@ -144,6 +156,7 @@ export function validateReactionProjection({
         problems.missingCanonicalIds.sort(compareByKey),
       missingRatings: problems.missingRatings.sort(compareByKey),
       invalidRatings: problems.invalidRatings.sort(compareByKey),
+      invalidNotes: problems.invalidNotes.sort(compareByKey),
       duplicateReactionEntries: problems.duplicateReactionEntries,
     },
   };
@@ -181,6 +194,7 @@ export function formatReactionValidationReport(report) {
     ...formatMissingCanonicalIds(report.problems.missingCanonicalIds),
     ...formatMissingRatings(report.problems.missingRatings),
     ...formatInvalidRatings(report.problems.invalidRatings),
+    ...formatInvalidNotes(report.problems.invalidNotes),
     ...formatDuplicateReactionEntries(
       report.problems.duplicateReactionEntries,
     ),
@@ -238,6 +252,22 @@ function formatInvalidRatings(problems) {
       (problem) =>
         `- key: ${problem.key}; rating: ${formatProblemValue(
           problem.rating,
+        )}`,
+    ),
+  ];
+}
+
+function formatInvalidNotes(problems) {
+  if (problems.length === 0) {
+    return [];
+  }
+
+  return [
+    'Invalid notes:',
+    ...problems.map(
+      (problem) =>
+        `- key: ${problem.key}; notes: ${formatProblemValue(
+          problem.notes,
         )}`,
     ),
   ];

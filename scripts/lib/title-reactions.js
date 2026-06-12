@@ -49,6 +49,15 @@ function validateEnum({ event, field, allowed, label }) {
   }
 }
 
+function hasPresentReactionUpdateField(event, field) {
+  return (
+    hasOwn(event, field) &&
+    (field !== 'notes' ||
+      (typeof event.notes === 'string' &&
+        event.notes.trim().length > 0))
+  );
+}
+
 export function validateTitleReactionEvent(event, index, catalog) {
   const label = `event ${index + 1}`;
 
@@ -98,8 +107,16 @@ export function validateTitleReactionEvent(event, index, catalog) {
     );
   }
 
+  if (
+    hasOwn(event, 'notes') &&
+    event.notes !== null &&
+    typeof event.notes !== 'string'
+  ) {
+    throw new CatalogBuildError(`${label} notes must be a string.`);
+  }
+
   const presentUpdateFields = updateFields.filter((field) =>
-    hasOwn(event, field),
+    hasPresentReactionUpdateField(event, field),
   );
 
   if (presentUpdateFields.length === 0) {
@@ -154,12 +171,6 @@ export function validateTitleReactionEvent(event, index, catalog) {
     );
   }
 
-  if (hasOwn(event, 'notes') && !isNonEmptyString(event.notes)) {
-    throw new CatalogBuildError(
-      `${label} notes must be a non-empty string.`,
-    );
-  }
-
   const validated = {
     eventId: event.eventId.trim(),
     type: event.type,
@@ -168,6 +179,16 @@ export function validateTitleReactionEvent(event, index, catalog) {
   };
 
   for (const field of presentUpdateFields) {
+    if (field === 'notes') {
+      const notes = event.notes.trim();
+
+      if (notes.length > 0) {
+        validated.notes = notes;
+      }
+
+      continue;
+    }
+
     validated[field] =
       field === 'reasonTags' ? [...event.reasonTags] : event[field];
   }
@@ -206,6 +227,10 @@ export function projectTitleReactions(events) {
       updatedAt: event.occurredAt,
       eventIds: [...existing.eventIds, event.eventId],
     };
+
+    if (hasOwn(event, 'rating')) {
+      delete next.notes;
+    }
 
     for (const field of updateFields) {
       if (hasOwn(event, field)) {

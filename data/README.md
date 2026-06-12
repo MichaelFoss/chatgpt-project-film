@@ -15,6 +15,10 @@ events/catalog.events.ndjson
 events/catalog.events.ndjson + data/metadata-cache.json
   -> catalog generation
   -> data/catalog.json
+
+events/title-reactions.events.ndjson
+  -> title reaction projection
+  -> data/title-reactions.json
 ```
 
 Metadata enrichment may contact providers and update
@@ -23,6 +27,11 @@ Metadata enrichment may contact providers and update
 Catalog generation consumes `events/catalog.events.ndjson` and
 `data/metadata-cache.json`, must not contact providers, and must not
 modify the metadata cache.
+
+Title reaction projection consumes
+`events/title-reactions.events.ndjson` and writes
+`data/title-reactions.json`. Rating notes are optional human notes and
+use replace semantics with the latest rating event.
 
 Do not manually edit generated state unless explicitly performing a
 migration or repair workflow.

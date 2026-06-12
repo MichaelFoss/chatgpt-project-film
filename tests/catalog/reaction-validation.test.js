@@ -100,6 +100,7 @@ describe('reaction validation command', () => {
         missingCanonicalIds: [],
         missingRatings: [],
         invalidRatings: [],
+        invalidNotes: [],
         duplicateReactionEntries: [],
       },
     });
@@ -164,6 +165,27 @@ describe('reaction validation command', () => {
       { key: 'imdb:tt002', rating: 11 },
       { key: 'imdb:tt003', rating: 'liked' },
     ]);
+  });
+
+  it('reports invalid notes types', () => {
+    const report = validateReactionProjection({
+      catalog,
+      reactions: {
+        'imdb:tt001': {
+          ...reaction('imdb:tt001', 8),
+          notes: ['not valid'],
+        },
+      },
+    });
+
+    expect(report.validRecords).toBe(0);
+    expect(report.invalidRecords).toBe(1);
+    expect(report.problems.invalidNotes).toEqual([
+      { key: 'imdb:tt001', notes: ['not valid'] },
+    ]);
+    expect(formatReactionValidationReport(report)).toContain(
+      'Invalid notes:\n- key: imdb:tt001; notes: ["not valid"]',
+    );
   });
 
   it('reports missing required fields', () => {

@@ -188,6 +188,9 @@ export function getReactionQueryItems({
         releaseYear: item.releaseYear,
         mediaType: item.mediaType,
         rating: reaction.rating,
+        ...(isNonEmptyString(reaction.notes)
+          ? { notes: reaction.notes }
+          : {}),
       };
     })
     .sort(compareReactionItems);
@@ -222,15 +225,19 @@ export function formatReactionQueryItems(
   }
 
   return items
-    .map((item) =>
-      [
+    .map((item) => {
+      const line = [
         item.title,
         formatReleaseYear(item.releaseYear),
         formatMediaType(item.mediaType),
         item.canonicalId,
         formatRating(item.rating),
-      ].join(' | '),
-    )
+      ].join(' | ');
+
+      return isNonEmptyString(item.notes)
+        ? `${line}\n  Notes: ${item.notes}`
+        : line;
+    })
     .join('\n');
 }
 

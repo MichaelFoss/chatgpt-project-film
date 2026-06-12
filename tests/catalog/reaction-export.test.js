@@ -48,12 +48,13 @@ const catalog = {
   },
 };
 
-function reaction(canonicalId, rating) {
+function reaction(canonicalId, rating, overrides = {}) {
   return {
     canonicalId,
     updatedAt: '2026-06-10T12:00:00.000Z',
     eventIds: [`event-${canonicalId}`],
     rating,
+    ...overrides,
   };
 }
 
@@ -123,7 +124,16 @@ describe('reaction export command', () => {
   });
 
   it('exports human-readable data in deterministic title order', async () => {
-    const rootDir = await createTempProject();
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+        'imdb:tt002': reaction('imdb:tt002', 8, {
+          notes: 'Loved the atmosphere and soundtrack.',
+        }),
+        'imdb:tt003': reaction('imdb:tt003', 5),
+        'imdb:tt004': reaction('imdb:tt004', 3),
+      },
+    });
 
     const items = await exportReactions({ rootDir });
 
@@ -136,6 +146,7 @@ describe('reaction export command', () => {
     expect(formatReactionExportItems(items)).toBe(
       [
         'Alpha | 2020 | TV | imdb:tt002 | 8/10',
+        '  Notes: Loved the atmosphere and soundtrack.',
         'Alpha | 2005 | Movie | imdb:tt003 | 5/10',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Zulu | 1964 | Movie | imdb:tt001 | 10/10',
@@ -144,7 +155,16 @@ describe('reaction export command', () => {
   });
 
   it('exports deterministic JSON with only allowed fields', async () => {
-    const rootDir = await createTempProject();
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+        'imdb:tt002': reaction('imdb:tt002', 8, {
+          notes: 'Loved the atmosphere and soundtrack.',
+        }),
+        'imdb:tt003': reaction('imdb:tt003', 5),
+        'imdb:tt004': reaction('imdb:tt004', 3),
+      },
+    });
 
     const items = await exportReactions({ rootDir });
     const parsed = JSON.parse(formatReactionExportJson(items));
@@ -155,6 +175,7 @@ describe('reaction export command', () => {
       releaseYear: 2020,
       mediaType: 'series',
       rating: 8,
+      notes: 'Loved the atmosphere and soundtrack.',
     });
     expect(Object.keys(parsed[0])).toEqual([
       'canonicalId',
@@ -162,7 +183,15 @@ describe('reaction export command', () => {
       'releaseYear',
       'mediaType',
       'rating',
+      'notes',
     ]);
+    expect(parsed[1]).toEqual({
+      canonicalId: 'imdb:tt003',
+      title: 'Alpha',
+      releaseYear: 2005,
+      mediaType: 'movie',
+      rating: 5,
+    });
     expect(formatReactionExportJson(items)).not.toContain('eventIds');
     expect(formatReactionExportJson(items)).not.toContain('updatedAt');
     expect(formatReactionExportJson(items)).not.toContain('event-');
