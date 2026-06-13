@@ -1,4 +1,17 @@
 {
+  "imdb:tt0168122": {
+    "canonicalId": "imdb:tt0168122",
+    "eventIds": ["982c6904-8659-4b5a-a78d-e704e3b7dafc"],
+    "updatedAt": "2026-06-13T14:42:05.699Z",
+    "rating": 5
+  },
+  "imdb:tt0338013": {
+    "canonicalId": "imdb:tt0338013",
+    "eventIds": ["70f9714c-4125-4131-9111-a6231a9b84cd"],
+    "updatedAt": "2026-06-13T14:41:45.861Z",
+    "rating": 9,
+    "reasons": ["thought-provoking", "surreal"]
+  },
   "imdb:tt0371746": {
     "canonicalId": "imdb:tt0371746",
     "eventIds": ["25d6446c-dbc5-41a8-b978-0ca0481fb2da"],
@@ -13,12 +26,33 @@
     "rating": 8,
     "reasons": ["science fantasy", "action", "otherworldly"]
   },
+  "imdb:tt0478970": {
+    "canonicalId": "imdb:tt0478970",
+    "eventIds": ["aaf180aa-13c3-4d78-9335-df52dfc6294b"],
+    "updatedAt": "2026-06-13T14:43:34.451Z",
+    "rating": 7,
+    "reasons": ["mcu"]
+  },
+  "imdb:tt0480249": {
+    "canonicalId": "imdb:tt0480249",
+    "eventIds": ["ec18e65b-c83e-4f35-9b92-6528048f5078"],
+    "updatedAt": "2026-06-13T14:44:31.350Z",
+    "rating": 9,
+    "reasons": ["solo", "zombie", "post-apocalyptic"]
+  },
   "imdb:tt11858890": {
     "canonicalId": "imdb:tt11858890",
     "eventIds": ["46880044-ae3d-467d-baf5-1d3f7b596556"],
     "updatedAt": "2026-06-12T12:14:02.938Z",
     "rating": 5,
     "reasons": ["overrated"]
+  },
+  "imdb:tt1431045": {
+    "canonicalId": "imdb:tt1431045",
+    "eventIds": ["dfd75c34-8f4e-46a9-9c73-a1bc96756073"],
+    "updatedAt": "2026-06-13T14:43:20.627Z",
+    "rating": 8,
+    "reasons": ["reynolds", "mcu", "4th wall"]
   },
   "imdb:tt1462764": {
     "canonicalId": "imdb:tt1462764",
@@ -83,6 +117,13 @@
     "updatedAt": "2026-06-12T12:19:11.438Z",
     "rating": 9,
     "reasons": ["unnerving", "scary", "sci-fi"]
+  },
+  "imdb:tt31193180": {
+    "canonicalId": "imdb:tt31193180",
+    "eventIds": ["16d65a2c-4d0f-4abd-9b4f-d286f764b984"],
+    "updatedAt": "2026-06-13T14:45:07.428Z",
+    "rating": 5,
+    "reasons": ["inventive", "boring", "agenda"]
   },
   "imdb:tt4123432": {
     "canonicalId": "imdb:tt4123432",

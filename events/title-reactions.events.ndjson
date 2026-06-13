@@ -15,3 +15,9 @@
 {"eventId":"b903355c-bb9b-40ba-a1ae-ea42aa318787","type":"title.reaction.updated","occurredAt":"2026-06-12T12:18:23.139Z","canonicalId":"imdb:tt14824600","rating":3,"reasons":["overrated","boring"]}
 {"eventId":"8c01b4e5-9d37-4b51-83d8-61cc6ff11652","type":"title.reaction.updated","occurredAt":"2026-06-12T12:19:11.438Z","canonicalId":"imdb:tt2649554","rating":9,"reasons":["unnerving","scary","sci-fi"]}
 {"eventId":"25d6446c-dbc5-41a8-b978-0ca0481fb2da","type":"title.reaction.updated","occurredAt":"2026-06-12T12:19:18.722Z","canonicalId":"imdb:tt0371746","rating":7,"reasons":["mcu"]}
+{"eventId":"70f9714c-4125-4131-9111-a6231a9b84cd","type":"title.reaction.updated","occurredAt":"2026-06-13T14:41:45.861Z","canonicalId":"imdb:tt0338013","rating":9,"reasons":["thought-provoking","surreal"]}
+{"eventId":"982c6904-8659-4b5a-a78d-e704e3b7dafc","type":"title.reaction.updated","occurredAt":"2026-06-13T14:42:05.699Z","canonicalId":"imdb:tt0168122","rating":5}
+{"eventId":"dfd75c34-8f4e-46a9-9c73-a1bc96756073","type":"title.reaction.updated","occurredAt":"2026-06-13T14:43:20.627Z","canonicalId":"imdb:tt1431045","rating":8,"reasons":["reynolds","mcu","4th wall"]}
+{"eventId":"aaf180aa-13c3-4d78-9335-df52dfc6294b","type":"title.reaction.updated","occurredAt":"2026-06-13T14:43:34.451Z","canonicalId":"imdb:tt0478970","rating":7,"reasons":["mcu"]}
+{"eventId":"ec18e65b-c83e-4f35-9b92-6528048f5078","type":"title.reaction.updated","occurredAt":"2026-06-13T14:44:31.350Z","canonicalId":"imdb:tt0480249","rating":9,"reasons":["solo","zombie","post-apocalyptic"]}
+{"eventId":"16d65a2c-4d0f-4abd-9b4f-d286f764b984","type":"title.reaction.updated","occurredAt":"2026-06-13T14:45:07.428Z","canonicalId":"imdb:tt31193180","rating":5,"reasons":["inventive","boring","agenda"]}
