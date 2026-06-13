@@ -151,8 +151,8 @@ export function formatReactionStats(stats) {
     '',
     'Media type breakdown:',
     `- Movies reacted: ${stats.mediaTypes.moviesReacted}`,
-    `- TV reacted: ${stats.mediaTypes.tvReacted}`,
+    `- Series reacted: ${stats.mediaTypes.tvReacted}`,
     `- Movies unreacted: ${stats.mediaTypes.moviesUnreacted}`,
-    `- TV unreacted: ${stats.mediaTypes.tvUnreacted}`,
+    `- Series unreacted: ${stats.mediaTypes.tvUnreacted}`,
   ].join('\n');
 }

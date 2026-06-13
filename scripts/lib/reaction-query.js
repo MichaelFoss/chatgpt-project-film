@@ -35,7 +35,7 @@ function formatMediaType(mediaType) {
   }
 
   if (mediaType === 'series') {
-    return 'TV';
+    return 'Series';
   }
 
   return mediaType;

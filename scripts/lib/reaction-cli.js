@@ -264,7 +264,7 @@ export function createReactionCommand() {
       ),
     )
     .addOption(
-      new Option('--tv', 'only include television titles').conflicts(
+      new Option('--tv', 'only include Series titles').conflicts(
         'movies',
       ),
     )
@@ -472,7 +472,7 @@ function formatMediaType(mediaType) {
   }
 
   if (mediaType === 'series') {
-    return 'TV';
+    return 'Series';
   }
 
   return mediaType;

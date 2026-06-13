@@ -146,7 +146,7 @@ describe('reaction export command', () => {
     ]);
     expect(formatReactionExportItems(items)).toBe(
       [
-        'Alpha | 2020 | TV | imdb:tt002 | 8/10',
+        'Alpha | 2020 | Series | imdb:tt002 | 8/10',
         '  Notes: Loved the atmosphere and soundtrack.',
         '  Reasons: Great Atmosphere, soundtrack',
         'Alpha | 2005 | Movie | imdb:tt003 | 5/10',
@@ -225,7 +225,7 @@ describe('reaction export command', () => {
     expect(stderr).toBe('');
     expect(stdout.trim()).toBe(
       [
-        'Alpha | 2020 | TV | imdb:tt002 | 8/10',
+        'Alpha | 2020 | Series | imdb:tt002 | 8/10',
         'Alpha | 2005 | Movie | imdb:tt003 | 5/10',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Zulu | 1964 | Movie | imdb:tt001 | 10/10',

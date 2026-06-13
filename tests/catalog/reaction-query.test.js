@@ -139,7 +139,7 @@ describe('reaction query command', () => {
     ]);
     expect(formatReactionQueryItems(items)).toBe(
       [
-        'Alpha | 2020 | TV | imdb:tt002 | 8/10',
+        'Alpha | 2020 | Series | imdb:tt002 | 8/10',
         '  Notes: Loved the atmosphere and soundtrack.',
         '  Reasons: Great Atmosphere, soundtrack',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
@@ -279,7 +279,9 @@ describe('reaction query command', () => {
     );
 
     expect(stderr).toBe('');
-    expect(stdout.trim()).toBe('Alpha | 2020 | TV | imdb:tt002 | 8/10');
+    expect(stdout.trim()).toBe(
+      'Alpha | 2020 | Series | imdb:tt002 | 8/10',
+    );
     expect(stdout).not.toContain('event-');
     expect(stdout).not.toContain('eventIds');
     expect(stdout).not.toContain('updatedAt');

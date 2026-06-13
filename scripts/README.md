@@ -61,9 +61,9 @@ absent.
 
 `yarn reactions:stats` is a read-only diagnostic view over
 `data/title-reactions.json` joined with `data/catalog.json`. It reports
-reaction coverage, canonical reaction rating distribution, and movie/TV
-reacted and unreacted counts without reading the title reaction event
-stream.
+reaction coverage, canonical reaction rating distribution, and movie and
+series reacted and unreacted counts without reading the title reaction
+event stream.
 
 `yarn reactions:validate` is a read-only diagnostic view over
 `data/title-reactions.json` joined with `data/catalog.json`. It reports

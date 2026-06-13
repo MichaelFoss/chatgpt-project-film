@@ -228,9 +228,9 @@ describe('reaction stats command', () => {
         '',
         'Media type breakdown:',
         '- Movies reacted: 2',
-        '- TV reacted: 1',
+        '- Series reacted: 1',
         '- Movies unreacted: 1',
-        '- TV unreacted: 1',
+        '- Series unreacted: 1',
       ].join('\n'),
     );
   });

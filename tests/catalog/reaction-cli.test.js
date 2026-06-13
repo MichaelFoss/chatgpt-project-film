@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
+  createReactionCommand,
   createTitleReactionEvent,
   findReactionTitleById,
   formatExistingReaction,
@@ -260,6 +261,14 @@ describe('reaction CLI', () => {
     ).toThrow(
       "error: option '--random' cannot be used with option '--search'",
     );
+  });
+
+  it('keeps --tv as the CLI flag while showing Series in help text', () => {
+    const helpText = createReactionCommand().helpInformation();
+
+    expect(helpText).toContain('--tv');
+    expect(helpText).toContain('only include Series titles');
+    expect(helpText).not.toContain('only include television titles');
   });
 
   it('loads the generated catalog', async () => {
@@ -526,6 +535,9 @@ describe('reaction CLI', () => {
     expect(formatReactionTitle(testCatalog()['imdb:tt001'])).toBe(
       ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
     );
+    expect(formatReactionTitle(testCatalog()['imdb:tt002'])).toBe(
+      ['Beta (2002)', 'Series · Drama'].join('\n'),
+    );
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
     ).not.toContain('plot summary');
@@ -610,7 +622,7 @@ describe('reaction CLI', () => {
     expect(formatSearchResults(items)).toBe(
       [
         '[1] Alpha (2001) | Movie | imdb:tt001',
-        '[2] Beta (2002) | TV | imdb:tt002',
+        '[2] Beta (2002) | Series | imdb:tt002',
       ].join('\n'),
     );
     expect(formatSearchResults(items)).not.toContain('plot summary');
@@ -623,7 +635,7 @@ describe('reaction CLI', () => {
       },
       {
         key: '2',
-        name: 'Beta (2002) | TV | imdb:tt002',
+        name: 'Beta (2002) | Series | imdb:tt002',
         value: 'imdb:tt002',
       },
     ]);
@@ -632,7 +644,7 @@ describe('reaction CLI', () => {
     ).toBe(
       [
         '[1] Alpha (2001) | Movie | imdb:tt001',
-        '[2] Beta (2002) | TV | imdb:tt002',
+        '[2] Beta (2002) | Series | imdb:tt002',
       ].join('\n'),
     );
   });
