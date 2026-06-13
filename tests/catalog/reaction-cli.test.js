@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createTitleReactionEvent,
   findReactionTitleById,
+  formatSearchResultThresholdMessage,
   formatSearchResults,
   formatVisibleRatingScale,
   formatVisibleReactionChoices,
@@ -18,6 +19,7 @@ import {
   promptForReaction,
   ratingForReaction,
   readReactionCatalog,
+  readReactionSearchResultThreshold,
   readReactionState,
   runReactionSession,
   searchReactionCatalog,
@@ -30,6 +32,7 @@ import {
 } from '../../scripts/react.js';
 
 const tempDirs = [];
+let originalSearchResultThreshold;
 
 async function createTempProject({
   catalog = testCatalog(),
@@ -157,7 +160,19 @@ async function captureReactionSession(options) {
   return { output, result };
 }
 
+beforeEach(() => {
+  originalSearchResultThreshold =
+    process.env.REACTION_SEARCH_RESULT_THRESHOLD;
+});
+
 afterEach(async () => {
+  if (originalSearchResultThreshold === undefined) {
+    delete process.env.REACTION_SEARCH_RESULT_THRESHOLD;
+  } else {
+    process.env.REACTION_SEARCH_RESULT_THRESHOLD =
+      originalSearchResultThreshold;
+  }
+
   await Promise.all(
     tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true })),
   );
@@ -573,6 +588,19 @@ describe('reaction CLI', () => {
     );
     expect(output).not.toContain('Showing 35 of 36 matches');
     expect(output.split('\n')).toHaveLength(36);
+  });
+
+  it('reads the search result threshold from the environment', () => {
+    delete process.env.REACTION_SEARCH_RESULT_THRESHOLD;
+
+    expect(readReactionSearchResultThreshold()).toBe(25);
+
+    process.env.REACTION_SEARCH_RESULT_THRESHOLD = '3';
+
+    expect(readReactionSearchResultThreshold()).toBe(3);
+    expect(formatSearchResultThresholdMessage(4)).toBe(
+      'Too many titles found (4). Please refine your search.',
+    );
   });
 
   it('maps rating prompt choices to explicit numeric values', async () => {
@@ -1855,6 +1883,7 @@ describe('reaction CLI', () => {
       selectReactionTitleFromSearch({
         rootDir,
         searchPrompt: async () => 'Match',
+        searchResultThreshold: 36,
         selectionPrompt: async ({ choices }) => {
           promptedChoices = choices;
           return choices[35].value;
@@ -1874,6 +1903,174 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).toContain(
       '[36] Match 36 (2035) | Movie | imdb:match36',
     );
+  });
+
+  it('displays search results below the configured threshold', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(24),
+    });
+    const output = [];
+    let promptedChoices = [];
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => 'Match',
+        searchResultThreshold: 25,
+        selectionPrompt: async ({ choices }) => {
+          promptedChoices = choices;
+          return choices[23].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:match24',
+      title: 'Match 24',
+    });
+
+    expect(promptedChoices).toHaveLength(24);
+    expect(output.join('\n')).toContain(
+      '[o] Match 24 (2023) | Movie | imdb:match24',
+    );
+    expect(output.join('\n')).not.toContain('Too many titles found');
+  });
+
+  it('displays search results exactly equal to the configured threshold', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(25),
+    });
+    const output = [];
+    let promptedChoices = [];
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => 'Match',
+        searchResultThreshold: 25,
+        selectionPrompt: async ({ choices }) => {
+          promptedChoices = choices;
+          return choices[24].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:match25',
+      title: 'Match 25',
+    });
+
+    expect(promptedChoices).toHaveLength(25);
+    expect(output.join('\n')).toContain(
+      '[p] Match 25 (2024) | Movie | imdb:match25',
+    );
+    expect(output.join('\n')).not.toContain('Too many titles found');
+  });
+
+  it('does not display candidate lists above the configured threshold', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(26),
+    });
+    const output = [];
+    let searchCount = 0;
+    let selectionPrompted = false;
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => {
+          searchCount += 1;
+          if (searchCount > 1) {
+            throw new Error('user cancelled');
+          }
+          return 'Match';
+        },
+        searchResultThreshold: 25,
+        selectionPrompt: async () => {
+          selectionPrompted = true;
+          return 'imdb:match01';
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).rejects.toThrow('user cancelled');
+
+    expect(selectionPrompted).toBe(false);
+    expect(searchCount).toBe(2);
+    expect(output).toEqual([
+      'Too many titles found (26). Please refine your search.',
+    ]);
+    expect(output.join('\n')).not.toContain('Match 01');
+  });
+
+  it('re-prompts after an above-threshold search and accepts a refined search', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(26),
+    });
+    const output = [];
+    const searches = ['Match', 'Match 26'];
+    let promptedChoices = [];
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => searches.shift(),
+        searchResultThreshold: 25,
+        selectionPrompt: async ({ choices }) => {
+          promptedChoices = choices;
+          return choices[0].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:match26',
+      title: 'Match 26',
+    });
+
+    expect(promptedChoices).toEqual([
+      {
+        key: '1',
+        name: 'Match 26 (2025) | Movie | imdb:match26',
+        value: 'imdb:match26',
+      },
+    ]);
+    expect(output).toEqual([
+      'Too many titles found (26). Please refine your search.',
+      '[1] Match 26 (2025) | Movie | imdb:match26',
+    ]);
+  });
+
+  it('uses the .env search result threshold for search sessions', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(3),
+    });
+    await fs.writeFile(
+      path.join(rootDir, '.env'),
+      'REACTION_SEARCH_RESULT_THRESHOLD=2\n',
+      'utf8',
+    );
+    const output = [];
+    const searches = ['Match', 'Match 03'];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--search'],
+      searchPrompt: async () => searches.shift(),
+      selectionPrompt: async ({ choices }) => choices[0].value,
+      reactionPrompt: async () => 8,
+      writeOutput: (message) => output.push(message),
+    });
+
+    expect(output).toEqual([
+      'Too many titles found (3). Please refine your search.',
+      '[1] Match 03 (2002) | Movie | imdb:match03',
+      ['Match 03 (2002)', 'Movie · Drama'].join('\n'),
+      'Wrote 1 title reaction event(s).\n- Match 03: rating 8/10 (imdb:match03)',
+    ]);
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:match03',
+        title: 'Match 03',
+        rating: 8,
+      }),
+    ]);
   });
 
   it('search selection supports re-reaction', async () => {

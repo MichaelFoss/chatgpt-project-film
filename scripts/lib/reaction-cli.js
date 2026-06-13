@@ -24,8 +24,11 @@ import {
   titleReactionEventType,
 } from './title-reactions.js';
 import { ratingForReaction, ratingScale } from './reaction-ratings.js';
+import { loadRepoEnv } from './local-env.js';
 
 const defaultLimit = 1;
+const defaultSearchResultThreshold = 25;
+const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
   { key: 'q', name: 'Quit', value: 'quit' },
@@ -218,6 +221,30 @@ function parseLimit(value) {
   }
 
   return Number(value);
+}
+
+function parseSearchResultThreshold(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    String(value).trim() === ''
+  ) {
+    return defaultSearchResultThreshold;
+  }
+
+  const normalized = String(value).trim();
+
+  if (!/^[1-9]\d*$/.test(normalized)) {
+    throw new CatalogBuildError(
+      `${searchResultThresholdEnvVar} must be a positive integer.`,
+    );
+  }
+
+  return Number(normalized);
+}
+
+export function readReactionSearchResultThreshold(env = process.env) {
+  return parseSearchResultThreshold(env[searchResultThresholdEnvVar]);
 }
 
 export function createReactionCommand() {
@@ -503,6 +530,10 @@ export function formatSearchResults(items) {
     .join('\n');
 }
 
+export function formatSearchResultThresholdMessage(count) {
+  return `Too many titles found (${count}). Please refine your search.`;
+}
+
 export function getReactionPromptChoices() {
   return [
     ...ratingScale.map(({ key, rating, label }) => ({
@@ -666,10 +697,26 @@ export async function selectReactionTitleFromSearch({
   rootDir = process.cwd(),
   searchPrompt,
   selectionPrompt,
+  searchResultThreshold,
   writeOutput = (message) => console.log(message),
 } = {}) {
-  const query = await promptForSearchQuery({ searchPrompt });
-  const items = await searchReactionCatalog({ rootDir, query });
+  loadRepoEnv({ rootDir });
+
+  const threshold =
+    searchResultThreshold ?? readReactionSearchResultThreshold();
+  let query;
+  let items;
+
+  while (true) {
+    query = await promptForSearchQuery({ searchPrompt });
+    items = await searchReactionCatalog({ rootDir, query });
+
+    if (items.length <= threshold) {
+      break;
+    }
+
+    writeOutput(formatSearchResultThresholdMessage(items.length));
+  }
 
   if (items.length === 0) {
     throw new CatalogBuildError(
@@ -691,6 +738,7 @@ async function resolveTargetReactionTitle({
   options,
   searchPrompt,
   selectionPrompt,
+  searchResultThreshold,
   writeOutput,
 }) {
   if (options.id) {
@@ -705,6 +753,7 @@ async function resolveTargetReactionTitle({
       rootDir,
       searchPrompt,
       selectionPrompt,
+      searchResultThreshold,
       writeOutput,
     });
   }
@@ -807,6 +856,7 @@ export async function runReactionSession({
   quitPrompt,
   searchPrompt,
   selectionPrompt,
+  searchResultThreshold,
   random = Math.random,
   writeOutput = (message) => console.log(message),
 } = {}) {
@@ -822,6 +872,7 @@ export async function runReactionSession({
     options,
     searchPrompt,
     selectionPrompt,
+    searchResultThreshold,
     writeOutput,
   });
   let processedCount = 0;

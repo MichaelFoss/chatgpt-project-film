@@ -129,6 +129,7 @@ Set these values in `.env`:
 OMDB_API_KEY=your-omdb-api-key
 PLEX_URL=http://your-plex-server:32400
 PLEX_TOKEN=your-plex-token
+REACTION_SEARCH_RESULT_THRESHOLD=25
 ```
 
 Then run:

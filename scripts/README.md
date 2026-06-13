@@ -129,6 +129,11 @@ Local CLI runs load `OMDB_API_KEY` from the repository root `.env` file.
 An `OMDB_API_KEY` value provided by the shell takes precedence over the
 `.env` value.
 
+`yarn react --search` also loads `REACTION_SEARCH_RESULT_THRESHOLD` from
+the repository root `.env` file. The default threshold is 25 search
+results; searches above that threshold ask for a refined term instead of
+printing the full candidate list.
+
 If a run reports provider rate limiting or the daily OMDb limit is
 reached, stop real-provider hydration for the day. Resume on the next
 day by running `yarn hydrate:metadata:plan`, then another capped
