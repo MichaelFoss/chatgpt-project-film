@@ -262,8 +262,8 @@ previous projected `notes` for that title. A newer rating event without
 `reasons` removes any previous projected `reasons`.
 
 `reasons` values are normalized by splitting comma-delimited text,
-trimming whitespace, removing empty values, and removing exact
-duplicates while preserving first-seen order and user-entered casing.
+trimming whitespace, lowercasing values, removing empty values, and
+removing duplicates after lowercasing while preserving first-seen order.
 
 ### Example
 
@@ -276,9 +276,9 @@ duplicates while preserving first-seen order and user-entered casing.
   "rating": 9,
   "notes": "Loved the atmosphere.",
   "reasons": [
-    "Great Atmosphere",
+    "great atmosphere",
     "strong emotional payoff",
-    "Excellent Soundtrack"
+    "excellent soundtrack"
   ]
 }
 ```

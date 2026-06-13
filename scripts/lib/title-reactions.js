@@ -79,7 +79,7 @@ export function normalizeReactionReasons(value) {
     }
 
     for (const rawReason of item.split(',')) {
-      const reason = rawReason.trim();
+      const reason = rawReason.trim().toLowerCase();
 
       if (reason.length === 0 || seen.has(reason)) {
         continue;

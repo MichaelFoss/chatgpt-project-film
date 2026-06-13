@@ -136,22 +136,62 @@ describe('title reaction events', () => {
         canonicalId: 'imdb:tt001',
         rating: 8,
         reasons: [
-          'Great Atmosphere',
+          'great atmosphere',
           'soundtrack',
-          'Strong Emotional Payoff',
+          'strong emotional payoff',
         ],
       },
     ]);
   });
 
-  it('preserves reason casing and only removes exact duplicates', () => {
+  it('lowercases a single mixed-case reason', () => {
     expect(
       validate([
         event({
-          reasons: ['MCU, CGI, Hans Zimmer', 'MCU', 'mcu'],
+          reasons: ['MCU'],
         }),
       ])[0].reasons,
-    ).toEqual(['MCU', 'CGI', 'Hans Zimmer', 'mcu']);
+    ).toEqual(['mcu']);
+  });
+
+  it('lowercases multiple mixed-case reasons', () => {
+    expect(
+      validate([
+        event({
+          reasons: ['Sci-Fi', 'Action'],
+        }),
+      ])[0].reasons,
+    ).toEqual(['sci-fi', 'action']);
+  });
+
+  it('deduplicates reasons after lowercase normalization', () => {
+    expect(
+      validate([
+        event({
+          reasons: ['MCU', 'mcu', ' Mcu '],
+        }),
+      ])[0].reasons,
+    ).toEqual(['mcu']);
+  });
+
+  it('preserves first-occurrence reason ordering after lowercase normalization', () => {
+    expect(
+      validate([
+        event({
+          reasons: ['Sci-Fi', 'Action', 'SCI-FI'],
+        }),
+      ])[0].reasons,
+    ).toEqual(['sci-fi', 'action']);
+  });
+
+  it('continues to trim reasons before persistence', () => {
+    expect(
+      validate([
+        event({
+          reasons: ['  Michael Bay  ', ' fantastic '],
+        }),
+      ])[0].reasons,
+    ).toEqual(['michael bay', 'fantastic']);
   });
 
   it('treats empty, whitespace-only, and null notes as absent', () => {
@@ -353,8 +393,22 @@ describe('title reaction events', () => {
       updatedAt: '2026-06-10T12:00:00.000Z',
       eventIds: ['evt-1', 'evt-2'],
       rating: 7,
-      reasons: ['Strong Emotional Payoff'],
+      reasons: ['strong emotional payoff'],
     });
+  });
+
+  it('projects lowercased reasons from validated events', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 9,
+          reasons: ['MCU', 'mcu', ' Mcu '],
+        }),
+      ]),
+    );
+
+    expect(projection['imdb:tt001'].reasons).toEqual(['mcu']);
   });
 
   it('writes deterministic projection output sorted by canonicalId', async () => {
@@ -537,13 +591,13 @@ describe('title reaction generated source', () => {
           updatedAt: '2026-06-10T12:00:00.000Z',
           eventIds: ['evt-1'],
           rating: 9,
-          reasons: ['Great Atmosphere', 'soundtrack'],
+          reasons: ['great atmosphere', 'soundtrack'],
         },
       },
     });
 
     expect(docs['title-reactions-summary.md']).toContain(
-      'reasons Great Atmosphere, soundtrack',
+      'reasons great atmosphere, soundtrack',
     );
   });
 

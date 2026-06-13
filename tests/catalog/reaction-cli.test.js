@@ -957,11 +957,45 @@ describe('reaction CLI', () => {
       rating: 9,
       notes: 'Loved the atmosphere.',
       reasons: [
-        'Great Atmosphere',
+        'great atmosphere',
         'soundtrack',
-        'Strong Emotional Payoff',
+        'strong emotional payoff',
       ],
     });
+  });
+
+  it('stores lowercase reasons while preserving notes unchanged', async () => {
+    const rootDir = await createTempProject();
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => 9,
+      notesPrompt: async () => 'Do NOT lowercase MCU in this note.',
+      reasonsPrompt: async (config) =>
+        config.transform(['MCU', 'mcu', ' Mcu ']),
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    const projectionText = await fs.readFile(
+      path.join(rootDir, 'data', 'title-reactions.json'),
+      'utf8',
+    );
+
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+      notes: 'Do NOT lowercase MCU in this note.',
+      reasons: ['mcu'],
+    });
+    expect(JSON.parse(eventText).reasons).toEqual(['mcu']);
+    expect(JSON.parse(eventText).notes).toBe(
+      'Do NOT lowercase MCU in this note.',
+    );
+    expect(JSON.parse(projectionText)['imdb:tt001'].reasons).toEqual([
+      'mcu',
+    ]);
   });
 
   it('does not display existing reaction details for first-time reactions', async () => {
@@ -1122,7 +1156,7 @@ describe('reaction CLI', () => {
     expect(result.bufferedEvents[0]).toMatchObject({
       canonicalId: 'imdb:tt001',
       rating: 9,
-      reasons: ['Great Atmosphere', 'soundtrack'],
+      reasons: ['great atmosphere', 'soundtrack'],
     });
   });
 
@@ -1146,7 +1180,7 @@ describe('reaction CLI', () => {
     expect(result.bufferedEvents[0]).toMatchObject({
       canonicalId: 'imdb:tt001',
       rating: 9,
-      reasons: ['Strong Emotional Payoff', 'soundtrack'],
+      reasons: ['strong emotional payoff', 'soundtrack'],
     });
   });
 

@@ -129,7 +129,7 @@ describe('reaction export command', () => {
         'imdb:tt001': reaction('imdb:tt001', 10),
         'imdb:tt002': reaction('imdb:tt002', 8, {
           notes: 'Loved the atmosphere and soundtrack.',
-          reasons: ['Great Atmosphere', 'soundtrack'],
+          reasons: ['great atmosphere', 'soundtrack'],
         }),
         'imdb:tt003': reaction('imdb:tt003', 5),
         'imdb:tt004': reaction('imdb:tt004', 3),
@@ -148,7 +148,7 @@ describe('reaction export command', () => {
       [
         'Alpha | 2020 | Series | imdb:tt002 | 8/10',
         '  Notes: Loved the atmosphere and soundtrack.',
-        '  Reasons: Great Atmosphere, soundtrack',
+        '  Reasons: great atmosphere, soundtrack',
         'Alpha | 2005 | Movie | imdb:tt003 | 5/10',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Zulu | 1964 | Movie | imdb:tt001 | 10/10',
@@ -162,7 +162,7 @@ describe('reaction export command', () => {
         'imdb:tt001': reaction('imdb:tt001', 10),
         'imdb:tt002': reaction('imdb:tt002', 8, {
           notes: 'Loved the atmosphere and soundtrack.',
-          reasons: ['Great Atmosphere', 'soundtrack'],
+          reasons: ['great atmosphere', 'soundtrack'],
         }),
         'imdb:tt003': reaction('imdb:tt003', 5),
         'imdb:tt004': reaction('imdb:tt004', 3),
@@ -179,7 +179,7 @@ describe('reaction export command', () => {
       mediaType: 'series',
       rating: 8,
       notes: 'Loved the atmosphere and soundtrack.',
-      reasons: ['Great Atmosphere', 'soundtrack'],
+      reasons: ['great atmosphere', 'soundtrack'],
     });
     expect(Object.keys(parsed[0])).toEqual([
       'canonicalId',
@@ -203,6 +203,34 @@ describe('reaction export command', () => {
     expect(formatReactionExportJson(items)).not.toContain(
       '2026-06-10T12:00:00.000Z',
     );
+  });
+
+  it('continues to export lowercase projected reasons', () => {
+    const items = formatReactionExportItems([
+      {
+        canonicalId: 'imdb:tt002',
+        title: 'Alpha',
+        releaseYear: 2020,
+        mediaType: 'series',
+        rating: 8,
+        reasons: ['sci-fi', 'action'],
+      },
+    ]);
+    const json = JSON.parse(
+      formatReactionExportJson([
+        {
+          canonicalId: 'imdb:tt002',
+          title: 'Alpha',
+          releaseYear: 2020,
+          mediaType: 'series',
+          rating: 8,
+          reasons: ['sci-fi', 'action'],
+        },
+      ]),
+    );
+
+    expect(items).toContain('  Reasons: sci-fi, action');
+    expect(json[0].reasons).toEqual(['sci-fi', 'action']);
   });
 
   it('does not depend on malformed event streams during export', async () => {

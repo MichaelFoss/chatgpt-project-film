@@ -52,7 +52,9 @@ reaction reasons are shown only when present.
 `yarn react --id <canonicalId>` can update an already-reacted title.
 When projected notes or reasons already exist for that title, the
 corresponding prompts are prefilled with the current projected values.
-Reasons are entered as a single comma-separated line.
+Reasons are entered as a single comma-separated line. Values are split
+on commas, trimmed, lowercased, deduplicated after lowercasing, and
+stored in first-occurrence order.
 
 `yarn reactions:export` reads the same projection and catalog join as
 `yarn reactions:list`. Human-readable and JSON export output include

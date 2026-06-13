@@ -546,7 +546,8 @@ overwrite supplied scalar fields for the same `canonicalId`; supplied
 `notes` and `reasons` use replace semantics together: a newer rating
 event without `notes` removes any previous projected `notes`, and a
 newer rating event without `reasons` removes any previous projected
-`reasons`. The projection stores event IDs for auditability and does not
+`reasons`. Free-form `reasons` are stored as lowercase normalized
+values. The projection stores event IDs for auditability and does not
 copy catalog title metadata.
 
 Generated recommendation context is emitted to:

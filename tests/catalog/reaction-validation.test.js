@@ -189,7 +189,7 @@ describe('reaction validation command', () => {
     );
   });
 
-  it('accepts casing differences in projected reasons', () => {
+  it('reports mixed-case projected reasons as invalid', () => {
     const report = validateReactionProjection({
       catalog,
       reactions: {
@@ -200,9 +200,14 @@ describe('reaction validation command', () => {
       },
     });
 
-    expect(report.validRecords).toBe(1);
-    expect(report.invalidRecords).toBe(0);
-    expect(report.problems.invalidReasons).toEqual([]);
+    expect(report.validRecords).toBe(0);
+    expect(report.invalidRecords).toBe(1);
+    expect(report.problems.invalidReasons).toEqual([
+      {
+        key: 'imdb:tt001',
+        reasons: ['MCU', 'mcu', 'CGI', 'Hans Zimmer'],
+      },
+    ]);
   });
 
   it('reports invalid reasons values', () => {

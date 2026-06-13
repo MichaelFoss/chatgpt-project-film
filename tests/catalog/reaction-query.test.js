@@ -120,7 +120,7 @@ describe('reaction query command', () => {
         'imdb:tt001': reaction('imdb:tt001', 10),
         'imdb:tt002': reaction('imdb:tt002', 8, {
           notes: 'Loved the atmosphere and soundtrack.',
-          reasons: ['Great Atmosphere', 'soundtrack'],
+          reasons: ['great atmosphere', 'soundtrack'],
         }),
         'imdb:tt003': reaction('imdb:tt003', 5),
         'imdb:tt004': reaction('imdb:tt004', 3),
@@ -141,7 +141,7 @@ describe('reaction query command', () => {
       [
         'Alpha | 2020 | Series | imdb:tt002 | 8/10',
         '  Notes: Loved the atmosphere and soundtrack.',
-        '  Reasons: Great Atmosphere, soundtrack',
+        '  Reasons: great atmosphere, soundtrack',
         'Beta | 1999 | Movie | imdb:tt004 | 3/10',
         'Gamma | unknown | Movie | imdb:tt005 | 1/10',
         'Middle | 2005 | Movie | imdb:tt003 | 5/10',
@@ -264,6 +264,22 @@ describe('reaction query command', () => {
     });
 
     await expect(listReactions({ rootDir })).resolves.toHaveLength(5);
+  });
+
+  it('continues to return lowercase projected reasons in query output', () => {
+    const items = getReactionQueryItems({
+      catalog,
+      reactions: {
+        'imdb:tt002': reaction('imdb:tt002', 8, {
+          reasons: ['sci-fi', 'action'],
+        }),
+      },
+    });
+
+    expect(items[0].reasons).toEqual(['sci-fi', 'action']);
+    expect(formatReactionQueryItems(items)).toContain(
+      '  Reasons: sci-fi, action',
+    );
   });
 
   it('prints human-readable CLI output without raw event fields', async () => {

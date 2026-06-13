@@ -51,6 +51,7 @@ function hasNormalizedReasonValues(reasons) {
     if (
       !isNonEmptyString(reason) ||
       reason !== reason.trim() ||
+      reason !== reason.toLowerCase() ||
       seen.has(reason)
     ) {
       return false;
