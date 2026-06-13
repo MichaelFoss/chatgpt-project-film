@@ -614,7 +614,7 @@ export async function promptForSearchQuery({
   searchPrompt = singleLineTextPrompt,
   message = 'Search catalog',
 } = {}) {
-  return searchPrompt({ message });
+  return searchPrompt({ message, allowEmpty: true });
 }
 
 export async function promptForReactionNotes({
@@ -693,6 +693,14 @@ export async function searchReactionCatalog({
   return searchCatalog({ rootDir, filters });
 }
 
+export function isBlankSearchQuery(query) {
+  return String(query ?? '').trim().length === 0;
+}
+
+export function formatSearchCancellationMessage() {
+  return 'Search cancelled.';
+}
+
 export async function selectReactionTitleFromSearch({
   rootDir = process.cwd(),
   searchPrompt,
@@ -709,6 +717,12 @@ export async function selectReactionTitleFromSearch({
 
   while (true) {
     query = await promptForSearchQuery({ searchPrompt });
+
+    if (isBlankSearchQuery(query)) {
+      writeOutput(formatSearchCancellationMessage());
+      return null;
+    }
+
     items = await searchReactionCatalog({ rootDir, query });
 
     if (items.length <= threshold) {
@@ -875,6 +889,16 @@ export async function runReactionSession({
     searchResultThreshold,
     writeOutput,
   });
+
+  if (options.search && targetItem === null) {
+    return {
+      status: 'cancelled',
+      bufferedEvents: [],
+      eventsWritten: 0,
+      processedCount: 0,
+    };
+  }
+
   let processedCount = 0;
 
   while (

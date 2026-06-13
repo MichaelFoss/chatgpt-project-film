@@ -16,6 +16,7 @@ import {
   getQuitConfirmationChoices,
   getReactionPromptChoices,
   parseReactionCliArgs,
+  promptForSearchQuery,
   promptForReaction,
   ratingForReaction,
   readReactionCatalog,
@@ -601,6 +602,17 @@ describe('reaction CLI', () => {
     expect(formatSearchResultThresholdMessage(4)).toBe(
       'Too many titles found (4). Please refine your search.',
     );
+  });
+
+  it('allows blank search prompt input so the search flow can cancel', async () => {
+    await expect(
+      promptForSearchQuery({
+        searchPrompt: async (config) => config,
+      }),
+    ).resolves.toMatchObject({
+      message: 'Search catalog',
+      allowEmpty: true,
+    });
   });
 
   it('maps rating prompt choices to explicit numeric values', async () => {
@@ -2037,6 +2049,116 @@ describe('reaction CLI', () => {
     ]);
   });
 
+  it('cancels search on empty input without showing results or selection prompts', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const output = [];
+    let selectionPrompted = false;
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => '',
+        selectionPrompt: async ({ choices }) => {
+          selectionPrompted = true;
+          return choices[0].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toBeNull();
+
+    expect(selectionPrompted).toBe(false);
+    expect(output).toEqual(['Search cancelled.']);
+  });
+
+  it('cancels search on space-only input without showing results or selection prompts', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const output = [];
+    let selectionPrompted = false;
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--search'],
+      searchPrompt: async () => '   ',
+      selectionPrompt: async ({ choices }) => {
+        selectionPrompted = true;
+        return choices[0].value;
+      },
+      reactionPrompt: async () => 8,
+      writeOutput: (message) => output.push(message),
+    });
+
+    expect(result).toEqual({
+      status: 'cancelled',
+      bufferedEvents: [],
+      eventsWritten: 0,
+      processedCount: 0,
+    });
+    expect(selectionPrompted).toBe(false);
+    expect(output).toEqual(['Search cancelled.']);
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('cancels search on tab and newline whitespace input', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const output = [];
+    let selectionPrompted = false;
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => '\t\n',
+        selectionPrompt: async ({ choices }) => {
+          selectionPrompted = true;
+          return choices[0].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toBeNull();
+
+    expect(selectionPrompted).toBe(false);
+    expect(output).toEqual(['Search cancelled.']);
+  });
+
+  it('cancels search when blank input follows an above-threshold re-prompt', async () => {
+    const rootDir = await createTempProject({
+      catalog: largeSearchCatalog(26),
+    });
+    const output = [];
+    const searches = ['Match', ''];
+    let selectionPrompted = false;
+
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => searches.shift(),
+        searchResultThreshold: 25,
+        selectionPrompt: async ({ choices }) => {
+          selectionPrompted = true;
+          return choices[0].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toBeNull();
+
+    expect(selectionPrompted).toBe(false);
+    expect(output).toEqual([
+      'Too many titles found (26). Please refine your search.',
+      'Search cancelled.',
+    ]);
+    expect(output.join('\n')).not.toContain('Match 01');
+  });
+
   it('uses the .env search result threshold for search sessions', async () => {
     const rootDir = await createTempProject({
       catalog: largeSearchCatalog(3),
@@ -2115,18 +2237,8 @@ describe('reaction CLI', () => {
     expect(projection['imdb:tt001'].eventIds).toHaveLength(2);
   });
 
-  it('fails search paths without writing events', async () => {
+  it('fails missing-result search paths without writing events', async () => {
     const rootDir = await createTempProject();
-
-    await expect(
-      captureReactionSession({
-        rootDir,
-        args: ['--search'],
-        searchPrompt: async () => '   ',
-        selectionPrompt: async ({ choices }) => choices[0].value,
-        reactionPrompt: async () => 8,
-      }),
-    ).rejects.toThrow('Search query must not be empty.');
 
     await expect(
       captureReactionSession({
