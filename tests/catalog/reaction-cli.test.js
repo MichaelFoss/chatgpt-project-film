@@ -862,6 +862,10 @@ describe('reaction CLI', () => {
   it('formats real write output without implementation details', () => {
     const output = formatReactionWriteSummary({
       eventsWritten: 1,
+      filesWritten: [
+        'events/title-reactions.events.ndjson',
+        'data/title-reactions.json',
+      ],
       events: [
         {
           canonicalId: 'imdb:tt001',
@@ -873,8 +877,48 @@ describe('reaction CLI', () => {
 
     expect(output).toContain('Wrote 1 title reaction event(s).');
     expect(output).toContain('Alpha: rating 8/10 (imdb:tt001)');
+    expect(output).toContain('Files changed:');
+    expect(output).toContain('- events/title-reactions.events.ndjson');
+    expect(output).toContain('- data/title-reactions.json');
+    expect(output).toContain('Next:');
+    expect(output).toContain('git diff');
+    expect(output).toContain(
+      'git add events/title-reactions.events.ndjson data/title-reactions.json',
+    );
+    expect(output).toContain('git commit -m "Add movie reactions"');
     expect(output).not.toContain('eventId');
     expect(output).not.toContain('occurredAt');
+  });
+
+  it('omits next-step guidance when no files were written', () => {
+    const output = formatReactionWriteSummary({
+      eventsWritten: 0,
+      filesWritten: ['events/title-reactions.events.ndjson'],
+      events: [],
+    });
+
+    expect(output).toBe('Wrote 0 title reaction event(s).');
+  });
+
+  it('quotes written files with shell-sensitive characters in git add', () => {
+    const output = formatReactionWriteSummary({
+      eventsWritten: 1,
+      filesWritten: [
+        'events/title-reactions.events.ndjson',
+        'data/reaction drafts/title reactions.json',
+      ],
+      events: [
+        {
+          canonicalId: 'imdb:tt001',
+          title: 'Alpha',
+          rating: 8,
+        },
+      ],
+    });
+
+    expect(output).toContain(
+      "git add events/title-reactions.events.ndjson 'data/reaction drafts/title reactions.json'",
+    );
   });
 
   it('does not write files when creating and formatting events', async () => {
@@ -2353,7 +2397,19 @@ describe('reaction CLI', () => {
       'Too many titles found (3). Please refine your search.',
       '[1] Match 03 (2002) | Movie | imdb:match03',
       ['Match 03 (2002)', 'Movie · Drama'].join('\n'),
-      'Wrote 1 title reaction event(s).\n- Match 03: rating 8/10 (imdb:match03)',
+      [
+        'Wrote 1 title reaction event(s).',
+        '- Match 03: rating 8/10 (imdb:match03)',
+        '',
+        'Files changed:',
+        '- events/title-reactions.events.ndjson',
+        '- data/title-reactions.json',
+        '',
+        'Next:',
+        'git diff',
+        'git add events/title-reactions.events.ndjson data/title-reactions.json',
+        'git commit -m "Add movie reactions"',
+      ].join('\n'),
     ]);
     expect(result.bufferedEvents).toEqual([
       expect.objectContaining({

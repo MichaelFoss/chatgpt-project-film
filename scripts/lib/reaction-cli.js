@@ -42,6 +42,23 @@ const quitConfirmationOptions = [
 const searchSelectionKeys = '123456789abcdefghijklmnopqrstuvwxyz'.split(
   '',
 );
+
+function uniqueNonEmptyStrings(values) {
+  return [
+    ...new Set(
+      values.filter(
+        (value) => typeof value === 'string' && value.length > 0,
+      ),
+    ),
+  ];
+}
+
+function shellQuotePath(filePath) {
+  return /^[A-Za-z0-9_./:-]+$/.test(filePath)
+    ? filePath
+    : `'${filePath.replaceAll("'", "'\\''")}'`;
+}
+
 const singleKeyChoicePrompt = createPrompt((config, done) => {
   const [status, setStatus] = useState('idle');
   const [selectedKey, setSelectedKey] = useState('');
@@ -847,6 +864,21 @@ export function formatReactionWriteSummary(report) {
     );
   }
 
+  const filesWritten = uniqueNonEmptyStrings(report.filesWritten ?? []);
+
+  if (report.eventsWritten > 0 && filesWritten.length > 0) {
+    lines.push(
+      '',
+      'Files changed:',
+      ...filesWritten.map((filePath) => `- ${filePath}`),
+      '',
+      'Next:',
+      'git diff',
+      `git add ${filesWritten.map(shellQuotePath).join(' ')}`,
+      'git commit -m "Add movie reactions"',
+    );
+  }
+
   return lines.join('\n');
 }
 
@@ -885,6 +917,14 @@ async function persistReactionEvents({
     projectionReport,
     eventsWritten: appendReport.eventsAppended,
     events: bufferedEvents,
+    filesWritten: uniqueNonEmptyStrings(
+      [
+        appendReport.outputPathWritten,
+        projectionReport.outputPathWritten,
+      ].map((filePath) =>
+        filePath ? path.relative(rootDir, filePath) : null,
+      ),
+    ),
   };
 }
 
