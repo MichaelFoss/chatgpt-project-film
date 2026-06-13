@@ -470,6 +470,39 @@ describe('buildCatalog', () => {
     expect(catalog).toEqual({});
   });
 
+  it('normalizes TV media type aliases to canonical series records', async () => {
+    const rootDir = await createTempProject();
+    await writeEvents(rootDir, [
+      catalogAdd({
+        canonicalId: 'imdb:tt0944947',
+      }),
+    ]);
+    await writeMetadata(rootDir, {
+      'imdb:tt0944947': {
+        canonicalId: 'imdb:tt0944947',
+        provider: 'manual',
+        isValid: true,
+        lastUpdatedAt: '2026-05-29T00:00:00.000Z',
+        metadata: {
+          mediaType: 'show',
+          title: 'Game of Thrones',
+          genres: ['Drama'],
+        },
+      },
+    });
+
+    const report = await buildCatalog({ rootDir });
+    const catalog = await readCatalog(rootDir);
+
+    expect(report.invalidMetadata).toEqual([]);
+    expect(report.catalogRecordsWritten).toBe(1);
+    expect(catalog['imdb:tt0944947']).toMatchObject({
+      canonicalId: 'imdb:tt0944947',
+      mediaType: 'series',
+      title: 'Game of Thrones',
+    });
+  });
+
   it('invalid event shape is fatal and does not write catalog', async () => {
     const rootDir = await createTempProject();
     await writeEvents(rootDir, [

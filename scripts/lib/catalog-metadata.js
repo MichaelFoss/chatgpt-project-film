@@ -87,6 +87,10 @@ function normalizeMediaType(value) {
     return 'series';
   }
 
+  if (lower === 'tv' || lower === 'television' || lower === 'show') {
+    return 'series';
+  }
+
   return null;
 }
 

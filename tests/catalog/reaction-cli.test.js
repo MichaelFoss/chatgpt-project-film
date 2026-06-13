@@ -96,6 +96,25 @@ function extendedCatalog() {
   };
 }
 
+function catalogWithTvAlias() {
+  return {
+    'imdb:tt010': {
+      canonicalId: 'imdb:tt010',
+      mediaType: 'movie',
+      title: 'Movie Candidate',
+      releaseYear: 2010,
+      genres: ['Drama'],
+    },
+    'imdb:tt011': {
+      canonicalId: 'imdb:tt011',
+      mediaType: 'show',
+      title: 'Show Candidate',
+      releaseYear: 2011,
+      genres: ['Drama'],
+    },
+  };
+}
+
 function largeSearchCatalog(size = 36) {
   return Object.fromEntries(
     Array.from({ length: size }, (_, index) => {
@@ -295,6 +314,71 @@ describe('reaction CLI', () => {
     });
   });
 
+  it('filters eligible titles to movies only', () => {
+    const titles = selectEligibleReactionTitles(
+      extendedCatalog(),
+      {},
+      new Set(),
+      { movies: true },
+    );
+
+    expect(titles).toHaveLength(2);
+    expect(titles.every((item) => item.mediaType === 'movie')).toBe(
+      true,
+    );
+    expect(titles.map((item) => item.canonicalId)).toEqual([
+      'imdb:tt001',
+      'imdb:tt003',
+    ]);
+  });
+
+  it('filters eligible titles to TV series only', () => {
+    const titles = selectEligibleReactionTitles(
+      extendedCatalog(),
+      {},
+      new Set(),
+      { tv: true },
+    );
+
+    expect(titles).toHaveLength(1);
+    expect(titles.every((item) => item.mediaType === 'series')).toBe(
+      true,
+    );
+    expect(titles.map((item) => item.canonicalId)).toEqual([
+      'imdb:tt002',
+    ]);
+  });
+
+  it('treats TV media-type aliases as TV candidates', () => {
+    const catalog = catalogWithTvAlias();
+    const titles = selectEligibleReactionTitles(
+      catalog,
+      {},
+      new Set(),
+      { tv: true },
+    );
+
+    expect(titles.map((item) => item.canonicalId)).toEqual([
+      'imdb:tt011',
+    ]);
+    expect(
+      selectFirstUnreactedTitle(catalog, {}, new Set(), {
+        tv: true,
+      }),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt011',
+      title: 'Show Candidate',
+    });
+    expect(
+      selectRandomUnreactedTitle(catalog, {}, new Set(), () => 0, {
+        tv: true,
+      }),
+    ).toMatchObject({
+      canonicalId: 'imdb:tt011',
+      title: 'Show Candidate',
+    });
+  });
+
   it('selects first, middle, and last eligible titles from deterministic random values', () => {
     const catalog = extendedCatalog();
     const reactions = {};
@@ -331,6 +415,48 @@ describe('reaction CLI', () => {
     ).toMatchObject({
       canonicalId: 'imdb:tt003',
       title: 'Gamma',
+    });
+  });
+
+  it('selects random movie titles only from movie candidates', () => {
+    const firstMovie = selectRandomUnreactedTitle(
+      extendedCatalog(),
+      {},
+      new Set(),
+      () => 0,
+      { movies: true },
+    );
+    const lastMovie = selectRandomUnreactedTitle(
+      extendedCatalog(),
+      {},
+      new Set(),
+      () => 0.999,
+      { movies: true },
+    );
+
+    expect(firstMovie).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      mediaType: 'movie',
+    });
+    expect(lastMovie).toMatchObject({
+      canonicalId: 'imdb:tt003',
+      mediaType: 'movie',
+    });
+  });
+
+  it('selects random TV titles only from TV candidates', () => {
+    const item = selectRandomUnreactedTitle(
+      extendedCatalog(),
+      {},
+      new Set(),
+      () => 0.999,
+      { tv: true },
+    );
+
+    expect(item).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      mediaType: 'series',
+      title: 'Beta',
     });
   });
 
@@ -1013,6 +1139,83 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).toContain('Gamma (2003)');
   });
 
+  it('does not surface movie titles in a TV-only session', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--tv', '--limit', '5'],
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt002',
+        title: 'Beta',
+      }),
+    ]);
+    expect(output.join('\n')).toContain('Beta (2002)');
+    expect(output.join('\n')).not.toContain('Alpha (2001)');
+    expect(output.join('\n')).not.toContain('Gamma (2003)');
+  });
+
+  it('selects a TV-only session title from a projection with a TV alias', async () => {
+    const rootDir = await createTempProject({
+      catalog: catalogWithTvAlias(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--tv'],
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt011',
+        title: 'Show Candidate',
+      }),
+    ]);
+    expect(output.join('\n')).toContain('Show Candidate (2011)');
+    expect(output.join('\n')).not.toContain(
+      'No unreacted titles found.',
+    );
+    expect(output.join('\n')).not.toContain('Movie Candidate (2010)');
+  });
+
+  it('does not surface TV titles in a movie-only session', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--movies', '--limit', '5'],
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt003']);
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).toContain('Gamma (2003)');
+    expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
   it('supports --limit none until no eligible titles remain', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -1054,6 +1257,57 @@ describe('reaction CLI', () => {
       'imdb:tt001',
       'imdb:tt002',
       'imdb:tt003',
+    ]);
+  });
+
+  it('supports --random with --movies from only the movie candidate set', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const randomValues = [0.999, 0];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--movies', '--limit', '2'],
+      random: () => randomValues.shift(),
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt003', 'imdb:tt001']);
+    expect(
+      result.bufferedEvents.every((event) =>
+        ['imdb:tt001', 'imdb:tt003'].includes(event.canonicalId),
+      ),
+    ).toBe(true);
+  });
+
+  it('supports --random with --tv from only the TV candidate set', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--random', '--tv', '--limit', '5'],
+      random: () => 0.999,
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt002',
+        title: 'Beta',
+      }),
     ]);
   });
 

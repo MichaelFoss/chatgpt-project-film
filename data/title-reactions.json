@@ -1,1 +1,123 @@
-{}
+{
+  "imdb:tt0371746": {
+    "canonicalId": "imdb:tt0371746",
+    "eventIds": ["25d6446c-dbc5-41a8-b978-0ca0481fb2da"],
+    "updatedAt": "2026-06-12T12:19:18.722Z",
+    "rating": 7,
+    "reasons": ["mcu"]
+  },
+  "imdb:tt0401729": {
+    "canonicalId": "imdb:tt0401729",
+    "eventIds": ["18bd293b-2230-492b-b756-8ae31737f2ae"],
+    "updatedAt": "2026-06-12T12:13:39.312Z",
+    "rating": 8,
+    "reasons": ["science fantasy", "action", "otherworldly"]
+  },
+  "imdb:tt11858890": {
+    "canonicalId": "imdb:tt11858890",
+    "eventIds": ["46880044-ae3d-467d-baf5-1d3f7b596556"],
+    "updatedAt": "2026-06-12T12:14:02.938Z",
+    "rating": 5,
+    "reasons": ["overrated"]
+  },
+  "imdb:tt1462764": {
+    "canonicalId": "imdb:tt1462764",
+    "eventIds": ["7d070e61-beb0-47e7-93ec-7407f5b8cd4b"],
+    "updatedAt": "2026-06-12T12:15:09.161Z",
+    "rating": 7,
+    "reasons": ["og"]
+  },
+  "imdb:tt14824600": {
+    "canonicalId": "imdb:tt14824600",
+    "eventIds": ["b903355c-bb9b-40ba-a1ae-ea42aa318787"],
+    "updatedAt": "2026-06-12T12:18:23.139Z",
+    "rating": 3,
+    "reasons": ["overrated", "boring"]
+  },
+  "imdb:tt1591095": {
+    "canonicalId": "imdb:tt1591095",
+    "eventIds": ["a9c2d62f-8937-4fbd-a994-9b9d32b56b39"],
+    "updatedAt": "2026-06-12T12:16:34.666Z",
+    "rating": 8,
+    "reasons": ["terrifying", "spiritual"]
+  },
+  "imdb:tt1616195": {
+    "canonicalId": "imdb:tt1616195",
+    "eventIds": ["04a1c237-abde-4000-8cc1-837a04e69ad1"],
+    "updatedAt": "2026-06-12T12:11:58.815Z",
+    "rating": 7,
+    "reasons": ["leo"]
+  },
+  "imdb:tt1713476": {
+    "canonicalId": "imdb:tt1713476",
+    "eventIds": ["091f605d-b05e-4ec9-879e-66b9554af7be"],
+    "updatedAt": "2026-06-12T12:18:12.670Z",
+    "rating": 1,
+    "notes": "Michael Bay sensationalism.",
+    "reasons": ["michael bay"]
+  },
+  "imdb:tt1783732": {
+    "canonicalId": "imdb:tt1783732",
+    "eventIds": ["7e5ac1ae-e2e5-4c19-bd87-16f454d4c988"],
+    "updatedAt": "2026-06-12T12:16:47.746Z",
+    "rating": 9,
+    "notes": "Don't remember why I loved this, but I did."
+  },
+  "imdb:tt20969586": {
+    "canonicalId": "imdb:tt20969586",
+    "eventIds": ["61b553ff-5076-49a4-b109-528387abf087"],
+    "updatedAt": "2026-06-12T12:14:23.279Z",
+    "rating": 5,
+    "reasons": ["mcu", "overrated"]
+  },
+  "imdb:tt2369317": {
+    "canonicalId": "imdb:tt2369317",
+    "eventIds": ["96d93c5e-35b8-45ce-8c67-6ceb665aeb98"],
+    "updatedAt": "2026-06-12T12:13:53.144Z",
+    "rating": 3,
+    "reasons": ["not funny"]
+  },
+  "imdb:tt2649554": {
+    "canonicalId": "imdb:tt2649554",
+    "eventIds": ["8c01b4e5-9d37-4b51-83d8-61cc6ff11652"],
+    "updatedAt": "2026-06-12T12:19:11.438Z",
+    "rating": 9,
+    "reasons": ["unnerving", "scary", "sci-fi"]
+  },
+  "imdb:tt4123432": {
+    "canonicalId": "imdb:tt4123432",
+    "eventIds": ["2204c123-64dc-4864-9ea4-623e5e406f0e"],
+    "updatedAt": "2026-06-12T12:16:02.321Z",
+    "rating": 3,
+    "reasons": ["gay agenda"]
+  },
+  "imdb:tt6565702": {
+    "canonicalId": "imdb:tt6565702",
+    "eventIds": ["1bf923ce-981d-4755-a9ce-e046353bda63"],
+    "updatedAt": "2026-06-12T12:11:36.767Z",
+    "rating": 7,
+    "reasons": ["dark", "serious", "mcu"]
+  },
+  "imdb:tt7286456": {
+    "canonicalId": "imdb:tt7286456",
+    "eventIds": ["7151db90-6752-49c1-b970-f58402812a9c"],
+    "updatedAt": "2026-06-12T12:15:31.449Z",
+    "rating": 5,
+    "notes": "dark, surprise ending",
+    "reasons": ["dark", "surprise ending"]
+  },
+  "imdb:tt8633464": {
+    "canonicalId": "imdb:tt8633464",
+    "eventIds": ["f431e100-a4fd-4d30-b8f5-5dacc1656ae7"],
+    "updatedAt": "2026-06-12T12:12:24.861Z",
+    "rating": 4,
+    "reasons": ["unbelievable"]
+  },
+  "imdb:tt9198364": {
+    "canonicalId": "imdb:tt9198364",
+    "eventIds": ["f9828912-d4ec-4a8b-a82c-38759ebc7918"],
+    "updatedAt": "2026-06-12T12:14:47.665Z",
+    "rating": 8,
+    "reasons": ["fantastic", "thought-provoking"]
+  }
+}

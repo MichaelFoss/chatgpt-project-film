@@ -347,10 +347,48 @@ export function getReactedTitleIds(reactions) {
   return new Set(Object.keys(reactions));
 }
 
+function normalizeReactionMediaType(mediaType) {
+  if (typeof mediaType !== 'string') {
+    return null;
+  }
+
+  const normalized = mediaType.trim().toLowerCase();
+
+  if (normalized === 'movie') {
+    return 'movie';
+  }
+
+  if (
+    normalized === 'series' ||
+    normalized === 'tv' ||
+    normalized === 'television' ||
+    normalized === 'show'
+  ) {
+    return 'series';
+  }
+
+  return null;
+}
+
+function matchesReactionMediaTypeFilter(item, options = {}) {
+  const mediaType = normalizeReactionMediaType(item.mediaType);
+
+  if (options.movies) {
+    return mediaType === 'movie';
+  }
+
+  if (options.tv) {
+    return mediaType === 'series';
+  }
+
+  return true;
+}
+
 export function selectEligibleReactionTitles(
   catalog,
   reactions,
   excludedTitleIds = new Set(),
+  options = {},
 ) {
   const reactedTitleIds = new Set([
     ...getReactedTitleIds(reactions),
@@ -358,7 +396,9 @@ export function selectEligibleReactionTitles(
   ]);
 
   return Object.values(catalog).filter(
-    (item) => !reactedTitleIds.has(item.canonicalId),
+    (item) =>
+      !reactedTitleIds.has(item.canonicalId) &&
+      matchesReactionMediaTypeFilter(item, options),
   );
 }
 
@@ -366,12 +406,14 @@ export function selectFirstUnreactedTitle(
   catalog,
   reactions,
   excludedTitleIds = new Set(),
+  options = {},
 ) {
   return (
     selectEligibleReactionTitles(
       catalog,
       reactions,
       excludedTitleIds,
+      options,
     )[0] ?? null
   );
 }
@@ -381,11 +423,13 @@ export function selectRandomUnreactedTitle(
   reactions,
   excludedTitleIds = new Set(),
   random = Math.random,
+  options = {},
 ) {
   const eligibleTitles = selectEligibleReactionTitles(
     catalog,
     reactions,
     excludedTitleIds,
+    options,
   );
 
   if (eligibleTitles.length === 0) {
@@ -795,11 +839,13 @@ export async function runReactionSession({
             reactions,
             processedTitleIds,
             random,
+            options,
           )
         : selectFirstUnreactedTitle(
             catalog,
             reactions,
             processedTitleIds,
+            options,
           ));
 
     if (!item) {
@@ -903,8 +949,19 @@ export async function selectReactionTitle(options = {}) {
   const reactions = await readReactionState(options);
 
   if (options.random) {
-    return selectRandomUnreactedTitle(catalog, reactions);
+    return selectRandomUnreactedTitle(
+      catalog,
+      reactions,
+      new Set(),
+      Math.random,
+      options,
+    );
   }
 
-  return selectFirstUnreactedTitle(catalog, reactions);
+  return selectFirstUnreactedTitle(
+    catalog,
+    reactions,
+    new Set(),
+    options,
+  );
 }
