@@ -498,6 +498,33 @@ export function formatReactionTitle(item) {
   return lines.join('\n');
 }
 
+export function formatExistingReaction(reaction) {
+  if (
+    !reaction ||
+    typeof reaction !== 'object' ||
+    Array.isArray(reaction) ||
+    !Number.isInteger(reaction.rating)
+  ) {
+    return null;
+  }
+
+  const lines = [
+    'Existing reaction found.',
+    '',
+    `Rating: ${reaction.rating}/10`,
+  ];
+
+  if (Array.isArray(reaction.reasons) && reaction.reasons.length > 0) {
+    lines.push(`Reasons: ${reaction.reasons.join(', ')}`);
+  }
+
+  if (isNonEmptyString(reaction.notes)) {
+    lines.push(`Notes: ${reaction.notes}`);
+  }
+
+  return lines.join('\n');
+}
+
 export function formatSearchResultTitle(item) {
   const year = Number.isInteger(item.releaseYear)
     ? ` (${item.releaseYear})`
@@ -931,6 +958,13 @@ export async function runReactionSession({
     }
 
     writeOutput(formatReactionTitle(item));
+    const currentReaction = reactions[item.canonicalId];
+    const existingReactionOutput =
+      formatExistingReaction(currentReaction);
+
+    if (existingReactionOutput) {
+      writeOutput(existingReactionOutput);
+    }
 
     let needsReaction = true;
     while (needsReaction) {
@@ -977,7 +1011,6 @@ export async function runReactionSession({
         continue;
       }
 
-      const currentReaction = reactions[item.canonicalId];
       const notes = await promptForReactionNotes({
         notesPrompt,
         initialValue: isNonEmptyString(currentReaction?.notes)

@@ -6,6 +6,7 @@ import {
   createReactionPromptConfig,
   createTitleReactionEvent,
   findReactionTitleById,
+  formatExistingReaction,
   formatSearchResultThresholdMessage,
   formatSearchResults,
   formatVisibleRatingScale,
@@ -533,6 +534,76 @@ describe('reaction CLI', () => {
     ).not.toContain('9.9');
   });
 
+  it('formats an existing reaction with rating only', () => {
+    expect(formatExistingReaction(reaction('imdb:tt001'))).toBe(
+      ['Existing reaction found.', '', 'Rating: 8/10'].join('\n'),
+    );
+  });
+
+  it('formats an existing reaction with rating and reasons', () => {
+    expect(
+      formatExistingReaction(
+        reaction('imdb:tt001', {
+          reasons: ['mcu', 'action'],
+        }),
+      ),
+    ).toBe(
+      [
+        'Existing reaction found.',
+        '',
+        'Rating: 8/10',
+        'Reasons: mcu, action',
+      ].join('\n'),
+    );
+  });
+
+  it('formats an existing reaction with rating and notes', () => {
+    expect(
+      formatExistingReaction(
+        reaction('imdb:tt001', {
+          notes: 'Great ending.',
+        }),
+      ),
+    ).toBe(
+      [
+        'Existing reaction found.',
+        '',
+        'Rating: 8/10',
+        'Notes: Great ending.',
+      ].join('\n'),
+    );
+  });
+
+  it('formats an existing reaction with rating, reasons, and notes', () => {
+    expect(
+      formatExistingReaction(
+        reaction('imdb:tt001', {
+          reasons: ['mcu', 'action'],
+          notes: 'Great ending.',
+        }),
+      ),
+    ).toBe(
+      [
+        'Existing reaction found.',
+        '',
+        'Rating: 8/10',
+        'Reasons: mcu, action',
+        'Notes: Great ending.',
+      ].join('\n'),
+    );
+  });
+
+  it('does not format missing existing reaction details', () => {
+    expect(formatExistingReaction(null)).toBeNull();
+    expect(formatExistingReaction(undefined)).toBeNull();
+    expect(
+      formatExistingReaction(reaction('imdb:tt001', { notes: '' })),
+    ).not.toContain('Notes:');
+    expect(
+      formatExistingReaction(reaction('imdb:tt001', { reasons: [] })),
+    ).not.toContain('Reasons:');
+  });
+
   it('formats search results without summaries or ratings', () => {
     const items = Object.values(testCatalog());
 
@@ -879,6 +950,58 @@ describe('reaction CLI', () => {
         'Strong Emotional Payoff',
       ],
     });
+  });
+
+  it('does not display existing reaction details for first-time reactions', async () => {
+    const rootDir = await createTempProject();
+
+    const { output } = await captureReactionSession({
+      rootDir,
+      reactionPrompt: async () => 9,
+    });
+
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).not.toContain('Existing reaction found.');
+    expect(output.join('\n')).not.toContain('Rating:');
+    expect(output.join('\n')).not.toContain('Reasons:');
+    expect(output.join('\n')).not.toContain('Notes:');
+  });
+
+  it('displays existing reaction details before prompting for an ID re-rating', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', {
+          rating: 8,
+          reasons: ['mcu', 'action'],
+          notes: 'Great ending.',
+        }),
+      },
+    });
+    const output = [];
+    let outputBeforeRatingPrompt = [];
+
+    await runReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt001'],
+      writeOutput: (message) => output.push(message),
+      notesPrompt: async () => null,
+      reasonsPrompt: async () => null,
+      reactionPrompt: async () => {
+        outputBeforeRatingPrompt = [...output];
+        return 9;
+      },
+    });
+
+    expect(outputBeforeRatingPrompt).toEqual([
+      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+      [
+        'Existing reaction found.',
+        '',
+        'Rating: 8/10',
+        'Reasons: mcu, action',
+        'Notes: Great ending.',
+      ].join('\n'),
+    ]);
   });
 
   it('passes existing projected notes as the notes prompt initial value', async () => {
@@ -2199,7 +2322,11 @@ describe('reaction CLI', () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
       reactions: {
-        'imdb:tt001': reaction('imdb:tt001'),
+        'imdb:tt001': reaction('imdb:tt001', {
+          rating: 3,
+          reasons: ['mcu', 'action'],
+          notes: 'Great ending.',
+        }),
       },
     });
     const existingEvent =
@@ -2210,7 +2337,7 @@ describe('reaction CLI', () => {
       'utf8',
     );
 
-    const { result } = await captureReactionSession({
+    const { output, result } = await captureReactionSession({
       rootDir,
       args: ['--search'],
       searchPrompt: async () => 'alpha',
@@ -2230,6 +2357,15 @@ describe('reaction CLI', () => {
         rating: 1,
       }),
     ]);
+    expect(output).toContain(
+      [
+        'Existing reaction found.',
+        '',
+        'Rating: 3/10',
+        'Reasons: mcu, action',
+        'Notes: Great ending.',
+      ].join('\n'),
+    );
     expect(projection['imdb:tt001']).toMatchObject({
       canonicalId: 'imdb:tt001',
       rating: 1,
