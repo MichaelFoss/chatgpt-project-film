@@ -21,6 +21,7 @@ import {
   appendTitleReactionEvents,
   buildTitleReactions,
   normalizeReactionReasons,
+  titleIgnoredEventType,
   titleReactionEventType,
 } from './title-reactions.js';
 import { ratingForReaction, ratingScale } from './reaction-ratings.js';
@@ -31,6 +32,7 @@ const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
+  { key: 'i', name: 'Ignore', value: 'ignore' },
   { key: 'q', name: 'Quit', value: 'quit' },
 ];
 
@@ -920,17 +922,66 @@ export function createTitleReactionEvent(
   return event;
 }
 
+export function createTitleIgnoredEvent(
+  item,
+  {
+    eventId = randomUUID(),
+    occurredAt = new Date().toISOString(),
+  } = {},
+) {
+  return {
+    eventId,
+    type: titleIgnoredEventType,
+    occurredAt,
+    canonicalId: item.canonicalId,
+  };
+}
+
+export function formatReactedTitleIgnoreError(item) {
+  return `${item.title} (${item.canonicalId}) currently has a reaction and cannot be ignored. Reset the reaction before ignoring it.`;
+}
+
+function countBufferedEventsByType(events, type) {
+  return events.filter((event) => {
+    if (event.type === type) {
+      return true;
+    }
+
+    return (
+      type === titleReactionEventType &&
+      !event.type &&
+      Object.hasOwn(event, 'rating')
+    );
+  }).length;
+}
+
 export function formatReactionWriteSummary(report) {
+  const reactionEventsWritten =
+    report.reactionEventsWritten ??
+    countBufferedEventsByType(
+      report.events ?? [],
+      titleReactionEventType,
+    );
+  const ignoreEventsWritten =
+    report.ignoreEventsWritten ??
+    countBufferedEventsByType(
+      report.events ?? [],
+      titleIgnoredEventType,
+    );
   const lines = [
-    `Wrote ${report.eventsWritten} title reaction event(s).`,
+    `Wrote ${reactionEventsWritten} title reaction event(s).`,
+    `Wrote ${ignoreEventsWritten} title ignore event(s).`,
   ];
 
   if (report.eventsWritten > 0) {
     lines.push(
-      ...report.events.map(
-        (event) =>
-          `- ${event.title}: rating ${event.rating}/10 (${event.canonicalId})`,
-      ),
+      ...report.events.map((event) => {
+        if (event.type === titleIgnoredEventType) {
+          return `- ${event.title}: ignored (${event.canonicalId})`;
+        }
+
+        return `- ${event.title}: rating ${event.rating}/10 (${event.canonicalId})`;
+      }),
     );
   }
 
@@ -981,16 +1032,29 @@ async function persistReactionEvents({
     catalog,
   });
   const projectionReport = await buildTitleReactions({ rootDir });
+  const reactionEventsWritten = countBufferedEventsByType(
+    bufferedEvents,
+    titleReactionEventType,
+  );
+  const ignoreEventsWritten = countBufferedEventsByType(
+    bufferedEvents,
+    titleIgnoredEventType,
+  );
 
   return {
     ...appendReport,
     projectionReport,
     eventsWritten: appendReport.eventsAppended,
+    reactionEventsWritten,
+    ignoreEventsWritten,
     events: bufferedEvents,
     filesWritten: uniqueNonEmptyStrings(
       [
         appendReport.outputPathWritten,
         projectionReport.outputPathWritten,
+        ignoreEventsWritten > 0
+          ? projectionReport.ignoredOutputPathWritten
+          : null,
       ].map((filePath) =>
         filePath ? path.relative(rootDir, filePath) : null,
       ),
@@ -1123,6 +1187,24 @@ export async function runReactionSession({
           };
         }
 
+        continue;
+      }
+
+      if (reaction === 'ignore') {
+        if (currentReaction) {
+          throw new CatalogBuildError(
+            formatReactedTitleIgnoreError(item),
+          );
+        }
+
+        const event = createTitleIgnoredEvent(item);
+        bufferedEvents.push({
+          ...event,
+          title: item.title,
+        });
+        processedTitleIds.add(item.canonicalId);
+        processedCount += 1;
+        needsReaction = false;
         continue;
       }
 

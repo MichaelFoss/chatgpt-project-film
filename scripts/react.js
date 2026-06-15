@@ -2,9 +2,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionPromptConfig,
+  createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
   findReactionTitleById,
+  formatReactedTitleIgnoreError,
   formatSearchResultThresholdMessage,
   formatSearchResults,
   formatIgnoredTitleRateError,
@@ -20,10 +22,12 @@ export { ratingForReaction } from './lib/reaction-ratings.js';
 
 export {
   createReactionPromptConfig,
+  createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
   formatExistingReaction,
   formatIgnoredTitleRateError,
+  formatReactedTitleIgnoreError,
   formatSearchResultThresholdMessage,
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
