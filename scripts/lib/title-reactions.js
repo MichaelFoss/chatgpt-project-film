@@ -6,6 +6,7 @@ import { isNonEmptyString } from './catalog-utils.js';
 import { writeGeneratedJsonFile } from './json-file.js';
 
 export const titleReactionEventType = 'title.reaction.updated';
+export const titleReactionResetEventType = 'title.reaction.reset';
 
 const watchStatuses = new Set([
   'completed',
@@ -33,6 +34,7 @@ const updateFields = [
   'spoilerDiscussion',
 ];
 const allowedFields = new Set([...requiredFields, ...updateFields]);
+const resetAllowedFields = new Set(requiredFields);
 
 function isValidIsoTimestamp(value) {
   return isNonEmptyString(value) && !Number.isNaN(Date.parse(value));
@@ -100,8 +102,13 @@ export function validateTitleReactionEvent(event, index, catalog) {
     throw new CatalogBuildError(`${label} must be a JSON object.`);
   }
 
+  const allowedFieldsForType =
+    event.type === titleReactionResetEventType
+      ? resetAllowedFields
+      : allowedFields;
+
   const unknownFields = Object.keys(event).filter(
-    (field) => !allowedFields.has(field),
+    (field) => !allowedFieldsForType.has(field),
   );
 
   if (unknownFields.length > 0) {
@@ -116,9 +123,12 @@ export function validateTitleReactionEvent(event, index, catalog) {
     );
   }
 
-  if (event.type !== titleReactionEventType) {
+  if (
+    event.type !== titleReactionEventType &&
+    event.type !== titleReactionResetEventType
+  ) {
     throw new CatalogBuildError(
-      `${label} type must be ${titleReactionEventType}.`,
+      `${label} type must be ${titleReactionEventType} or ${titleReactionResetEventType}.`,
     );
   }
 
@@ -140,6 +150,24 @@ export function validateTitleReactionEvent(event, index, catalog) {
     throw new CatalogBuildError(
       `${label} canonicalId does not exist in data/catalog.json: ${canonicalId}`,
     );
+  }
+
+  if (
+    event.type === titleReactionResetEventType &&
+    updateFields.some((field) => hasOwn(event, field))
+  ) {
+    throw new CatalogBuildError(
+      `${label} reset events must not include reaction update fields.`,
+    );
+  }
+
+  if (event.type === titleReactionResetEventType) {
+    return {
+      eventId: event.eventId.trim(),
+      type: event.type,
+      occurredAt: event.occurredAt,
+      canonicalId,
+    };
   }
 
   if (
@@ -272,6 +300,11 @@ export function projectTitleReactions(events) {
   const reactions = {};
 
   for (const event of events) {
+    if (event.type === titleReactionResetEventType) {
+      delete reactions[event.canonicalId];
+      continue;
+    }
+
     const existing = reactions[event.canonicalId] ?? {
       canonicalId: event.canonicalId,
       eventIds: [],

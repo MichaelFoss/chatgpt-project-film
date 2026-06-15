@@ -103,6 +103,24 @@ describe('title reaction events', () => {
     ]);
   });
 
+  it('accepts a valid reset event without reaction update fields', () => {
+    expect(
+      validate([
+        event({
+          type: 'title.reaction.reset',
+          rating: undefined,
+        }),
+      ]),
+    ).toEqual([
+      {
+        eventId: 'evt-1',
+        type: 'title.reaction.reset',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+        canonicalId: 'imdb:tt001',
+      },
+    ]);
+  });
+
   it('accepts and trims optional notes on rating events', () => {
     expect(validate([event({ notes: ' Great visuals. ' })])).toEqual([
       {
@@ -296,6 +314,17 @@ describe('title reaction events', () => {
     );
   });
 
+  it('rejects reset events with unknown reaction update fields', () => {
+    expect(() =>
+      validate([
+        event({
+          type: 'title.reaction.reset',
+          rating: 8,
+        }),
+      ]),
+    ).toThrow('unknown field');
+  });
+
   it('projects merge behavior for multiple events on one title', () => {
     const projection = projectTitleReactions(
       validate([
@@ -324,6 +353,75 @@ describe('title reaction events', () => {
       reasonTags: ['rewatchable'],
       notes: 'Updated note.',
     });
+  });
+
+  it('removes reacted projection state when replaying a reset event', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 8,
+          notes: 'Initial note.',
+        }),
+        event({
+          eventId: 'evt-2',
+          type: 'title.reaction.reset',
+          rating: undefined,
+        }),
+      ]),
+    );
+
+    expect(projection).toEqual({});
+  });
+
+  it('allows a title to be reacted again after a reset event', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 8,
+        }),
+        event({
+          eventId: 'evt-2',
+          type: 'title.reaction.reset',
+          rating: undefined,
+        }),
+        event({
+          eventId: 'evt-3',
+          rating: 6,
+        }),
+      ]),
+    );
+
+    expect(projection['imdb:tt001']).toEqual({
+      canonicalId: 'imdb:tt001',
+      updatedAt: '2026-06-10T12:00:00.000Z',
+      eventIds: ['evt-3'],
+      rating: 6,
+    });
+  });
+
+  it('keeps repeated reset events idempotent during projection replay', () => {
+    const projection = projectTitleReactions(
+      validate([
+        event({
+          eventId: 'evt-1',
+          rating: 8,
+        }),
+        event({
+          eventId: 'evt-2',
+          type: 'title.reaction.reset',
+          rating: undefined,
+        }),
+        event({
+          eventId: 'evt-3',
+          type: 'title.reaction.reset',
+          rating: undefined,
+        }),
+      ]),
+    );
+
+    expect(projection).toEqual({});
   });
 
   it('uses replace semantics for notes when a newer rating omits notes', () => {

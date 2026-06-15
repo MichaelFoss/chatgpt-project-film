@@ -32,8 +32,10 @@ Title reaction projection consumes
 `events/title-reactions.events.ndjson` and writes
 `data/title-reactions.json`. Rating notes and free-form reasons are
 optional human recall fields and use replace semantics with the latest
-rating event. Free-form reason values are stored in lowercase normalized
-form.
+rating event. `title.reaction.reset` events remove a title from the
+current reacted projection without deleting earlier reaction history
+from the event stream. Free-form reason values are stored in lowercase
+normalized form.
 
 Do not manually edit generated state unless explicitly performing a
 migration or repair workflow.

@@ -56,6 +56,14 @@ Reasons are entered as a single comma-separated line. Values are split
 on commas, trimmed, lowercased, deduplicated after lowercasing, and
 stored in first-occurrence order.
 
+`yarn reactions:reset <canonicalId> [...<canonicalId>]` appends
+`title.reaction.reset` events for currently reacted titles and rebuilds
+`data/title-reactions.json`. Existing reaction update events stay in the
+event stream, but reset titles are removed from the current reacted
+projection and become eligible for future reaction workflows. Unknown
+canonical IDs fail before any events are written. Repeating a reset for
+an already-unreacted title is a no-op.
+
 `yarn react` selects unreacted catalog titles in random order by
 default. `yarn react --random` explicitly uses the same random candidate
 ordering, while `yarn react --ordered` uses deterministic catalog
