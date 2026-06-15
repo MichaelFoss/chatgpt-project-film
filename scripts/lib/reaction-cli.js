@@ -286,7 +286,17 @@ export function createReactionCommand() {
       ),
     )
     .addOption(
-      new Option('--random', 'randomize eligible title selection')
+      new Option(
+        '--random',
+        'randomize eligible title selection (default)',
+      )
+        .conflicts('ordered')
+        .conflicts('id')
+        .conflicts('search'),
+    )
+    .addOption(
+      new Option('--ordered', 'use deterministic title ordering')
+        .conflicts('random')
         .conflicts('id')
         .conflicts('search'),
     )
@@ -315,12 +325,15 @@ export function parseReactionCliArgs(args) {
   command.parse(args, { from: 'user' });
 
   const options = command.opts();
+  const hasTargetSelector =
+    Boolean(options.id) || Boolean(options.search);
 
   return {
     limit: options.limit,
     movies: Boolean(options.movies),
     tv: Boolean(options.tv),
-    random: Boolean(options.random),
+    random: !hasTargetSelector && !options.ordered,
+    ordered: Boolean(options.ordered),
     id: options.id ?? null,
     search: Boolean(options.search),
   };
@@ -1096,7 +1109,7 @@ export async function selectReactionTitle(options = {}) {
   const catalog = await readReactionCatalog(options);
   const reactions = await readReactionState(options);
 
-  if (options.random) {
+  if (!options.ordered && options.random !== false) {
     return selectRandomUnreactedTitle(
       catalog,
       reactions,

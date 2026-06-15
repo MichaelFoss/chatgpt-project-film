@@ -56,6 +56,12 @@ Reasons are entered as a single comma-separated line. Values are split
 on commas, trimmed, lowercased, deduplicated after lowercasing, and
 stored in first-occurrence order.
 
+`yarn react` selects unreacted catalog titles in random order by
+default. `yarn react --random` explicitly uses the same random candidate
+ordering, while `yarn react --ordered` uses deterministic catalog
+ordering. `--random` and `--ordered` are mutually exclusive selection
+mode flags.
+
 `yarn reactions:export` reads the same projection and catalog join as
 `yarn reactions:list`. Human-readable and JSON export output include
 optional `notes` and `reasons` values when present and omit them when

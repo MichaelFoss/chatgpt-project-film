@@ -187,7 +187,8 @@ describe('reaction CLI', () => {
       limit: 1,
       movies: false,
       tv: false,
-      random: false,
+      random: true,
+      ordered: false,
       id: null,
       search: false,
     });
@@ -201,6 +202,7 @@ describe('reaction CLI', () => {
       movies: true,
       tv: false,
       random: true,
+      ordered: false,
       id: null,
       search: false,
     });
@@ -208,7 +210,17 @@ describe('reaction CLI', () => {
       limit: 'none',
       movies: false,
       tv: true,
+      random: true,
+      ordered: false,
+      id: null,
+      search: false,
+    });
+    expect(parseReactionCliArgs(['--ordered'])).toEqual({
+      limit: 1,
+      movies: false,
+      tv: false,
       random: false,
+      ordered: true,
       id: null,
       search: false,
     });
@@ -217,6 +229,7 @@ describe('reaction CLI', () => {
       movies: false,
       tv: false,
       random: false,
+      ordered: false,
       id: 'imdb:tt0133093',
       search: false,
     });
@@ -225,6 +238,7 @@ describe('reaction CLI', () => {
       movies: false,
       tv: false,
       random: false,
+      ordered: false,
       id: null,
       search: true,
     });
@@ -261,6 +275,16 @@ describe('reaction CLI', () => {
     ).toThrow(
       "error: option '--random' cannot be used with option '--search'",
     );
+    expect(() =>
+      parseReactionCliArgs(['--random', '--ordered']),
+    ).toThrow(
+      "error: option '--random' cannot be used with option '--ordered'",
+    );
+    expect(() =>
+      parseReactionCliArgs(['--ordered', '--id', 'imdb:tt0133093']),
+    ).toThrow(
+      "error: option '--ordered' cannot be used with option '--id <canonicalId>'",
+    );
   });
 
   it('keeps --tv as the CLI flag while showing Series in help text', () => {
@@ -268,6 +292,12 @@ describe('reaction CLI', () => {
 
     expect(helpText).toContain('--tv');
     expect(helpText).toContain('only include Series titles');
+    expect(helpText).toContain(
+      '--random            randomize eligible title selection (default)',
+    );
+    expect(helpText).toContain(
+      '--ordered           use deterministic title ordering',
+    );
     expect(helpText).not.toContain('only include television titles');
   });
 
@@ -290,7 +320,7 @@ describe('reaction CLI', () => {
     );
   });
 
-  it('selects the first unreacted title in catalog order', async () => {
+  it('selects the first unreacted title in ordered catalog order', async () => {
     const rootDir = await createTempProject({
       reactions: {
         'imdb:tt001': reaction('imdb:tt001'),
@@ -298,7 +328,7 @@ describe('reaction CLI', () => {
     });
 
     await expect(
-      selectReactionTitle({ rootDir }),
+      selectReactionTitle({ rootDir, ordered: true }),
     ).resolves.toMatchObject({
       canonicalId: 'imdb:tt002',
       title: 'Beta',
@@ -950,6 +980,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
+      args: ['--ordered'],
       reactionPrompt: async () => 9,
       notesPrompt: async () => ' Loved the atmosphere and soundtrack. ',
     });
@@ -975,6 +1006,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
+      args: ['--ordered'],
       reactionPrompt: async () => {
         prompts.push('rating');
         return 9;
@@ -1013,6 +1045,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
+      args: ['--ordered'],
       reactionPrompt: async () => 9,
       notesPrompt: async () => 'Do NOT lowercase MCU in this note.',
       reasonsPrompt: async (config) =>
@@ -1047,6 +1080,7 @@ describe('reaction CLI', () => {
 
     const { output } = await captureReactionSession({
       rootDir,
+      args: ['--ordered'],
       reactionPrompt: async () => 9,
     });
 
@@ -1345,6 +1379,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
+      random: () => 0.999,
       reactionPrompt: async () => 8,
     });
 
@@ -1356,21 +1391,44 @@ describe('reaction CLI', () => {
     expect(result.bufferedEvents).toHaveLength(1);
     expect(result.bufferedEvents[0]).toMatchObject({
       type: 'title.reaction.updated',
-      canonicalId: 'imdb:tt001',
-      title: 'Alpha',
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
       rating: 8,
     });
-    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).toContain('Gamma (2003)');
+    expect(output.join('\n')).not.toContain('Alpha (2001)');
     expect(output.join('\n')).not.toContain('Beta (2002)');
     await expect(
       fs.readFile(
         path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
         'utf8',
       ),
-    ).resolves.toContain('"canonicalId":"imdb:tt001"');
+    ).resolves.toContain('"canonicalId":"imdb:tt003"');
   });
 
-  it('supports --limit n session selection behavior', async () => {
+  it('uses random title selection by default for --limit n', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const randomValues = [0.999, 0, 0];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--limit', '3'],
+      random: () => randomValues.shift(),
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 3,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt003', 'imdb:tt001', 'imdb:tt002']);
+  });
+
+  it('supports --ordered --limit n session selection behavior', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
     });
@@ -1378,7 +1436,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '3'],
+      args: ['--ordered', '--limit', '3'],
       reactionPrompt: async () => reactions.shift(),
     });
 
@@ -1453,7 +1511,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      args: ['--movies', '--limit', '5'],
+      args: ['--ordered', '--movies', '--limit', '5'],
       reactionPrompt: async () => 8,
     });
 
@@ -1615,7 +1673,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '2'],
+      args: ['--ordered', '--limit', '2'],
       reactionPrompt: async () => reactions.shift(),
     });
 
@@ -1672,7 +1730,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '3'],
+      args: ['--ordered', '--limit', '3'],
       reactionPrompt: async () => reactions.shift(),
       quitPrompt: async () => 'abort',
     });
@@ -1730,7 +1788,7 @@ describe('reaction CLI', () => {
 
     const { output, result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '3'],
+      args: ['--ordered', '--limit', '3'],
       reactionPrompt: async () => reactions.shift(),
       quitPrompt: async () => 'save-and-quit',
     });
@@ -1796,7 +1854,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '1'],
+      args: ['--ordered', '--limit', '1'],
       reactionPrompt: async () => reactions.shift(),
       quitPrompt: async () => 'cancel',
       writeOutput: (message) => promptedTitles.push(message),
@@ -1827,7 +1885,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '2'],
+      args: ['--ordered', '--limit', '2'],
       reactionPrompt: async () => 8,
     });
 
@@ -1846,7 +1904,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '1'],
+      args: ['--ordered', '--limit', '1'],
       reactionPrompt: async () => 8,
     });
 
@@ -2513,7 +2571,7 @@ describe('reaction CLI', () => {
 
     const { result } = await captureReactionSession({
       rootDir,
-      args: ['--limit', '2'],
+      args: ['--ordered', '--limit', '2'],
       reactionPrompt: async () => 8,
     });
     const eventText = await fs.readFile(
@@ -2554,7 +2612,7 @@ describe('reaction CLI', () => {
 
     await captureReactionSession({
       rootDir,
-      args: ['--limit', '2'],
+      args: ['--ordered', '--limit', '2'],
       reactionPrompt: async () => 8,
     });
     const eventText = await fs.readFile(
