@@ -125,6 +125,13 @@
     "rating": 5,
     "reasons": ["inventive", "boring", "agenda"]
   },
+  "imdb:tt3272066": {
+    "canonicalId": "imdb:tt3272066",
+    "eventIds": ["ca7ba590-fc8c-4a33-933b-843898ea7f31"],
+    "updatedAt": "2026-06-15T07:28:12.755Z",
+    "rating": 6,
+    "notes": "Don't remember this, just remember it was lackluster."
+  },
   "imdb:tt4123432": {
     "canonicalId": "imdb:tt4123432",
     "eventIds": ["2204c123-64dc-4864-9ea4-623e5e406f0e"],
