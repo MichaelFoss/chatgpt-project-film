@@ -7,6 +7,7 @@ import { buildGeneratedSourceDocuments } from '../../scripts/build-generated-sou
 import {
   appendTitleReactionEvents,
   buildTitleReactions,
+  projectIgnoredTitles,
   projectTitleReactions,
   validateTitleReactionEvents,
 } from '../../scripts/lib/title-reactions.js';
@@ -79,6 +80,22 @@ function event(overrides = {}) {
   return value;
 }
 
+function ignoredEvent(overrides = {}) {
+  return event({
+    type: 'title.ignored',
+    rating: undefined,
+    ...overrides,
+  });
+}
+
+function unignoredEvent(overrides = {}) {
+  return event({
+    type: 'title.unignored',
+    rating: undefined,
+    ...overrides,
+  });
+}
+
 function validate(events, catalog = testCatalog()) {
   return validateTitleReactionEvents(events, catalog);
 }
@@ -115,6 +132,28 @@ describe('title reaction events', () => {
       {
         eventId: 'evt-1',
         type: 'title.reaction.reset',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+        canonicalId: 'imdb:tt001',
+      },
+    ]);
+  });
+
+  it('accepts a valid ignore event without reaction update fields', () => {
+    expect(validate([ignoredEvent()])).toEqual([
+      {
+        eventId: 'evt-1',
+        type: 'title.ignored',
+        occurredAt: '2026-06-10T12:00:00.000Z',
+        canonicalId: 'imdb:tt001',
+      },
+    ]);
+  });
+
+  it('accepts a valid unignore event without reaction update fields', () => {
+    expect(validate([unignoredEvent()])).toEqual([
+      {
+        eventId: 'evt-1',
+        type: 'title.unignored',
         occurredAt: '2026-06-10T12:00:00.000Z',
         canonicalId: 'imdb:tt001',
       },
@@ -260,6 +299,12 @@ describe('title reaction events', () => {
     ).toThrow('canonicalId does not exist');
   });
 
+  it('rejects ignore events with unknown canonicalId values', () => {
+    expect(() =>
+      validate([ignoredEvent({ canonicalId: 'imdb:missing' })]),
+    ).toThrow('canonicalId does not exist');
+  });
+
   it('rejects duplicate eventId values', () => {
     expect(() =>
       validate([
@@ -323,6 +368,42 @@ describe('title reaction events', () => {
         }),
       ]),
     ).toThrow('unknown field');
+  });
+
+  it('rejects malformed ignore events', () => {
+    expect(() =>
+      validate([
+        ignoredEvent({
+          rating: 8,
+        }),
+      ]),
+    ).toThrow('unknown field');
+
+    expect(() =>
+      validate([
+        ignoredEvent({
+          occurredAt: 'not-a-date',
+        }),
+      ]),
+    ).toThrow('valid occurredAt ISO timestamp');
+  });
+
+  it('rejects malformed unignore events', () => {
+    expect(() =>
+      validate([
+        unignoredEvent({
+          watchStatus: 'completed',
+        }),
+      ]),
+    ).toThrow('unknown field');
+
+    expect(() =>
+      validate([
+        unignoredEvent({
+          canonicalId: '',
+        }),
+      ]),
+    ).toThrow('canonicalId must be a non-empty string');
   });
 
   it('projects merge behavior for multiple events on one title', () => {
@@ -509,6 +590,76 @@ describe('title reaction events', () => {
     expect(projection['imdb:tt001'].reasons).toEqual(['mcu']);
   });
 
+  it('projects ignored state from ignore events independently from reactions', () => {
+    const ignored = projectIgnoredTitles(
+      validate([
+        event({
+          eventId: 'evt-reaction',
+          rating: 7,
+        }),
+        ignoredEvent({
+          eventId: 'evt-ignore',
+        }),
+      ]),
+    );
+
+    expect(ignored).toEqual({
+      'imdb:tt001': {
+        canonicalId: 'imdb:tt001',
+        ignoredAt: '2026-06-10T12:00:00.000Z',
+        eventId: 'evt-ignore',
+      },
+    });
+  });
+
+  it('removes ignored state when replaying ignore followed by unignore', () => {
+    const ignored = projectIgnoredTitles(
+      validate([
+        ignoredEvent({
+          eventId: 'evt-ignore',
+        }),
+        unignoredEvent({
+          eventId: 'evt-unignore',
+        }),
+      ]),
+    );
+
+    expect(ignored).toEqual({});
+  });
+
+  it('restores ignored state when replaying unignore followed by ignore', () => {
+    const ignored = projectIgnoredTitles(
+      validate([
+        unignoredEvent({
+          eventId: 'evt-unignore',
+        }),
+        ignoredEvent({
+          eventId: 'evt-ignore',
+        }),
+      ]),
+    );
+
+    expect(ignored).toEqual({
+      'imdb:tt001': {
+        canonicalId: 'imdb:tt001',
+        ignoredAt: '2026-06-10T12:00:00.000Z',
+        eventId: 'evt-ignore',
+      },
+    });
+  });
+
+  it('does not project ignored events as reactions', () => {
+    const projection = projectTitleReactions(
+      validate([
+        ignoredEvent({
+          eventId: 'evt-ignore',
+        }),
+      ]),
+    );
+
+    expect(projection).toEqual({});
+  });
+
   it('writes deterministic projection output sorted by canonicalId', async () => {
     const rootDir = await createTempProject();
     await writeCatalog(rootDir);
@@ -537,6 +688,34 @@ describe('title reaction events', () => {
     ]);
   });
 
+  it('writes deterministic ignored projection output sorted by canonicalId', async () => {
+    const rootDir = await createTempProject();
+    await writeCatalog(rootDir);
+    await writeEvents(
+      rootDir,
+      `${JSON.stringify(ignoredEvent({ eventId: 'evt-b', canonicalId: 'imdb:tt002' }))}\n${JSON.stringify(
+        ignoredEvent({ eventId: 'evt-a', canonicalId: 'imdb:tt001' }),
+      )}\n`,
+    );
+
+    await buildTitleReactions({ rootDir });
+    const first = await fs.readFile(
+      path.join(rootDir, 'data', 'title-ignored.json'),
+      'utf8',
+    );
+    await buildTitleReactions({ rootDir });
+    const second = await fs.readFile(
+      path.join(rootDir, 'data', 'title-ignored.json'),
+      'utf8',
+    );
+
+    expect(first).toBe(second);
+    expect(Object.keys(JSON.parse(first))).toEqual([
+      'imdb:tt001',
+      'imdb:tt002',
+    ]);
+  });
+
   it('builds empty event streams into an empty projection', async () => {
     const rootDir = await createTempProject();
     await writeCatalog(rootDir);
@@ -549,12 +728,20 @@ describe('title reaction events', () => {
         'utf8',
       ),
     );
+    const ignored = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'title-ignored.json'),
+        'utf8',
+      ),
+    );
 
     expect(report).toMatchObject({
       eventsRead: 0,
       reactionRecordsWritten: 0,
+      ignoredRecordsWritten: 0,
     });
     expect(projection).toEqual({});
+    expect(ignored).toEqual({});
   });
 
   it('appends title reaction events without replacing existing events', async () => {

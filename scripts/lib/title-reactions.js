@@ -7,6 +7,8 @@ import { writeGeneratedJsonFile } from './json-file.js';
 
 export const titleReactionEventType = 'title.reaction.updated';
 export const titleReactionResetEventType = 'title.reaction.reset';
+export const titleIgnoredEventType = 'title.ignored';
+export const titleUnignoredEventType = 'title.unignored';
 
 const watchStatuses = new Set([
   'completed',
@@ -35,6 +37,7 @@ const updateFields = [
 ];
 const allowedFields = new Set([...requiredFields, ...updateFields]);
 const resetAllowedFields = new Set(requiredFields);
+const ignoredAllowedFields = new Set(requiredFields);
 
 function isValidIsoTimestamp(value) {
   return isNonEmptyString(value) && !Number.isNaN(Date.parse(value));
@@ -102,10 +105,16 @@ export function validateTitleReactionEvent(event, index, catalog) {
     throw new CatalogBuildError(`${label} must be a JSON object.`);
   }
 
-  const allowedFieldsForType =
-    event.type === titleReactionResetEventType
-      ? resetAllowedFields
-      : allowedFields;
+  let allowedFieldsForType = allowedFields;
+
+  if (event.type === titleReactionResetEventType) {
+    allowedFieldsForType = resetAllowedFields;
+  } else if (
+    event.type === titleIgnoredEventType ||
+    event.type === titleUnignoredEventType
+  ) {
+    allowedFieldsForType = ignoredAllowedFields;
+  }
 
   const unknownFields = Object.keys(event).filter(
     (field) => !allowedFieldsForType.has(field),
@@ -125,10 +134,12 @@ export function validateTitleReactionEvent(event, index, catalog) {
 
   if (
     event.type !== titleReactionEventType &&
-    event.type !== titleReactionResetEventType
+    event.type !== titleReactionResetEventType &&
+    event.type !== titleIgnoredEventType &&
+    event.type !== titleUnignoredEventType
   ) {
     throw new CatalogBuildError(
-      `${label} type must be ${titleReactionEventType} or ${titleReactionResetEventType}.`,
+      `${label} type must be one of: ${titleReactionEventType}, ${titleReactionResetEventType}, ${titleIgnoredEventType}, ${titleUnignoredEventType}.`,
     );
   }
 
@@ -152,16 +163,21 @@ export function validateTitleReactionEvent(event, index, catalog) {
     );
   }
 
+  const isNonReactionEvent =
+    event.type === titleReactionResetEventType ||
+    event.type === titleIgnoredEventType ||
+    event.type === titleUnignoredEventType;
+
   if (
-    event.type === titleReactionResetEventType &&
+    isNonReactionEvent &&
     updateFields.some((field) => hasOwn(event, field))
   ) {
     throw new CatalogBuildError(
-      `${label} reset events must not include reaction update fields.`,
+      `${label} ${event.type} events must not include reaction update fields.`,
     );
   }
 
-  if (event.type === titleReactionResetEventType) {
+  if (isNonReactionEvent) {
     return {
       eventId: event.eventId.trim(),
       type: event.type,
@@ -305,6 +321,10 @@ export function projectTitleReactions(events) {
       continue;
     }
 
+    if (event.type !== titleReactionEventType) {
+      continue;
+    }
+
     const existing = reactions[event.canonicalId] ?? {
       canonicalId: event.canonicalId,
       eventIds: [],
@@ -335,6 +355,29 @@ export function projectTitleReactions(events) {
 
   return Object.fromEntries(
     Object.entries(reactions).sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
+
+export function projectIgnoredTitles(events) {
+  const ignored = {};
+
+  for (const event of events) {
+    if (event.type === titleIgnoredEventType) {
+      ignored[event.canonicalId] = {
+        canonicalId: event.canonicalId,
+        ignoredAt: event.occurredAt,
+        eventId: event.eventId,
+      };
+      continue;
+    }
+
+    if (event.type === titleUnignoredEventType) {
+      delete ignored[event.canonicalId];
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(ignored).sort(([a], [b]) => a.localeCompare(b)),
   );
 }
 
@@ -393,17 +436,22 @@ export async function buildTitleReactions({
   ),
   catalogPath = path.join(rootDir, 'data', 'catalog.json'),
   outputPath = path.join(rootDir, 'data', 'title-reactions.json'),
+  ignoredOutputPath = path.join(rootDir, 'data', 'title-ignored.json'),
 } = {}) {
   const catalog = JSON.parse(await fs.readFile(catalogPath, 'utf8'));
   const rawEvents = await readTitleReactionEvents(eventsPath);
   const events = validateTitleReactionEvents(rawEvents, catalog);
   const reactions = projectTitleReactions(events);
+  const ignored = projectIgnoredTitles(events);
 
   await writeGeneratedJsonFile(outputPath, reactions);
+  await writeGeneratedJsonFile(ignoredOutputPath, ignored);
 
   return {
     eventsRead: events.length,
     reactionRecordsWritten: Object.keys(reactions).length,
+    ignoredRecordsWritten: Object.keys(ignored).length,
     outputPathWritten: outputPath,
+    ignoredOutputPathWritten: ignoredOutputPath,
   };
 }

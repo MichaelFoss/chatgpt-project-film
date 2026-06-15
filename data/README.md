@@ -19,6 +19,10 @@ events/catalog.events.ndjson + data/metadata-cache.json
 events/title-reactions.events.ndjson
   -> title reaction projection
   -> data/title-reactions.json
+
+events/title-reactions.events.ndjson
+  -> ignored title projection
+  -> data/title-ignored.json
 ```
 
 Metadata enrichment may contact providers and update
@@ -36,6 +40,11 @@ rating event. `title.reaction.reset` events remove a title from the
 current reacted projection without deleting earlier reaction history
 from the event stream. Free-form reason values are stored in lowercase
 normalized form.
+
+Ignored title projection consumes the same event stream and writes
+`data/title-ignored.json`. `title.ignored` and `title.unignored` events
+derive the current ignored state independently from reaction ratings,
+watch status, and reaction reset state.
 
 Do not manually edit generated state unless explicitly performing a
 migration or repair workflow.
