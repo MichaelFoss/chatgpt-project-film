@@ -70,6 +70,14 @@ projection and become eligible for future reaction workflows. Unknown
 canonical IDs fail before any events are written. Repeating a reset for
 an already-unreacted title is a no-op.
 
+`yarn reactions:unignore <canonicalId> [...<canonicalId>]` appends
+`title.unignored` events for currently ignored titles and rebuilds
+`data/title-reactions.json` and `data/title-ignored.json` through the
+standard title reaction projection path. Unknown canonical IDs fail
+before any events are written. Repeating unignore for a title that is
+not currently ignored is a no-op and writes no event. Unignored titles
+return to normal reaction eligibility when they are not already reacted.
+
 `yarn react` selects unreacted catalog titles in random order by
 default. `yarn react --random` explicitly uses the same random candidate
 ordering, while `yarn react --ordered` uses deterministic catalog
