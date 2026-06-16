@@ -1,56 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { CatalogBuildError } from './catalog-build-error.js';
 import { readCatalog } from './catalog-query.js';
-import { isNonEmptyString } from './catalog-utils.js';
-import {
-  appendTitleReactionEvents,
-  buildTitleReactions,
-  titleUnignoredEventType,
-} from './title-reactions.js';
+import { titleUnignoredEventType } from './title-reactions.js';
 import { readReactionIgnoredState } from './reaction-cli.js';
+import {
+  appendAndBuildTitleReactionEvents,
+  parseCanonicalIdListArgs,
+  validateCatalogTargets,
+} from './reaction-command-utils.js';
 
 export const reactionUnignoreUsage = [
   'Usage:',
   '  yarn reactions:unignore <canonicalId> [...<canonicalId>]',
 ].join('\n');
 
-function uniqueCanonicalIds(canonicalIds) {
-  const seen = new Set();
-  const unique = [];
-
-  for (const canonicalId of canonicalIds) {
-    const normalized = String(canonicalId ?? '').trim();
-
-    if (seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    unique.push(normalized);
-  }
-
-  return unique;
-}
-
 export function parseReactionUnignoreCliArgs(args) {
-  if (!Array.isArray(args) || args.length === 0) {
-    throw new CatalogBuildError(reactionUnignoreUsage);
-  }
-
-  if (args.some((arg) => arg.startsWith('--'))) {
-    throw new CatalogBuildError(reactionUnignoreUsage);
-  }
-
-  const canonicalIds = uniqueCanonicalIds(args);
-
-  if (
-    canonicalIds.some((canonicalId) => !isNonEmptyString(canonicalId))
-  ) {
-    throw new CatalogBuildError(reactionUnignoreUsage);
-  }
-
-  return { canonicalIds };
+  return parseCanonicalIdListArgs(args, reactionUnignoreUsage);
 }
 
 export function createTitleUnignoredEvent(
@@ -72,17 +37,7 @@ export function validateReactionUnignoreTargets({
   catalog,
   canonicalIds,
 }) {
-  const missing = canonicalIds.filter(
-    (canonicalId) => !catalog[canonicalId],
-  );
-
-  if (missing.length > 0) {
-    throw new CatalogBuildError(
-      `No catalog title found for canonical ID: ${missing.join(', ')}`,
-    );
-  }
-
-  return canonicalIds.map((canonicalId) => catalog[canonicalId]);
+  return validateCatalogTargets({ catalog, canonicalIds });
 }
 
 export function formatReactionUnignoreSummary(report) {
@@ -150,35 +105,23 @@ export async function unignoreReactions({
     });
   }
 
-  let appendReport = {
-    eventsAppended: 0,
-    outputPathWritten: null,
-  };
-  let projectionReport = {
-    outputPathWritten: null,
-    ignoredOutputPathWritten: null,
-  };
-
-  if (events.length > 0) {
-    appendReport = await appendTitleReactionEvents({
+  const { appendReport, filesWritten } =
+    await appendAndBuildTitleReactionEvents({
+      rootDir,
       eventsPath,
-      events: events.map(({ title, ...event }) => event),
+      events,
       catalog,
+      projectionPathKeys: [
+        'outputPathWritten',
+        'ignoredOutputPathWritten',
+      ],
     });
-    projectionReport = await buildTitleReactions({ rootDir });
-  }
 
   const report = {
     eventsWritten: appendReport.eventsAppended,
     events,
     alreadyUnignored,
-    filesWritten: [
-      appendReport.outputPathWritten,
-      projectionReport.outputPathWritten,
-      projectionReport.ignoredOutputPathWritten,
-    ]
-      .filter(Boolean)
-      .map((filePath) => path.relative(rootDir, filePath)),
+    filesWritten,
   };
 
   writeOutput(formatReactionUnignoreSummary(report));

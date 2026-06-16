@@ -1,56 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { CatalogBuildError } from './catalog-build-error.js';
 import { readCatalog } from './catalog-query.js';
-import { isNonEmptyString } from './catalog-utils.js';
-import {
-  appendTitleReactionEvents,
-  buildTitleReactions,
-  titleReactionResetEventType,
-} from './title-reactions.js';
+import { titleReactionResetEventType } from './title-reactions.js';
 import { readReactionState } from './reaction-cli.js';
+import {
+  appendAndBuildTitleReactionEvents,
+  parseCanonicalIdListArgs,
+  validateCatalogTargets,
+} from './reaction-command-utils.js';
 
 export const reactionResetUsage = [
   'Usage:',
   '  yarn reactions:reset <canonicalId> [...<canonicalId>]',
 ].join('\n');
 
-function uniqueCanonicalIds(canonicalIds) {
-  const seen = new Set();
-  const unique = [];
-
-  for (const canonicalId of canonicalIds) {
-    const normalized = String(canonicalId ?? '').trim();
-
-    if (seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    unique.push(normalized);
-  }
-
-  return unique;
-}
-
 export function parseReactionResetCliArgs(args) {
-  if (!Array.isArray(args) || args.length === 0) {
-    throw new CatalogBuildError(reactionResetUsage);
-  }
-
-  if (args.some((arg) => arg.startsWith('--'))) {
-    throw new CatalogBuildError(reactionResetUsage);
-  }
-
-  const canonicalIds = uniqueCanonicalIds(args);
-
-  if (
-    canonicalIds.some((canonicalId) => !isNonEmptyString(canonicalId))
-  ) {
-    throw new CatalogBuildError(reactionResetUsage);
-  }
-
-  return { canonicalIds };
+  return parseCanonicalIdListArgs(args, reactionResetUsage);
 }
 
 export function createTitleReactionResetEvent(
@@ -72,17 +37,7 @@ export function validateReactionResetTargets({
   catalog,
   canonicalIds,
 }) {
-  const missing = canonicalIds.filter(
-    (canonicalId) => !catalog[canonicalId],
-  );
-
-  if (missing.length > 0) {
-    throw new CatalogBuildError(
-      `No catalog title found for canonical ID: ${missing.join(', ')}`,
-    );
-  }
-
-  return canonicalIds.map((canonicalId) => catalog[canonicalId]);
+  return validateCatalogTargets({ catalog, canonicalIds });
 }
 
 export function formatReactionResetSummary(report) {
@@ -153,33 +108,20 @@ export async function resetReactions({
     });
   }
 
-  let appendReport = {
-    eventsAppended: 0,
-    outputPathWritten: null,
-  };
-  let projectionReport = {
-    outputPathWritten: null,
-  };
-
-  if (events.length > 0) {
-    appendReport = await appendTitleReactionEvents({
+  const { appendReport, filesWritten } =
+    await appendAndBuildTitleReactionEvents({
+      rootDir,
       eventsPath,
-      events: events.map(({ title, ...event }) => event),
+      events,
       catalog,
+      projectionPathKeys: ['outputPathWritten'],
     });
-    projectionReport = await buildTitleReactions({ rootDir });
-  }
 
   const report = {
     eventsWritten: appendReport.eventsAppended,
     events,
     alreadyUnreacted,
-    filesWritten: [
-      appendReport.outputPathWritten,
-      projectionReport.outputPathWritten,
-    ]
-      .filter(Boolean)
-      .map((filePath) => path.relative(rootDir, filePath)),
+    filesWritten,
   };
 
   writeOutput(formatReactionResetSummary(report));
