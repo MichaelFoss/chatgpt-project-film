@@ -992,6 +992,7 @@ describe('reaction CLI', () => {
       events: [
         {
           canonicalId: 'imdb:tt001',
+          type: 'title.reaction.updated',
           title: 'Alpha',
           rating: 8,
         },
@@ -1036,6 +1037,7 @@ describe('reaction CLI', () => {
       events: [
         {
           canonicalId: 'imdb:tt001',
+          type: 'title.reaction.updated',
           title: 'Alpha',
           rating: 8,
         },

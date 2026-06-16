@@ -942,17 +942,7 @@ export function formatReactedTitleIgnoreError(item) {
 }
 
 function countBufferedEventsByType(events, type) {
-  return events.filter((event) => {
-    if (event.type === type) {
-      return true;
-    }
-
-    return (
-      type === titleReactionEventType &&
-      !event.type &&
-      Object.hasOwn(event, 'rating')
-    );
-  }).length;
+  return events.filter((event) => event.type === type).length;
 }
 
 export function formatReactionWriteSummary(report) {
