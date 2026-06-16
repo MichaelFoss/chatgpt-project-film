@@ -296,6 +296,38 @@ Acceptance criteria:
 - No typeless reaction-event fixtures remain.
 - All tests pass.
 
+## Ticket 9 — Consolidate reset and unignore command infrastructure
+
+Review `reactions:reset` and `reactions:unignore` for duplicated
+command-orchestration logic.
+
+Requirements:
+
+- Reduce duplicated infrastructure shared by:
+  - `reactions:reset`
+  - `reactions:unignore`
+- Extract shared helpers only where doing so improves readability and
+  maintainability.
+- Preserve all existing CLI behavior, output, and error messages.
+- Preserve all existing tests.
+- Avoid introducing abstractions that make command-specific behavior
+  harder to follow.
+- Keep command-specific responsibilities explicit:
+  - event creation
+  - target-state validation
+  - summary formatting
+  - projection rebuild behavior
+- Do not change event schemas.
+- Do not change projections.
+- Do not change user-facing workflows.
+
+Acceptance criteria:
+
+- Duplicate command-orchestration code is reduced.
+- Reset and unignore behavior remain unchanged.
+- Existing tests continue to pass.
+- No user-facing behavior changes.
+
 ## Out of scope for this task list
 
 - Bulk ignore by search query.
