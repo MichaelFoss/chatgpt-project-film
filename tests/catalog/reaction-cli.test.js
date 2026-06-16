@@ -632,10 +632,10 @@ describe('reaction CLI', () => {
 
   it('formats only identifying metadata for a selected title', () => {
     expect(formatReactionTitle(testCatalog()['imdb:tt001'])).toBe(
-      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+      ['Alpha (2001)', '', '  Movie · Action, Sci-Fi'].join('\n'),
     );
     expect(formatReactionTitle(testCatalog()['imdb:tt002'])).toBe(
-      ['Beta (2002)', 'Series · Drama'].join('\n'),
+      ['Beta (2002)', '', '  Series · Drama'].join('\n'),
     );
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
@@ -876,9 +876,11 @@ describe('reaction CLI', () => {
       '[1] Hated',
       '',
       '[s] Skip  [i] Ignore  [q] Quit',
+      '',
+      '>',
     ].join('\n');
 
-    expect(promptConfig.message).toBe('Rate this title:');
+    expect(promptConfig.message).toBe('');
     expect(formatVisibleRatingScale()).toBe(expectedOutput);
     expect(promptConfig.formatChoices(promptConfig.choices)).toBe(
       expectedOutput,
@@ -924,10 +926,12 @@ describe('reaction CLI', () => {
     expect(promptConfig).not.toHaveProperty('default');
     expect(promptConfig.choices).toEqual(getReactionPromptChoices());
     expect(promptConfig.formatChoices).toBe(formatVisibleRatingScale);
+    expect(promptConfig.bare).toBe(true);
 
     await promptForReaction({
       reactionPrompt: async (config) => {
         expect(config).not.toHaveProperty('default');
+        expect(config.bare).toBe(true);
         return 8;
       },
     });
@@ -1215,7 +1219,7 @@ describe('reaction CLI', () => {
     });
 
     expect(outputBeforeRatingPrompt).toEqual([
-      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+      ['Alpha (2001)', '', '  Movie · Action, Sci-Fi'].join('\n'),
       [
         'Existing reaction found.',
         '',
@@ -1813,6 +1817,17 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Alpha (2001)');
     expect(output.join('\n')).toContain('Beta (2002)');
+    expect(output.slice(0, 2).join('\n')).toBe(
+      [
+        'Alpha (2001)',
+        '',
+        '  Movie · Action, Sci-Fi',
+        '',
+        'Beta (2002)',
+        '',
+        '  Series · Drama',
+      ].join('\n'),
+    );
     await expect(
       fs.readFile(
         path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
@@ -3009,7 +3024,7 @@ describe('reaction CLI', () => {
     expect(output).toEqual([
       'Too many titles found (3). Please refine your search.',
       '[1] Match 03 (2002) | Movie | imdb:match03',
-      ['Match 03 (2002)', 'Movie · Drama'].join('\n'),
+      ['Match 03 (2002)', '', '  Movie · Drama'].join('\n'),
       [
         'Wrote 1 title reaction event(s).',
         'Wrote 0 title ignore event(s).',

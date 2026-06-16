@@ -90,6 +90,34 @@ ordering, while `yarn react --ordered` uses deterministic catalog
 ordering. `--random` and `--ordered` are mutually exclusive selection
 mode flags.
 
+Interactive reaction review screens use a consistent terminal layout:
+the title and year start at column 0, existing metadata is separated
+from the title by a blank line and indented two spaces, prompt options
+start at column 0, and the input marker starts at column 0. Consecutive
+review screens are separated by a blank line. The current prompt keeps
+the rating scale and existing control actions:
+
+```text
+Alpha (2001)
+
+  Movie · Action, Sci-Fi
+
+[0] Exceptional
+[9] Loved
+[8]
+[7] Liked
+[6]
+[5] Mixed
+[4]
+[3] Disliked
+[2]
+[1] Hated
+
+[s] Skip  [i] Ignore  [q] Quit
+
+>
+```
+
 `yarn reactions:export` reads the same projection and catalog join as
 `yarn reactions:list`. Human-readable and JSON export output include
 optional `notes` and `reasons` values when present and omit them when

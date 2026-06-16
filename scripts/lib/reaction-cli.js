@@ -30,6 +30,8 @@ import { loadRepoEnv } from './local-env.js';
 const defaultLimit = 1;
 const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
+const reviewIndent = '  ';
+const reviewScreenSeparator = '\n';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
   { key: 'i', name: 'Ignore', value: 'ignore' },
@@ -91,16 +93,30 @@ const singleKeyChoicePrompt = createPrompt((config, done) => {
     );
   });
 
-  const message = theme.style.message(config.message, status);
+  const message = config.message
+    ? theme.style.message(config.message, status)
+    : '';
 
   if (status === 'done') {
     const selectedChoice = selectReactionChoiceByKey(
       config.choices,
       selectedKey,
     );
+    if (config.bare === true) {
+      return `> ${theme.style.answer(
+        selectedChoice?.name ?? selectedKey,
+      )}`;
+    }
     return `${prefix} ${message} ${theme.style.answer(
       selectedChoice?.name ?? selectedKey,
     )}`;
+  }
+
+  if (config.bare === true) {
+    const choices = config.formatChoices
+      ? config.formatChoices(config.choices)
+      : formatVisibleReactionChoices(config.choices);
+    return error ? `${choices}\n${theme.style.error(error)}` : choices;
   }
 
   return [
@@ -572,7 +588,7 @@ export function formatReactionTitle(item) {
     metadata.push(item.genres.join(', '));
   }
 
-  lines.push(metadata.join(' · '));
+  lines.push('', `${reviewIndent}${metadata.join(' · ')}`);
 
   return lines.join('\n');
 }
@@ -660,6 +676,8 @@ export function formatVisibleRatingScale() {
     reactionControlOptions
       .map((choice) => `[${choice.key}] ${choice.name}`)
       .join('  '),
+    '',
+    '>',
   ].join('\n');
 }
 
@@ -675,13 +693,12 @@ export function formatVisibleReactionChoices(
     .join(separator);
 }
 
-export function createReactionPromptConfig({
-  message = 'Rate this title:',
-} = {}) {
+export function createReactionPromptConfig({ message = '' } = {}) {
   return {
     message,
     choices: getReactionPromptChoices(),
     formatChoices: formatVisibleRatingScale,
+    bare: true,
   };
 }
 
@@ -1096,6 +1113,7 @@ export async function runReactionSession({
 
   let processedCount = 0;
   const ignoredTitleIds = getIgnoredTitleIds(ignored);
+  let reviewScreensDisplayed = 0;
 
   while (
     targetItem
@@ -1126,7 +1144,13 @@ export async function runReactionSession({
       break;
     }
 
-    writeOutput(formatReactionTitle(item));
+    const reviewScreen = formatReactionTitle(item);
+    writeOutput(
+      reviewScreensDisplayed > 0
+        ? `${reviewScreenSeparator}${reviewScreen}`
+        : reviewScreen,
+    );
+    reviewScreensDisplayed += 1;
     const currentReaction = reactions[item.canonicalId];
     const existingReactionOutput =
       formatExistingReaction(currentReaction);
