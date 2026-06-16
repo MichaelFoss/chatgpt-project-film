@@ -91,16 +91,23 @@ ordering. `--random` and `--ordered` are mutually exclusive selection
 mode flags.
 
 Interactive reaction review screens use a consistent terminal layout:
-the title and year start at column 0, existing metadata is separated
-from the title by a blank line and indented two spaces, prompt options
-start at column 0, and the input marker starts at column 0. Consecutive
-review screens are separated by a blank line. The current prompt keeps
-the rating scale and existing control actions:
+the title and year start at column 0, hydrated media type and top-billed
+actor metadata are separated from the title by a blank line and indented
+two spaces, prompt options start at column 0, and the input marker
+starts at column 0. Actor names are limited for readability and omitted
+when unavailable. Consecutive review screens are separated by a blank
+line. The current prompt keeps the rating scale and existing control
+actions:
 
 ```text
 Alpha (2001)
 
-  Movie · Action, Sci-Fi
+  Movie
+
+  Actors:
+    - Actor One
+    - Actor Two
+    - Actor Three
 
 [0] Exceptional
 [9] Loved

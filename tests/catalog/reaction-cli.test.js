@@ -28,6 +28,9 @@ import {
   readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
+  reviewIndent,
+  reviewNestedIndent,
+  reviewTopBilledActorLimit,
   runReactionSession,
   searchReactionCatalog,
   selectFirstUnreactedTitle,
@@ -83,7 +86,11 @@ function testCatalog() {
       title: 'Alpha',
       releaseYear: 2001,
       description: 'This plot summary must not appear.',
+      posterUrl: 'https://example.test/poster-alpha.jpg',
       genres: ['Action', 'Sci-Fi'],
+      people: {
+        actors: ['Actor One', 'Actor Two', 'Actor Three', 'Actor Four'],
+      },
       ratings: {
         imdb: '9.9',
       },
@@ -95,6 +102,9 @@ function testCatalog() {
       releaseYear: 2002,
       description: 'Another plot summary must not appear.',
       genres: ['Drama'],
+      people: {
+        actors: ['Series Actor'],
+      },
     },
   };
 }
@@ -632,10 +642,26 @@ describe('reaction CLI', () => {
 
   it('formats only identifying metadata for a selected title', () => {
     expect(formatReactionTitle(testCatalog()['imdb:tt001'])).toBe(
-      ['Alpha (2001)', '', '  Movie · Action, Sci-Fi'].join('\n'),
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+      ].join('\n'),
     );
     expect(formatReactionTitle(testCatalog()['imdb:tt002'])).toBe(
-      ['Beta (2002)', '', '  Series · Drama'].join('\n'),
+      [
+        'Beta (2002)',
+        '',
+        `${reviewIndent}Series`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Series Actor`,
+      ].join('\n'),
     );
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
@@ -643,6 +669,50 @@ describe('reaction CLI', () => {
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
     ).not.toContain('9.9');
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('poster-alpha.jpg');
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('Actor Four');
+    expect(reviewTopBilledActorLimit).toBe(3);
+  });
+
+  it('handles missing actor metadata in review title formatting', () => {
+    expect(
+      formatReactionTitle({
+        canonicalId: 'imdb:missing-actors',
+        mediaType: 'movie',
+        title: 'Missing Actors',
+        releaseYear: 2020,
+      }),
+    ).toBe(
+      ['Missing Actors (2020)', '', `${reviewIndent}Movie`].join('\n'),
+    );
+  });
+
+  it('filters unusable actor metadata in review title formatting', () => {
+    expect(
+      formatReactionTitle({
+        canonicalId: 'imdb:partial-actors',
+        mediaType: 'movie',
+        title: 'Partial Actors',
+        releaseYear: 2021,
+        people: {
+          actors: ['', 'Recognized Actor', null, 'Another Actor'],
+        },
+      }),
+    ).toBe(
+      [
+        'Partial Actors (2021)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Recognized Actor`,
+        `${reviewNestedIndent}- Another Actor`,
+      ].join('\n'),
+    );
   });
 
   it('formats an existing reaction with rating only', () => {
@@ -1219,7 +1289,16 @@ describe('reaction CLI', () => {
     });
 
     expect(outputBeforeRatingPrompt).toEqual([
-      ['Alpha (2001)', '', '  Movie · Action, Sci-Fi'].join('\n'),
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+      ].join('\n'),
       [
         'Existing reaction found.',
         '',
@@ -1821,11 +1900,19 @@ describe('reaction CLI', () => {
       [
         'Alpha (2001)',
         '',
-        '  Movie · Action, Sci-Fi',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
         '',
         'Beta (2002)',
         '',
-        '  Series · Drama',
+        `${reviewIndent}Series`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Series Actor`,
       ].join('\n'),
     );
     await expect(
@@ -3024,7 +3111,7 @@ describe('reaction CLI', () => {
     expect(output).toEqual([
       'Too many titles found (3). Please refine your search.',
       '[1] Match 03 (2002) | Movie | imdb:match03',
-      ['Match 03 (2002)', '', '  Movie · Drama'].join('\n'),
+      ['Match 03 (2002)', '', `${reviewIndent}Movie`].join('\n'),
       [
         'Wrote 1 title reaction event(s).',
         'Wrote 0 title ignore event(s).',

@@ -30,7 +30,9 @@ import { loadRepoEnv } from './local-env.js';
 const defaultLimit = 1;
 const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
-const reviewIndent = '  ';
+export const reviewIndent = '  ';
+export const reviewNestedIndent = `${reviewIndent}${reviewIndent}`;
+export const reviewTopBilledActorLimit = 3;
 const reviewScreenSeparator = '\n';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
@@ -562,6 +564,10 @@ export function selectRandomUnreactedTitle(
 }
 
 function formatMediaType(mediaType) {
+  if (!isNonEmptyString(mediaType)) {
+    return mediaType;
+  }
+
   if (mediaType === 'movie') {
     return 'Movie';
   }
@@ -573,6 +579,16 @@ function formatMediaType(mediaType) {
   return mediaType;
 }
 
+function formatTopBilledActors(item) {
+  if (!Array.isArray(item?.people?.actors)) {
+    return [];
+  }
+
+  return item.people.actors
+    .filter(isNonEmptyString)
+    .slice(0, reviewTopBilledActorLimit);
+}
+
 export function formatReactionTitle(item) {
   if (!item) {
     return 'No eligible-unreacted titles found.';
@@ -582,13 +598,27 @@ export function formatReactionTitle(item) {
     ? ` (${item.releaseYear})`
     : '';
   const lines = [`${item.title}${year}`];
-  const metadata = [formatMediaType(item.mediaType)];
+  const mediaType = formatMediaType(item.mediaType);
+  const actors = formatTopBilledActors(item);
 
-  if (Array.isArray(item.genres) && item.genres.length > 0) {
-    metadata.push(item.genres.join(', '));
+  if (mediaType || actors.length > 0) {
+    lines.push('');
   }
 
-  lines.push('', `${reviewIndent}${metadata.join(' · ')}`);
+  if (mediaType) {
+    lines.push(`${reviewIndent}${mediaType}`);
+  }
+
+  if (actors.length > 0) {
+    if (mediaType) {
+      lines.push('');
+    }
+
+    lines.push(
+      `${reviewIndent}Actors:`,
+      ...actors.map((actor) => `${reviewNestedIndent}- ${actor}`),
+    );
+  }
 
   return lines.join('\n');
 }
