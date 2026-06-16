@@ -559,7 +559,7 @@ function formatMediaType(mediaType) {
 
 export function formatReactionTitle(item) {
   if (!item) {
-    return 'No unreacted titles found.';
+    return 'No eligible-unreacted titles found.';
   }
 
   const year = Number.isInteger(item.releaseYear)

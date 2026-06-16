@@ -615,7 +615,7 @@ describe('reaction CLI', () => {
 
     expect(item).toBeNull();
     expect(formatReactionTitle(item)).toBe(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
   });
 
@@ -626,7 +626,7 @@ describe('reaction CLI', () => {
 
     expect(item).toBeNull();
     expect(formatReactionTitle(item)).toBe(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
   });
 
@@ -1620,7 +1620,7 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Show Candidate (2011)');
     expect(output.join('\n')).not.toContain(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
     expect(output.join('\n')).not.toContain('Movie Candidate (2010)');
   });

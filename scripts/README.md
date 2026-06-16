@@ -44,11 +44,12 @@ yarn catalog:search --genre='*comedy'
 
 `yarn reactions:list` is a read-only view over
 `data/title-reactions.json` joined with `data/catalog.json`, excluding
-titles that are currently ignored. It does not read the title reaction
-event stream. Use `--rating loved`, `--liked`, `--mixed`, `--disliked`,
-or `--hated` to list only one recorded reaction rating group. Reaction
-notes are shown only when present. Free-form reaction reasons are shown
-only when present.
+titles that are currently ignored. It lists reacted titles only and does
+not read the title reaction event stream. Use `--rating exceptional`,
+`--rating loved`, or any supported rating flag such as `--exceptional`,
+`--liked`, `--mixed`, `--disliked`, or `--hated` to list only one
+recorded reaction rating group. Reaction notes are shown only when
+present. Free-form reaction reasons are shown only when present.
 
 `yarn reactions:list --ignored` is a read-only view over
 `data/title-ignored.json` joined with `data/catalog.json`. It lists
@@ -66,9 +67,9 @@ stored in first-occurrence order.
 `title.reaction.reset` events for currently reacted titles and rebuilds
 `data/title-reactions.json`. Existing reaction update events stay in the
 event stream, but reset titles are removed from the current reacted
-projection and become eligible for future reaction workflows. Unknown
-canonical IDs fail before any events are written. Repeating a reset for
-an already-unreacted title is a no-op.
+projection and become eligible-unreacted titles when they are not
+ignored. Unknown canonical IDs fail before any events are written.
+Repeating a reset for an already eligible-unreacted title is a no-op.
 
 `yarn reactions:unignore <canonicalId> [...<canonicalId>]` appends
 `title.unignored` events for currently ignored titles and rebuilds
@@ -78,8 +79,13 @@ before any events are written. Repeating unignore for a title that is
 not currently ignored is a no-op and writes no event. Unignored titles
 return to normal reaction eligibility when they are not already reacted.
 
-`yarn react` selects unreacted catalog titles in random order by
-default. `yarn react --random` explicitly uses the same random candidate
+`yarn react` selects eligible-unreacted catalog titles in random order
+by default. Eligible-unreacted titles are catalog titles that are
+neither currently reacted nor currently ignored. `Skip` means "do not
+rate this title right now"; it writes no event and the title can appear
+again later. `Ignore` appends a `title.ignored` event and excludes the
+title from automatic reaction prompts until it is unignored.
+`yarn react --random` explicitly uses the same random candidate
 ordering, while `yarn react --ordered` uses deterministic catalog
 ordering. `--random` and `--ordered` are mutually exclusive selection
 mode flags.
@@ -94,7 +100,9 @@ absent.
 `data/catalog.json`. It reports reaction coverage, canonical reaction
 rating distribution, total reacted titles, total ignored titles, total
 eligible-unreacted titles, and movie and series breakdowns without
-reading the title reaction event stream.
+reading the title reaction event stream. Reaction coverage is based on
+reacted titles divided by total catalog titles; ignored titles are
+reported separately and do not count as reactions.
 
 `yarn reactions:validate` is a read-only diagnostic view over
 `data/title-reactions.json` joined with `data/catalog.json`. It reports
