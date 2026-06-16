@@ -43,11 +43,17 @@ yarn catalog:search --genre='*comedy'
 ```
 
 `yarn reactions:list` is a read-only view over
-`data/title-reactions.json` joined with `data/catalog.json`. It does not
-read the title reaction event stream. Use `--rating loved`, `--liked`,
-`--mixed`, `--disliked`, or `--hated` to list only one recorded reaction
-rating group. Reaction notes are shown only when present. Free-form
-reaction reasons are shown only when present.
+`data/title-reactions.json` joined with `data/catalog.json`, excluding
+titles that are currently ignored. It does not read the title reaction
+event stream. Use `--rating loved`, `--liked`, `--mixed`, `--disliked`,
+or `--hated` to list only one recorded reaction rating group. Reaction
+notes are shown only when present. Free-form reaction reasons are shown
+only when present.
+
+`yarn reactions:list --ignored` is a read-only view over
+`data/title-ignored.json` joined with `data/catalog.json`. It lists
+currently ignored titles with canonical IDs, title metadata, and genres
+when available.
 
 `yarn react --id <canonicalId>` can update an already-reacted title.
 When projected notes or reasons already exist for that title, the
