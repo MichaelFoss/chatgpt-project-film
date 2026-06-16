@@ -9,6 +9,7 @@ import {
 
 export {
   formatReactionQueryItems,
+  getIgnoredReactionQueryItems,
   getReactionQueryItems,
   getReactionRatingOptions,
   listReactions,
@@ -18,12 +19,14 @@ export {
 
 async function main() {
   try {
-    const { ratingBand } = parseReactionListCliArgs(
+    const { ratingBand, ignored } = parseReactionListCliArgs(
       process.argv.slice(2),
     );
-    const items = await listReactions({ ratingBand });
+    const items = await listReactions({ ratingBand, ignored });
 
-    console.log(formatReactionQueryItems(items, { ratingBand }));
+    console.log(
+      formatReactionQueryItems(items, { ratingBand, ignored }),
+    );
   } catch (error) {
     console.error(error.message);
 

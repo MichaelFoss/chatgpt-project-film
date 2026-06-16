@@ -144,7 +144,11 @@ Conceptual structure:
 ```ts
 type TitleReactionEvent = {
   eventId: string;
-  type: 'title.reaction.updated';
+  type:
+    | 'title.reaction.updated'
+    | 'title.reaction.reset'
+    | 'title.ignored'
+    | 'title.unignored';
   occurredAt: string;
   canonicalId: string;
   rating?: number;
@@ -158,9 +162,10 @@ type TitleReactionEvent = {
 };
 ```
 
-At least one optional update field must be present. Reaction events do
-not include human-readable title fields; generated sources join display
-titles from `data/catalog.json`.
+`title.reaction.updated` events must include a `rating`. Reset, ignore,
+and unignore events must not include reaction update fields. Reaction
+events do not include human-readable title fields; generated sources
+join display titles from `data/catalog.json`.
 
 `rating` is a personal-fit rating, not an objective quality score. It
 must be an integer from `1` through `10`:
@@ -535,7 +540,13 @@ Title reaction state is stored under:
 data/title-reactions.json
 ```
 
-This projection is generated from:
+Ignored title state is stored under:
+
+```text
+data/title-ignored.json
+```
+
+These projections are generated from:
 
 - `events/title-reactions.events.ndjson`
 - `data/catalog.json`
@@ -547,8 +558,25 @@ overwrite supplied scalar fields for the same `canonicalId`; supplied
 event without `notes` removes any previous projected `notes`, and a
 newer rating event without `reasons` removes any previous projected
 `reasons`. Free-form `reasons` are stored as lowercase normalized
-values. The projection stores event IDs for auditability and does not
-copy catalog title metadata.
+values. A `title.reaction.reset` event removes that title from the
+current reacted projection without deleting prior reaction history from
+the event stream.
+
+Ignored title projection applies `title.ignored` and `title.unignored`
+events in file order. A current ignored title is excluded from automatic
+reaction prompts and normal `yarn reactions:list` output. Ignored titles
+can be inspected with `yarn reactions:list --ignored` and restored with
+`yarn reactions:unignore <canonicalId> [...<canonicalId>]`.
+
+The current catalog reaction states are:
+
+- reacted: a title with current reaction state
+- ignored: a title with current ignored state
+- eligible-unreacted: a catalog title that is neither reacted nor
+  ignored
+
+The projections store event IDs for auditability and do not copy catalog
+title metadata.
 
 Generated recommendation context is emitted to:
 

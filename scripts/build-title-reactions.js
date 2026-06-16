@@ -14,6 +14,12 @@ async function main() {
       report.outputPathWritten,
     )}.`,
   );
+  console.log(
+    `Wrote ${report.ignoredRecordsWritten} ignored title record(s) to ${path.relative(
+      process.cwd(),
+      report.ignoredOutputPathWritten,
+    )}.`,
+  );
 }
 
 const currentFilePath = fileURLToPath(import.meta.url);

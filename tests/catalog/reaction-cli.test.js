@@ -5,9 +5,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createReactionCommand,
+  createTitleIgnoredEvent,
   createTitleReactionEvent,
   findReactionTitleById,
   formatExistingReaction,
+  formatIgnoredTitleRateError,
+  formatReactedTitleIgnoreError,
   formatSearchResultThresholdMessage,
   formatSearchResults,
   formatVisibleRatingScale,
@@ -22,6 +25,7 @@ import {
   promptForReaction,
   ratingForReaction,
   readReactionCatalog,
+  readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
   runReactionSession,
@@ -40,6 +44,7 @@ let originalSearchResultThreshold;
 async function createTempProject({
   catalog = testCatalog(),
   reactions = {},
+  ignored = {},
 } = {}) {
   const rootDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'film-reaction-cli-'),
@@ -55,6 +60,11 @@ async function createTempProject({
   await fs.writeFile(
     path.join(rootDir, 'data', 'title-reactions.json'),
     `${JSON.stringify(reactions, null, 2)}\n`,
+    'utf8',
+  );
+  await fs.writeFile(
+    path.join(rootDir, 'data', 'title-ignored.json'),
+    `${JSON.stringify(ignored, null, 2)}\n`,
     'utf8',
   );
   await fs.writeFile(
@@ -147,6 +157,15 @@ function reaction(canonicalId, overrides = {}) {
     updatedAt: '2026-06-10T12:00:00.000Z',
     eventIds: [`evt-${canonicalId}`],
     rating: 8,
+    ...overrides,
+  };
+}
+
+function ignoredTitle(canonicalId, overrides = {}) {
+  return {
+    canonicalId,
+    ignoredAt: '2026-06-10T12:00:00.000Z',
+    eventId: `evt-ignore-${canonicalId}`,
     ...overrides,
   };
 }
@@ -318,6 +337,17 @@ describe('reaction CLI', () => {
     await expect(readReactionState({ rootDir })).resolves.toEqual(
       reactions,
     );
+  });
+
+  it('loads current ignored title state from the generated projection', async () => {
+    const ignored = {
+      'imdb:tt002': ignoredTitle('imdb:tt002'),
+    };
+    const rootDir = await createTempProject({ ignored });
+
+    await expect(
+      readReactionIgnoredState({ rootDir }),
+    ).resolves.toEqual(ignored);
   });
 
   it('selects the first unreacted title in ordered catalog order', async () => {
@@ -534,6 +564,45 @@ describe('reaction CLI', () => {
     });
   });
 
+  it('excludes ignored titles from random selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt001': ignoredTitle('imdb:tt001'),
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    const item = await selectReactionTitle({
+      rootDir,
+      random: true,
+    });
+
+    expect(item).toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+  });
+
+  it('excludes ignored titles from ordered selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt001': ignoredTitle('imdb:tt001'),
+      },
+    });
+
+    const item = await selectReactionTitle({
+      rootDir,
+      ordered: true,
+    });
+
+    expect(item).toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+  });
+
   it('returns a user-friendly message when all titles are reacted', async () => {
     const rootDir = await createTempProject({
       reactions: {
@@ -546,7 +615,7 @@ describe('reaction CLI', () => {
 
     expect(item).toBeNull();
     expect(formatReactionTitle(item)).toBe(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
   });
 
@@ -557,7 +626,7 @@ describe('reaction CLI', () => {
 
     expect(item).toBeNull();
     expect(formatReactionTitle(item)).toBe(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
   });
 
@@ -741,6 +810,7 @@ describe('reaction CLI', () => {
       { key: '2', name: '2', value: 2 },
       { key: '1', name: 'Hated', value: 1 },
       { key: 's', name: 'Skip', value: 'skip' },
+      { key: 'i', name: 'Ignore', value: 'ignore' },
       { key: 'q', name: 'Quit', value: 'quit' },
     ]);
 
@@ -777,6 +847,11 @@ describe('reaction CLI', () => {
       name: 'Skip',
       value: 'skip',
     });
+    expect(selectReactionChoiceByKey(choices, 'i')).toEqual({
+      key: 'i',
+      name: 'Ignore',
+      value: 'ignore',
+    });
     expect(selectReactionChoiceByKey(choices, 'q')).toEqual({
       key: 'q',
       name: 'Quit',
@@ -800,7 +875,7 @@ describe('reaction CLI', () => {
       '[2]',
       '[1] Hated',
       '',
-      '[s] Skip  [q] Quit',
+      '[s] Skip  [i] Ignore  [q] Quit',
     ].join('\n');
 
     expect(promptConfig.message).toBe('Rate this title:');
@@ -826,6 +901,7 @@ describe('reaction CLI', () => {
         '[2] 2',
         '[1] Hated',
         '[s] Skip',
+        '[i] Ignore',
         '[q] Quit',
       ].join(' '),
     );
@@ -879,6 +955,23 @@ describe('reaction CLI', () => {
     expect(event).not.toHaveProperty('bucket');
   });
 
+  it('creates a title ignored event in memory', () => {
+    const event = createTitleIgnoredEvent(testCatalog()['imdb:tt001'], {
+      eventId: 'evt-ignore-1',
+      occurredAt: '2026-06-10T12:00:00.000Z',
+    });
+
+    expect(event).toEqual({
+      eventId: 'evt-ignore-1',
+      type: 'title.ignored',
+      occurredAt: '2026-06-10T12:00:00.000Z',
+      canonicalId: 'imdb:tt001',
+    });
+    expect(event).not.toHaveProperty('rating');
+    expect(event).not.toHaveProperty('notes');
+    expect(event).not.toHaveProperty('reasons');
+  });
+
   it('accepts only supported personal-fit ratings', () => {
     for (let rating = 1; rating <= 10; rating += 1) {
       expect(ratingForReaction(rating)).toBe(rating);
@@ -899,6 +992,7 @@ describe('reaction CLI', () => {
       events: [
         {
           canonicalId: 'imdb:tt001',
+          type: 'title.reaction.updated',
           title: 'Alpha',
           rating: 8,
         },
@@ -906,6 +1000,7 @@ describe('reaction CLI', () => {
     });
 
     expect(output).toContain('Wrote 1 title reaction event(s).');
+    expect(output).toContain('Wrote 0 title ignore event(s).');
     expect(output).toContain('Alpha: rating 8/10 (imdb:tt001)');
     expect(output).toContain('Files changed:');
     expect(output).toContain('- events/title-reactions.events.ndjson');
@@ -927,7 +1022,9 @@ describe('reaction CLI', () => {
       events: [],
     });
 
-    expect(output).toBe('Wrote 0 title reaction event(s).');
+    expect(output).toBe(
+      'Wrote 0 title reaction event(s).\nWrote 0 title ignore event(s).',
+    );
   });
 
   it('quotes written files with shell-sensitive characters in git add', () => {
@@ -940,6 +1037,7 @@ describe('reaction CLI', () => {
       events: [
         {
           canonicalId: 'imdb:tt001',
+          type: 'title.reaction.updated',
           title: 'Alpha',
           rating: 8,
         },
@@ -1428,6 +1526,31 @@ describe('reaction CLI', () => {
     ).toEqual(['imdb:tt003', 'imdb:tt001', 'imdb:tt002']);
   });
 
+  it('excludes ignored titles from --limit workflows', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '3'],
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+      eventsWritten: 2,
+    });
+    expect(
+      result.bufferedEvents.map((event) => event.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt003']);
+    expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
   it('supports --ordered --limit n session selection behavior', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -1499,7 +1622,7 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Show Candidate (2011)');
     expect(output.join('\n')).not.toContain(
-      'No unreacted titles found.',
+      'No eligible-unreacted titles found.',
     );
     expect(output.join('\n')).not.toContain('Movie Candidate (2010)');
   });
@@ -1690,6 +1813,170 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Alpha (2001)');
     expect(output.join('\n')).toContain('Beta (2002)');
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.not.toContain('title.ignored');
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'data', 'title-ignored.json'),
+        'utf8',
+      ),
+    ).resolves.toBe('{}\n');
+  });
+
+  it('creates an ignored title event from the ignore action', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '1'],
+      reactionPrompt: async () => 'ignore',
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    const ignoredProjection = JSON.parse(
+      await fs.readFile(
+        path.join(rootDir, 'data', 'title-ignored.json'),
+        'utf8',
+      ),
+    );
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+      eventsWritten: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt001',
+        title: 'Alpha',
+        type: 'title.ignored',
+      }),
+    ]);
+    expect(result.bufferedEvents[0]).not.toHaveProperty('rating');
+    expect(eventText).toContain('"type":"title.ignored"');
+    expect(eventText).toContain('"canonicalId":"imdb:tt001"');
+    expect(ignoredProjection).toMatchObject({
+      'imdb:tt001': {
+        canonicalId: 'imdb:tt001',
+      },
+    });
+    expect(output.join('\n')).toContain(
+      'Wrote 0 title reaction event(s).',
+    );
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title ignore event(s).',
+    );
+    expect(output.join('\n')).toContain(
+      '- Alpha: ignored (imdb:tt001)',
+    );
+  });
+
+  it('does not request notes or reasons for the ignore action', async () => {
+    const rootDir = await createTempProject();
+    let notesPrompted = false;
+    let reasonsPrompted = false;
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--ordered'],
+      reactionPrompt: async () => 'ignore',
+      notesPrompt: async () => {
+        notesPrompted = true;
+        throw new Error('notes should not be requested');
+      },
+      reasonsPrompt: async () => {
+        reasonsPrompted = true;
+        throw new Error('reasons should not be requested');
+      },
+    });
+
+    expect(notesPrompted).toBe(false);
+    expect(reasonsPrompted).toBe(false);
+  });
+
+  it('removes ignored titles from future candidate selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    await captureReactionSession({
+      rootDir,
+      args: ['--ordered'],
+      reactionPrompt: async () => 'ignore',
+    });
+
+    await expect(
+      selectReactionTitle({ rootDir, ordered: true }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt002',
+      title: 'Beta',
+    });
+  });
+
+  it('continues normally after ignore until the session limit is reached', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const reactions = ['ignore', 8];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '2'],
+      reactionPrompt: async () => reactions.shift(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 2,
+      eventsWritten: 2,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt001',
+        type: 'title.ignored',
+      }),
+      expect.objectContaining({
+        canonicalId: 'imdb:tt002',
+        type: 'title.reaction.updated',
+        rating: 8,
+      }),
+    ]);
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).toContain('Beta (2002)');
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title reaction event(s).',
+    );
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title ignore event(s).',
+    );
+  });
+
+  it('counts ignore actions toward the session limit', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '1'],
+      reactionPrompt: async () => 'ignore',
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+      eventsWritten: 1,
+    });
+    expect(output.join('\n')).toContain('Alpha (2001)');
+    expect(output.join('\n')).not.toContain('Beta (2002)');
   });
 
   it('prevents random-mode skipped titles from being reselected during the same session', async () => {
@@ -1878,6 +2165,63 @@ describe('reaction CLI', () => {
     ).toHaveLength(1);
   });
 
+  it('handles mixed sessions with ratings ignores skips and quit', async () => {
+    const rootDir = await createTempProject({
+      catalog: {
+        ...extendedCatalog(),
+        'imdb:tt004': {
+          canonicalId: 'imdb:tt004',
+          mediaType: 'movie',
+          title: 'Delta',
+          releaseYear: 2004,
+          genres: ['Drama'],
+        },
+      },
+    });
+    const reactions = [8, 'ignore', 'skip', 'quit'];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '4'],
+      reactionPrompt: async () => reactions.shift(),
+      quitPrompt: async () => 'save-and-quit',
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+    const events = eventText
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+
+    expect(result).toMatchObject({
+      status: 'saved-and-quit',
+      processedCount: 3,
+      eventsWritten: 2,
+    });
+    expect(events.map((event) => event.type)).toEqual([
+      'title.reaction.updated',
+      'title.ignored',
+    ]);
+    expect(events.map((event) => event.canonicalId)).toEqual([
+      'imdb:tt001',
+      'imdb:tt002',
+    ]);
+    expect(eventText).not.toContain('imdb:tt003');
+    expect(eventText).not.toContain('imdb:tt004');
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title reaction event(s).',
+    );
+    expect(output.join('\n')).toContain(
+      'Wrote 1 title ignore event(s).',
+    );
+    expect(output.join('\n')).toContain(
+      'Save & Quit selected. Current title was not written: Delta.',
+    );
+  });
+
   it('excludes titles already reacted during the current run', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -1917,6 +2261,76 @@ describe('reaction CLI', () => {
     ]);
   });
 
+  it('keeps reset titles eligible unless they are ignored', async () => {
+    const resetProjectionRootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt002': reaction('imdb:tt002'),
+      },
+    });
+    const ignoredResetProjectionRootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt002': reaction('imdb:tt002'),
+      },
+      ignored: {
+        'imdb:tt001': ignoredTitle('imdb:tt001'),
+      },
+    });
+
+    await expect(
+      selectReactionTitle({
+        rootDir: resetProjectionRootDir,
+        ordered: true,
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+    });
+    await expect(
+      selectReactionTitle({
+        rootDir: ignoredResetProjectionRootDir,
+        ordered: true,
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt003',
+      title: 'Gamma',
+    });
+  });
+
+  it('selects only eligible-unreacted titles from mixed reacted and ignored catalogs', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+      ignored: {
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered', '--limit', '3'],
+      reactionPrompt: async () => 9,
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      processedCount: 1,
+      eventsWritten: 1,
+    });
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+        rating: 9,
+      }),
+    ]);
+    expect(output.join('\n')).not.toContain('Alpha (2001)');
+    expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
   it('reacts to a valid canonical ID and ignores normal unreacted selection', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -1952,6 +2366,64 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Gamma (2003)');
     expect(output.join('\n')).not.toContain('Beta (2002)');
+  });
+
+  it('rejects ignored title targeting by ID before prompting for a rating', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt003': ignoredTitle('imdb:tt003'),
+      },
+    });
+    let prompted = false;
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: ['--id', 'imdb:tt003'],
+        reactionPrompt: async () => {
+          prompted = true;
+          return 8;
+        },
+      }),
+    ).rejects.toThrow(
+      'Gamma (imdb:tt003) is currently ignored and cannot be rated. Unignore the title before rating it.',
+    );
+    expect(prompted).toBe(false);
+    expect(
+      formatIgnoredTitleRateError(extendedCatalog()['imdb:tt003']),
+    ).toBe(
+      'Gamma (imdb:tt003) is currently ignored and cannot be rated. Unignore the title before rating it.',
+    );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('continues to rate non-ignored titles by ID when another title is ignored', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--id', 'imdb:tt003'],
+      reactionPrompt: async () => 8,
+    });
+
+    expect(result.bufferedEvents).toEqual([
+      expect.objectContaining({
+        canonicalId: 'imdb:tt003',
+        title: 'Gamma',
+        rating: 8,
+      }),
+    ]);
   });
 
   it('ID targeting bypasses random behavior', async () => {
@@ -2076,6 +2548,48 @@ describe('reaction CLI', () => {
     expect(projection['imdb:tt001'].eventIds).toHaveLength(2);
   });
 
+  it('rejects ignoring a reacted title with an actionable reset message', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001'),
+      },
+    });
+    let notesPrompted = false;
+    let reasonsPrompted = false;
+
+    await expect(
+      captureReactionSession({
+        rootDir,
+        args: ['--id', 'imdb:tt001'],
+        reactionPrompt: async () => 'ignore',
+        notesPrompt: async () => {
+          notesPrompted = true;
+          return null;
+        },
+        reasonsPrompt: async () => {
+          reasonsPrompted = true;
+          return null;
+        },
+      }),
+    ).rejects.toThrow(
+      'Alpha (imdb:tt001) currently has a reaction and cannot be ignored. Reset the reaction before ignoring it.',
+    );
+    expect(notesPrompted).toBe(false);
+    expect(reasonsPrompted).toBe(false);
+    expect(
+      formatReactedTitleIgnoreError(extendedCatalog()['imdb:tt001']),
+    ).toBe(
+      'Alpha (imdb:tt001) currently has a reaction and cannot be ignored. Reset the reaction before ignoring it.',
+    );
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
   it('searches the catalog and reacts to the selected result', async () => {
     const rootDir = await createTempProject({
       catalog: extendedCatalog(),
@@ -2121,6 +2635,47 @@ describe('reaction CLI', () => {
         rating: 5,
       }),
     ]);
+  });
+
+  it('excludes ignored titles from default search results', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+      ignored: {
+        'imdb:tt003': ignoredTitle('imdb:tt003'),
+      },
+    });
+    const output = [];
+    let promptedChoices = [];
+
+    await expect(
+      searchReactionCatalog({ rootDir, query: 'ga' }),
+    ).resolves.toEqual([]);
+    await expect(
+      selectReactionTitleFromSearch({
+        rootDir,
+        searchPrompt: async () => 'a',
+        selectionPrompt: async ({ choices }) => {
+          promptedChoices = choices;
+          return choices[0].value;
+        },
+        writeOutput: (message) => output.push(message),
+      }),
+    ).resolves.toMatchObject({
+      canonicalId: 'imdb:tt001',
+      title: 'Alpha',
+    });
+
+    expect(promptedChoices.map((choice) => choice.value)).toEqual([
+      'imdb:tt001',
+      'imdb:tt002',
+    ]);
+    expect(output.join('\n')).toContain(
+      '[1] Alpha (2001) | Movie | imdb:tt001',
+    );
+    expect(output.join('\n')).toContain(
+      '[2] Beta (2002) | Series | imdb:tt002',
+    );
+    expect(output.join('\n')).not.toContain('Gamma');
   });
 
   it('search targeting bypasses random behavior', async () => {
@@ -2457,6 +3012,7 @@ describe('reaction CLI', () => {
       ['Match 03 (2002)', 'Movie · Drama'].join('\n'),
       [
         'Wrote 1 title reaction event(s).',
+        'Wrote 0 title ignore event(s).',
         '- Match 03: rating 8/10 (imdb:match03)',
         '',
         'Files changed:',

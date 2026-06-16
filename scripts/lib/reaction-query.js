@@ -2,7 +2,10 @@ import path from 'node:path';
 import { CatalogBuildError } from './catalog-build-error.js';
 import { isNonEmptyString } from './catalog-utils.js';
 import { readCatalog } from './catalog-query.js';
-import { readReactionState } from './reaction-cli.js';
+import {
+  readReactionIgnoredState,
+  readReactionState,
+} from './reaction-cli.js';
 import {
   isSupportedReactionBand,
   ratingMatchesReactionBand,
@@ -13,6 +16,7 @@ export const reactionListUsage = [
   'Usage:',
   '  yarn reactions:list [--rating <exceptional|loved|liked|mixed|disliked|hated>]',
   '  yarn reactions:list [--exceptional|--loved|--liked|--mixed|--disliked|--hated]',
+  '  yarn reactions:list --ignored',
 ].join('\n');
 
 export const reactionExportUsage = [
@@ -60,12 +64,22 @@ function compareReactionItems(left, right) {
 
 export function parseReactionListCliArgs(args) {
   let ratingBand = null;
+  let ignored = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
 
+    if (arg === '--ignored') {
+      if (ratingBand || ignored) {
+        throw new CatalogBuildError(reactionListUsage);
+      }
+
+      ignored = true;
+      continue;
+    }
+
     if (ratingFlags.has(arg)) {
-      if (ratingBand) {
+      if (ratingBand || ignored) {
         throw new CatalogBuildError(reactionListUsage);
       }
 
@@ -74,7 +88,7 @@ export function parseReactionListCliArgs(args) {
     }
 
     if (arg === '--rating') {
-      if (ratingBand) {
+      if (ratingBand || ignored) {
         throw new CatalogBuildError(reactionListUsage);
       }
 
@@ -94,7 +108,7 @@ export function parseReactionListCliArgs(args) {
     }
 
     if (arg.startsWith('--rating=')) {
-      if (ratingBand) {
+      if (ratingBand || ignored) {
         throw new CatalogBuildError(reactionListUsage);
       }
 
@@ -115,7 +129,7 @@ export function parseReactionListCliArgs(args) {
     );
   }
 
-  return { ratingBand };
+  return { ratingBand, ignored };
 }
 
 export function parseReactionExportCliArgs(args) {
@@ -137,51 +151,79 @@ export function parseReactionExportCliArgs(args) {
   return { json };
 }
 
+function assertJsonObject(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new CatalogBuildError(`${label} must be a JSON object`);
+  }
+}
+
+function assertCatalogJoins(catalog, records) {
+  const missing = Object.entries(records)
+    .filter(([, record]) => {
+      if (
+        !record ||
+        typeof record !== 'object' ||
+        Array.isArray(record)
+      ) {
+        return false;
+      }
+
+      return !catalog[record.canonicalId];
+    })
+    .map(([recordKey, record]) => record.canonicalId ?? recordKey)
+    .filter(isNonEmptyString)
+    .sort();
+
+  if (missing.length > 0) {
+    throw new CatalogBuildError(
+      `No catalog title found for canonical ID: ${missing.join(', ')}`,
+    );
+  }
+}
+
+function getCatalogJoinedTitleItems({ catalog, records, mapRecord }) {
+  assertJsonObject(catalog, 'catalog');
+  assertJsonObject(records, 'title state');
+  assertCatalogJoins(catalog, records);
+
+  return Object.values(records)
+    .map((record) => {
+      const item = catalog[record.canonicalId];
+
+      return mapRecord({ record, item });
+    })
+    .sort(compareReactionItems);
+}
+
 export function getReactionQueryItems({
   catalog,
   reactions,
+  ignored = {},
   ratingBand = null,
 } = {}) {
-  if (
-    !catalog ||
-    typeof catalog !== 'object' ||
-    Array.isArray(catalog)
-  ) {
-    throw new CatalogBuildError('catalog must be a JSON object');
-  }
-
-  if (
-    !reactions ||
-    typeof reactions !== 'object' ||
-    Array.isArray(reactions)
-  ) {
-    throw new CatalogBuildError(
-      'title reaction state must be a JSON object',
-    );
-  }
+  assertJsonObject(reactions, 'title reaction state');
 
   if (ratingBand && !isSupportedReactionBand(ratingBand)) {
     throw new CatalogBuildError(reactionListUsage);
   }
 
-  return Object.values(reactions)
-    .filter((reaction) => {
-      if (
-        !reaction ||
-        typeof reaction !== 'object' ||
-        Array.isArray(reaction) ||
-        !catalog[reaction.canonicalId]
-      ) {
+  const ignoredTitleIds = new Set(Object.keys(ignored ?? {}));
+  const filteredReactions = Object.fromEntries(
+    Object.entries(reactions).filter(([, reaction]) => {
+      if (ignoredTitleIds.has(reaction?.canonicalId)) {
         return false;
       }
 
       return ratingBand
         ? ratingMatchesReactionBand(reaction.rating, ratingBand)
         : true;
-    })
-    .map((reaction) => {
-      const item = catalog[reaction.canonicalId];
+    }),
+  );
 
+  return getCatalogJoinedTitleItems({
+    catalog,
+    records: filteredReactions,
+    mapRecord({ record: reaction, item }) {
       return {
         canonicalId: reaction.canonicalId,
         title: item.title,
@@ -196,16 +238,67 @@ export function getReactionQueryItems({
           ? { reasons: [...reaction.reasons] }
           : {}),
       };
-    })
-    .sort(compareReactionItems);
+    },
+  });
+}
+
+export function getIgnoredReactionQueryItems({
+  catalog,
+  ignored,
+} = {}) {
+  assertJsonObject(ignored, 'ignored title state');
+
+  return getCatalogJoinedTitleItems({
+    catalog,
+    records: ignored,
+    mapRecord({ record, item }) {
+      return {
+        canonicalId: record.canonicalId,
+        title: item.title,
+        releaseYear: item.releaseYear,
+        mediaType: item.mediaType,
+        ...(Array.isArray(item.genres) && item.genres.length > 0
+          ? { genres: [...item.genres] }
+          : {}),
+      };
+    },
+  });
 }
 
 export async function listReactions({
   rootDir = process.cwd(),
   catalogPath = path.join(rootDir, 'data', 'catalog.json'),
   reactionsPath = path.join(rootDir, 'data', 'title-reactions.json'),
+  ignoredPath = path.join(rootDir, 'data', 'title-ignored.json'),
   ratingBand = null,
+  ignored = false,
 } = {}) {
+  const [catalog, reactions, ignoredState] = await Promise.all([
+    readCatalog({ rootDir, catalogPath }),
+    readReactionState({ rootDir, reactionsPath }),
+    readReactionIgnoredState({ rootDir, ignoredPath }),
+  ]);
+
+  return ignored
+    ? getIgnoredReactionQueryItems({
+        catalog,
+        ignored: ignoredState,
+      })
+    : getReactionQueryItems({
+        catalog,
+        reactions,
+        ignored: ignoredState,
+        ratingBand,
+      });
+}
+
+export async function exportReactions(options = {}) {
+  const {
+    rootDir = process.cwd(),
+    catalogPath = path.join(rootDir, 'data', 'catalog.json'),
+    reactionsPath = path.join(rootDir, 'data', 'title-reactions.json'),
+    ratingBand = null,
+  } = options;
   const [catalog, reactions] = await Promise.all([
     readCatalog({ rootDir, catalogPath }),
     readReactionState({ rootDir, reactionsPath }),
@@ -214,15 +307,15 @@ export async function listReactions({
   return getReactionQueryItems({ catalog, reactions, ratingBand });
 }
 
-export async function exportReactions(options = {}) {
-  return listReactions(options);
-}
-
 export function formatReactionQueryItems(
   items,
-  { ratingBand = null } = {},
+  { ratingBand = null, ignored = false } = {},
 ) {
   if (items.length === 0) {
+    if (ignored) {
+      return 'No ignored titles found.';
+    }
+
     return ratingBand
       ? `No ${ratingBand} reacted titles found.`
       : 'No reacted titles found.';
@@ -235,8 +328,13 @@ export function formatReactionQueryItems(
         formatReleaseYear(item.releaseYear),
         formatMediaType(item.mediaType),
         item.canonicalId,
-        formatRating(item.rating),
-      ].join(' | ');
+        ignored ? null : formatRating(item.rating),
+        ignored && Array.isArray(item.genres) && item.genres.length > 0
+          ? item.genres.join(', ')
+          : null,
+      ]
+        .filter((value) => value !== null)
+        .join(' | ');
 
       const detailLines = [];
 

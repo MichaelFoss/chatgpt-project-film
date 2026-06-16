@@ -56,8 +56,17 @@ function reaction(canonicalId, rating) {
   };
 }
 
+function ignoredTitle(canonicalId) {
+  return {
+    canonicalId,
+    ignoredAt: '2026-06-10T12:00:00.000Z',
+    eventId: `event-ignore-${canonicalId}`,
+  };
+}
+
 async function createTempProject({
   reactions = {},
+  ignored = {},
   eventStreamText = '{"malformed": true\n',
 } = {}) {
   const rootDir = await fs.mkdtemp(
@@ -74,6 +83,11 @@ async function createTempProject({
   await fs.writeFile(
     path.join(rootDir, 'data', 'title-reactions.json'),
     `${JSON.stringify(reactions, null, 2)}\n`,
+    'utf8',
+  );
+  await fs.writeFile(
+    path.join(rootDir, 'data', 'title-ignored.json'),
+    `${JSON.stringify(ignored, null, 2)}\n`,
     'utf8',
   );
   await fs.writeFile(
@@ -98,7 +112,8 @@ describe('reaction stats command', () => {
       overall: {
         totalCatalogTitles: 5,
         totalReactedTitles: 0,
-        totalUnreactedTitles: 5,
+        totalIgnoredTitles: 0,
+        totalEligibleUnreactedTitles: 5,
         reactionCoveragePercentage: '0.0%',
       },
       reactionDistribution: {
@@ -112,8 +127,10 @@ describe('reaction stats command', () => {
       mediaTypes: {
         moviesReacted: 0,
         tvReacted: 0,
-        moviesUnreacted: 3,
-        tvUnreacted: 2,
+        moviesIgnored: 0,
+        tvIgnored: 0,
+        moviesEligibleUnreacted: 3,
+        tvEligibleUnreacted: 2,
       },
     });
   });
@@ -131,14 +148,74 @@ describe('reaction stats command', () => {
     expect(stats.overall).toEqual({
       totalCatalogTitles: 5,
       totalReactedTitles: 3,
-      totalUnreactedTitles: 2,
+      totalIgnoredTitles: 0,
+      totalEligibleUnreactedTitles: 2,
       reactionCoveragePercentage: '60.0%',
     });
     expect(stats.mediaTypes).toEqual({
       moviesReacted: 2,
       tvReacted: 1,
-      moviesUnreacted: 1,
-      tvUnreacted: 1,
+      moviesIgnored: 0,
+      tvIgnored: 0,
+      moviesEligibleUnreacted: 1,
+      tvEligibleUnreacted: 1,
+    });
+  });
+
+  it('reports ignored and eligible-unreacted titles separately', () => {
+    const stats = getReactionStats({
+      catalog,
+      reactions: {},
+      ignored: {
+        'imdb:tt001': ignoredTitle('imdb:tt001'),
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    expect(stats.overall).toEqual({
+      totalCatalogTitles: 5,
+      totalReactedTitles: 0,
+      totalIgnoredTitles: 2,
+      totalEligibleUnreactedTitles: 3,
+      reactionCoveragePercentage: '0.0%',
+    });
+    expect(stats.mediaTypes).toEqual({
+      moviesReacted: 0,
+      tvReacted: 0,
+      moviesIgnored: 1,
+      tvIgnored: 1,
+      moviesEligibleUnreacted: 2,
+      tvEligibleUnreacted: 1,
+    });
+  });
+
+  it('reports mixed reacted, ignored, and eligible-unreacted catalog states', () => {
+    const stats = getReactionStats({
+      catalog,
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+        'imdb:tt002': reaction('imdb:tt002', 8),
+      },
+      ignored: {
+        'imdb:tt003': ignoredTitle('imdb:tt003'),
+        'imdb:tt004': ignoredTitle('imdb:tt004'),
+      },
+    });
+
+    expect(stats.overall).toEqual({
+      totalCatalogTitles: 5,
+      totalReactedTitles: 2,
+      totalIgnoredTitles: 2,
+      totalEligibleUnreactedTitles: 1,
+      reactionCoveragePercentage: '40.0%',
+    });
+    expect(stats.mediaTypes).toEqual({
+      moviesReacted: 1,
+      tvReacted: 1,
+      moviesIgnored: 1,
+      tvIgnored: 1,
+      moviesEligibleUnreacted: 1,
+      tvEligibleUnreacted: 0,
     });
   });
 
@@ -157,14 +234,38 @@ describe('reaction stats command', () => {
     expect(stats.overall).toEqual({
       totalCatalogTitles: 5,
       totalReactedTitles: 5,
-      totalUnreactedTitles: 0,
+      totalIgnoredTitles: 0,
+      totalEligibleUnreactedTitles: 0,
       reactionCoveragePercentage: '100.0%',
     });
     expect(stats.mediaTypes).toEqual({
       moviesReacted: 3,
       tvReacted: 2,
-      moviesUnreacted: 0,
-      tvUnreacted: 0,
+      moviesIgnored: 0,
+      tvIgnored: 0,
+      moviesEligibleUnreacted: 0,
+      tvEligibleUnreacted: 0,
+    });
+  });
+
+  it('keeps reaction coverage based only on reacted titles', () => {
+    const stats = getReactionStats({
+      catalog,
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+      },
+      ignored: {
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+        'imdb:tt003': ignoredTitle('imdb:tt003'),
+      },
+    });
+
+    expect(stats.overall).toEqual({
+      totalCatalogTitles: 5,
+      totalReactedTitles: 1,
+      totalIgnoredTitles: 2,
+      totalEligibleUnreactedTitles: 2,
+      reactionCoveragePercentage: '20.0%',
     });
   });
 
@@ -215,7 +316,8 @@ describe('reaction stats command', () => {
         'Overall:',
         '- Total catalog titles: 5',
         '- Total reacted titles: 3',
-        '- Total unreacted titles: 2',
+        '- Total ignored titles: 0',
+        '- Total eligible unreacted titles: 2',
         '- Reaction coverage: 60.0%',
         '',
         'Reaction distribution:',
@@ -229,8 +331,10 @@ describe('reaction stats command', () => {
         'Media type breakdown:',
         '- Movies reacted: 2',
         '- Series reacted: 1',
-        '- Movies unreacted: 1',
-        '- Series unreacted: 1',
+        '- Movies ignored: 0',
+        '- Series ignored: 0',
+        '- Movies eligible unreacted: 1',
+        '- Series eligible unreacted: 1',
       ].join('\n'),
     );
   });
@@ -248,7 +352,31 @@ describe('reaction stats command', () => {
       overall: {
         totalCatalogTitles: 5,
         totalReactedTitles: 1,
-        totalUnreactedTitles: 4,
+        totalIgnoredTitles: 0,
+        totalEligibleUnreactedTitles: 4,
+        reactionCoveragePercentage: '20.0%',
+      },
+    });
+  });
+
+  it('reads ignored titles from the generated projection', async () => {
+    const rootDir = await createTempProject({
+      reactions: {
+        'imdb:tt001': reaction('imdb:tt001', 10),
+      },
+      ignored: {
+        'imdb:tt002': ignoredTitle('imdb:tt002'),
+      },
+    });
+
+    await expect(
+      getReactionStatsFromProjections({ rootDir }),
+    ).resolves.toMatchObject({
+      overall: {
+        totalCatalogTitles: 5,
+        totalReactedTitles: 1,
+        totalIgnoredTitles: 1,
+        totalEligibleUnreactedTitles: 3,
         reactionCoveragePercentage: '20.0%',
       },
     });
@@ -270,6 +398,8 @@ describe('reaction stats command', () => {
     expect(stderr).toBe('');
     expect(stdout.trim()).toContain('Reaction statistics');
     expect(stdout).toContain('- Total reacted titles: 1');
+    expect(stdout).toContain('- Total ignored titles: 0');
+    expect(stdout).toContain('- Total eligible unreacted titles: 4');
     expect(stdout).not.toContain('event-');
     expect(stdout).not.toContain('eventIds');
   });

@@ -283,6 +283,68 @@ removing duplicates after lowercasing while preserving first-seen order.
 }
 ```
 
+## `title.reaction.reset`
+
+Implementation status: implemented.
+
+Removes the current projected reaction state for a catalog title without
+deleting prior reaction update events from the append-only event stream.
+Reset titles become eligible-unreacted when they are not currently
+ignored.
+
+### Required Fields
+
+| Field         | Type   | Description                                      |
+| ------------- | ------ | ------------------------------------------------ |
+| `eventId`     | string | Globally unique event identifier.                |
+| `type`        | string | Must be `title.reaction.reset`.                  |
+| `occurredAt`  | string | ISO timestamp.                                   |
+| `canonicalId` | string | Existing canonical title ID from `data/catalog`. |
+
+Reset events must not include reaction update fields such as `rating`,
+`notes`, or `reasons`.
+
+## `title.ignored`
+
+Implementation status: implemented.
+
+Records that a catalog title should be excluded from automatic reaction
+prompts. Ignoring a title is not a reaction, rating, dislike, or
+recommendation judgment.
+
+### Required Fields
+
+| Field         | Type   | Description                                      |
+| ------------- | ------ | ------------------------------------------------ |
+| `eventId`     | string | Globally unique event identifier.                |
+| `type`        | string | Must be `title.ignored`.                         |
+| `occurredAt`  | string | ISO timestamp.                                   |
+| `canonicalId` | string | Existing canonical title ID from `data/catalog`. |
+
+Ignored titles remain visible through `yarn reactions:list --ignored`
+and can be restored to normal reaction eligibility with
+`yarn reactions:unignore <canonicalId> [...<canonicalId>]`.
+
+## `title.unignored`
+
+Implementation status: implemented.
+
+Records that a currently ignored catalog title should return to normal
+reaction eligibility. Unignoring does not create a reaction and does not
+remove prior ignore history from the append-only event stream.
+
+### Required Fields
+
+| Field         | Type   | Description                                      |
+| ------------- | ------ | ------------------------------------------------ |
+| `eventId`     | string | Globally unique event identifier.                |
+| `type`        | string | Must be `title.unignored`.                       |
+| `occurredAt`  | string | ISO timestamp.                                   |
+| `canonicalId` | string | Existing canonical title ID from `data/catalog`. |
+
+Unignore events must not include reaction update fields such as
+`rating`, `notes`, or `reasons`.
+
 ## Spoiler Rules for Events
 
 Events should not contain spoilers unless the user explicitly chooses to

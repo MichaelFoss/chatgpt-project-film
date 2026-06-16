@@ -21,6 +21,7 @@ import {
   appendTitleReactionEvents,
   buildTitleReactions,
   normalizeReactionReasons,
+  titleIgnoredEventType,
   titleReactionEventType,
 } from './title-reactions.js';
 import { ratingForReaction, ratingScale } from './reaction-ratings.js';
@@ -31,6 +32,7 @@ const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
+  { key: 'i', name: 'Ignore', value: 'ignore' },
   { key: 'q', name: 'Quit', value: 'quit' },
 ];
 
@@ -376,6 +378,39 @@ export async function readReactionState({
   }
 }
 
+export async function readReactionIgnoredState({
+  rootDir = process.cwd(),
+  ignoredPath = path.join(rootDir, 'data', 'title-ignored.json'),
+} = {}) {
+  let text;
+
+  try {
+    text = await fs.readFile(ignoredPath, 'utf8');
+  } catch (error) {
+    throw new CatalogBuildError(
+      `Unable to read ignored title state at ${ignoredPath}: ${error.message}`,
+    );
+  }
+
+  try {
+    const ignored = JSON.parse(text);
+
+    if (
+      !ignored ||
+      typeof ignored !== 'object' ||
+      Array.isArray(ignored)
+    ) {
+      throw new Error('ignored title state must be a JSON object');
+    }
+
+    return ignored;
+  } catch (error) {
+    throw new CatalogBuildError(
+      `Invalid ignored title state JSON at ${ignoredPath}: ${error.message}`,
+    );
+  }
+}
+
 export async function findReactionTitleById({
   rootDir = process.cwd(),
   canonicalId,
@@ -402,6 +437,20 @@ export async function findReactionTitleById({
 
 export function getReactedTitleIds(reactions) {
   return new Set(Object.keys(reactions));
+}
+
+export function getIgnoredTitleIds(ignored) {
+  return new Set(Object.keys(ignored));
+}
+
+export function formatIgnoredTitleRateError(item) {
+  return `${item.title} (${item.canonicalId}) is currently ignored and cannot be rated. Unignore the title before rating it.`;
+}
+
+export function assertTitleIsRateable(item, ignored) {
+  if (getIgnoredTitleIds(ignored).has(item.canonicalId)) {
+    throw new CatalogBuildError(formatIgnoredTitleRateError(item));
+  }
 }
 
 function normalizeReactionMediaType(mediaType) {
@@ -510,7 +559,7 @@ function formatMediaType(mediaType) {
 
 export function formatReactionTitle(item) {
   if (!item) {
-    return 'No unreacted titles found.';
+    return 'No eligible-unreacted titles found.';
   }
 
   const year = Number.isInteger(item.releaseYear)
@@ -747,7 +796,13 @@ export async function searchReactionCatalog({
   }
 
   const filters = createCatalogTitleSearchFilters(query);
-  return searchCatalog({ rootDir, filters });
+  const [items, ignored] = await Promise.all([
+    searchCatalog({ rootDir, filters }),
+    readReactionIgnoredState({ rootDir }),
+  ]);
+  const ignoredTitleIds = getIgnoredTitleIds(ignored);
+
+  return items.filter((item) => !ignoredTitleIds.has(item.canonicalId));
 }
 
 export function isBlankSearchQuery(query) {
@@ -807,16 +862,20 @@ export async function selectReactionTitleFromSearch({
 async function resolveTargetReactionTitle({
   rootDir,
   options,
+  ignored,
   searchPrompt,
   selectionPrompt,
   searchResultThreshold,
   writeOutput,
 }) {
   if (options.id) {
-    return findReactionTitleById({
+    const item = await findReactionTitleById({
       rootDir,
       canonicalId: options.id,
     });
+
+    assertTitleIsRateable(item, ignored);
+    return item;
   }
 
   if (options.search) {
@@ -863,17 +922,56 @@ export function createTitleReactionEvent(
   return event;
 }
 
+export function createTitleIgnoredEvent(
+  item,
+  {
+    eventId = randomUUID(),
+    occurredAt = new Date().toISOString(),
+  } = {},
+) {
+  return {
+    eventId,
+    type: titleIgnoredEventType,
+    occurredAt,
+    canonicalId: item.canonicalId,
+  };
+}
+
+export function formatReactedTitleIgnoreError(item) {
+  return `${item.title} (${item.canonicalId}) currently has a reaction and cannot be ignored. Reset the reaction before ignoring it.`;
+}
+
+function countBufferedEventsByType(events, type) {
+  return events.filter((event) => event.type === type).length;
+}
+
 export function formatReactionWriteSummary(report) {
+  const reactionEventsWritten =
+    report.reactionEventsWritten ??
+    countBufferedEventsByType(
+      report.events ?? [],
+      titleReactionEventType,
+    );
+  const ignoreEventsWritten =
+    report.ignoreEventsWritten ??
+    countBufferedEventsByType(
+      report.events ?? [],
+      titleIgnoredEventType,
+    );
   const lines = [
-    `Wrote ${report.eventsWritten} title reaction event(s).`,
+    `Wrote ${reactionEventsWritten} title reaction event(s).`,
+    `Wrote ${ignoreEventsWritten} title ignore event(s).`,
   ];
 
   if (report.eventsWritten > 0) {
     lines.push(
-      ...report.events.map(
-        (event) =>
-          `- ${event.title}: rating ${event.rating}/10 (${event.canonicalId})`,
-      ),
+      ...report.events.map((event) => {
+        if (event.type === titleIgnoredEventType) {
+          return `- ${event.title}: ignored (${event.canonicalId})`;
+        }
+
+        return `- ${event.title}: rating ${event.rating}/10 (${event.canonicalId})`;
+      }),
     );
   }
 
@@ -924,16 +1022,29 @@ async function persistReactionEvents({
     catalog,
   });
   const projectionReport = await buildTitleReactions({ rootDir });
+  const reactionEventsWritten = countBufferedEventsByType(
+    bufferedEvents,
+    titleReactionEventType,
+  );
+  const ignoreEventsWritten = countBufferedEventsByType(
+    bufferedEvents,
+    titleIgnoredEventType,
+  );
 
   return {
     ...appendReport,
     projectionReport,
     eventsWritten: appendReport.eventsAppended,
+    reactionEventsWritten,
+    ignoreEventsWritten,
     events: bufferedEvents,
     filesWritten: uniqueNonEmptyStrings(
       [
         appendReport.outputPathWritten,
         projectionReport.outputPathWritten,
+        ignoreEventsWritten > 0
+          ? projectionReport.ignoredOutputPathWritten
+          : null,
       ].map((filePath) =>
         filePath ? path.relative(rootDir, filePath) : null,
       ),
@@ -958,12 +1069,16 @@ export async function runReactionSession({
     ? parseReactionCliArgs(args)
     : args;
   const catalog = await readReactionCatalog({ rootDir });
-  const reactions = await readReactionState({ rootDir });
+  const [reactions, ignored] = await Promise.all([
+    readReactionState({ rootDir }),
+    readReactionIgnoredState({ rootDir }),
+  ]);
   const processedTitleIds = new Set();
   const bufferedEvents = [];
   const targetItem = await resolveTargetReactionTitle({
     rootDir,
     options,
+    ignored,
     searchPrompt,
     selectionPrompt,
     searchResultThreshold,
@@ -980,6 +1095,7 @@ export async function runReactionSession({
   }
 
   let processedCount = 0;
+  const ignoredTitleIds = getIgnoredTitleIds(ignored);
 
   while (
     targetItem
@@ -992,14 +1108,14 @@ export async function runReactionSession({
         ? selectRandomUnreactedTitle(
             catalog,
             reactions,
-            processedTitleIds,
+            new Set([...processedTitleIds, ...ignoredTitleIds]),
             random,
             options,
           )
         : selectFirstUnreactedTitle(
             catalog,
             reactions,
-            processedTitleIds,
+            new Set([...processedTitleIds, ...ignoredTitleIds]),
             options,
           ));
 
@@ -1064,6 +1180,24 @@ export async function runReactionSession({
         continue;
       }
 
+      if (reaction === 'ignore') {
+        if (currentReaction) {
+          throw new CatalogBuildError(
+            formatReactedTitleIgnoreError(item),
+          );
+        }
+
+        const event = createTitleIgnoredEvent(item);
+        bufferedEvents.push({
+          ...event,
+          title: item.title,
+        });
+        processedTitleIds.add(item.canonicalId);
+        processedCount += 1;
+        needsReaction = false;
+        continue;
+      }
+
       const notes = await promptForReactionNotes({
         notesPrompt,
         initialValue: isNonEmptyString(currentReaction?.notes)
@@ -1107,13 +1241,17 @@ export async function runReactionSession({
 
 export async function selectReactionTitle(options = {}) {
   const catalog = await readReactionCatalog(options);
-  const reactions = await readReactionState(options);
+  const [reactions, ignored] = await Promise.all([
+    readReactionState(options),
+    readReactionIgnoredState(options),
+  ]);
+  const ignoredTitleIds = getIgnoredTitleIds(ignored);
 
   if (!options.ordered && options.random !== false) {
     return selectRandomUnreactedTitle(
       catalog,
       reactions,
-      new Set(),
+      ignoredTitleIds,
       Math.random,
       options,
     );
@@ -1122,7 +1260,7 @@ export async function selectReactionTitle(options = {}) {
   return selectFirstUnreactedTitle(
     catalog,
     reactions,
-    new Set(),
+    ignoredTitleIds,
     options,
   );
 }
