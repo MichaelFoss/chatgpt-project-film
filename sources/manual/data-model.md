@@ -1,7 +1,7 @@
 ---
 title: Data Model
 status: current
-last_updated: 2026-06-10
+last_updated: 2026-06-16
 upload_to_chatgpt: false
 ---
 
@@ -577,6 +577,26 @@ The current catalog reaction states are:
 
 The projections store event IDs for auditability and do not copy catalog
 title metadata.
+
+### Title Reaction CLI Review Display
+
+The interactive reaction CLI displays a review screen before prompting
+for an action. The screen shows the title and release year at column 0,
+then indented hydrated metadata when available:
+
+- media type
+- up to three top-billed actors
+
+The review prompt includes rating choices plus control actions for skip,
+info, ignore, and quit. Selecting info displays a read-only detail view
+for the active title, then returns to the same review prompt without
+writing events, modifying ratings, modifying reactions, or advancing the
+review state.
+
+The info view may include title, year, media type, genres, top-billed
+actors, plot summary, IMDb URL, and poster URL when available. Plot
+summary lines wrap to 72 terminal columns. Missing metadata is omitted
+rather than displayed as placeholder text.
 
 Generated recommendation context is emitted to:
 

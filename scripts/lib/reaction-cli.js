@@ -30,9 +30,15 @@ import { loadRepoEnv } from './local-env.js';
 const defaultLimit = 1;
 const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
+export const reviewIndent = '  ';
+export const reviewNestedIndent = `${reviewIndent}${reviewIndent}`;
+export const reviewTopBilledActorLimit = 3;
+export const reviewPlotWrapColumns = 72;
+const reviewScreenSeparator = '\n';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
-  { key: 'i', name: 'Ignore', value: 'ignore' },
+  { key: 'i', name: 'Info', value: 'info' },
+  { key: 'x', name: 'Ignore', value: 'ignore' },
   { key: 'q', name: 'Quit', value: 'quit' },
 ];
 
@@ -91,16 +97,30 @@ const singleKeyChoicePrompt = createPrompt((config, done) => {
     );
   });
 
-  const message = theme.style.message(config.message, status);
+  const message = config.message
+    ? theme.style.message(config.message, status)
+    : '';
 
   if (status === 'done') {
     const selectedChoice = selectReactionChoiceByKey(
       config.choices,
       selectedKey,
     );
+    if (config.bare === true) {
+      return `> ${theme.style.answer(
+        selectedChoice?.name ?? selectedKey,
+      )}`;
+    }
     return `${prefix} ${message} ${theme.style.answer(
       selectedChoice?.name ?? selectedKey,
     )}`;
+  }
+
+  if (config.bare === true) {
+    const choices = config.formatChoices
+      ? config.formatChoices(config.choices)
+      : formatVisibleReactionChoices(config.choices);
+    return error ? `${choices}\n${theme.style.error(error)}` : choices;
   }
 
   return [
@@ -546,6 +566,10 @@ export function selectRandomUnreactedTitle(
 }
 
 function formatMediaType(mediaType) {
+  if (!isNonEmptyString(mediaType)) {
+    return mediaType;
+  }
+
   if (mediaType === 'movie') {
     return 'Movie';
   }
@@ -557,6 +581,122 @@ function formatMediaType(mediaType) {
   return mediaType;
 }
 
+function formatTopBilledActors(item) {
+  if (!Array.isArray(item?.people?.actors)) {
+    return [];
+  }
+
+  return item.people.actors
+    .filter(isNonEmptyString)
+    .slice(0, reviewTopBilledActorLimit);
+}
+
+function formatImdbUrl(item) {
+  const match = /^imdb:(tt\d+)$/.exec(item?.canonicalId ?? '');
+  return match ? `https://www.imdb.com/title/${match[1]}/` : null;
+}
+
+function wrapText(text, columns = reviewPlotWrapColumns) {
+  const width = Math.max(1, columns - reviewNestedIndent.length);
+  const words = String(text).trim().replace(/\s+/g, ' ').split(' ');
+  const lines = [];
+  let line = '';
+
+  for (const word of words) {
+    if (word.length > width) {
+      if (line) {
+        lines.push(line);
+        line = '';
+      }
+
+      for (let index = 0; index < word.length; index += width) {
+        lines.push(word.slice(index, index + width));
+      }
+      continue;
+    }
+
+    const nextLine = line ? `${line} ${word}` : word;
+
+    if (nextLine.length > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = nextLine;
+    }
+  }
+
+  if (line) {
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+export function formatTitleInformation(item) {
+  if (!item) {
+    return 'No title information available.';
+  }
+
+  const year = Number.isInteger(item.releaseYear)
+    ? ` (${item.releaseYear})`
+    : '';
+  const lines = [`${item.title}${year}`];
+  const mediaType = formatMediaType(item.mediaType);
+  const genres = Array.isArray(item.genres)
+    ? item.genres.filter(isNonEmptyString)
+    : [];
+  const actors = formatTopBilledActors(item);
+  const imdbUrl = formatImdbUrl(item);
+
+  if (mediaType) {
+    lines.push('', `${reviewIndent}${mediaType}`);
+  }
+
+  if (genres.length > 0) {
+    lines.push(
+      '',
+      `${reviewIndent}Genres:`,
+      ...genres.map((genre) => `${reviewNestedIndent}${genre}`),
+    );
+  }
+
+  if (actors.length > 0) {
+    lines.push(
+      '',
+      `${reviewIndent}Actors:`,
+      ...actors.map((actor) => `${reviewNestedIndent}- ${actor}`),
+    );
+  }
+
+  if (isNonEmptyString(item.description)) {
+    lines.push(
+      '',
+      `${reviewIndent}Plot:`,
+      ...wrapText(item.description).map(
+        (line) => `${reviewNestedIndent}${line}`,
+      ),
+    );
+  }
+
+  if (imdbUrl) {
+    lines.push(
+      '',
+      `${reviewIndent}IMDb:`,
+      `${reviewNestedIndent}${imdbUrl}`,
+    );
+  }
+
+  if (isNonEmptyString(item.posterUrl)) {
+    lines.push(
+      '',
+      `${reviewIndent}Poster:`,
+      `${reviewNestedIndent}${item.posterUrl}`,
+    );
+  }
+
+  return lines.join('\n');
+}
+
 export function formatReactionTitle(item) {
   if (!item) {
     return 'No eligible-unreacted titles found.';
@@ -566,13 +706,27 @@ export function formatReactionTitle(item) {
     ? ` (${item.releaseYear})`
     : '';
   const lines = [`${item.title}${year}`];
-  const metadata = [formatMediaType(item.mediaType)];
+  const mediaType = formatMediaType(item.mediaType);
+  const actors = formatTopBilledActors(item);
 
-  if (Array.isArray(item.genres) && item.genres.length > 0) {
-    metadata.push(item.genres.join(', '));
+  if (mediaType || actors.length > 0) {
+    lines.push('');
   }
 
-  lines.push(metadata.join(' · '));
+  if (mediaType) {
+    lines.push(`${reviewIndent}${mediaType}`);
+  }
+
+  if (actors.length > 0) {
+    if (mediaType) {
+      lines.push('');
+    }
+
+    lines.push(
+      `${reviewIndent}Actors:`,
+      ...actors.map((actor) => `${reviewNestedIndent}- ${actor}`),
+    );
+  }
 
   return lines.join('\n');
 }
@@ -660,6 +814,8 @@ export function formatVisibleRatingScale() {
     reactionControlOptions
       .map((choice) => `[${choice.key}] ${choice.name}`)
       .join('  '),
+    '',
+    '>',
   ].join('\n');
 }
 
@@ -675,13 +831,12 @@ export function formatVisibleReactionChoices(
     .join(separator);
 }
 
-export function createReactionPromptConfig({
-  message = 'Rate this title:',
-} = {}) {
+export function createReactionPromptConfig({ message = '' } = {}) {
   return {
     message,
     choices: getReactionPromptChoices(),
     formatChoices: formatVisibleRatingScale,
+    bare: true,
   };
 }
 
@@ -1096,6 +1251,7 @@ export async function runReactionSession({
 
   let processedCount = 0;
   const ignoredTitleIds = getIgnoredTitleIds(ignored);
+  let reviewScreensDisplayed = 0;
 
   while (
     targetItem
@@ -1126,7 +1282,13 @@ export async function runReactionSession({
       break;
     }
 
-    writeOutput(formatReactionTitle(item));
+    const reviewScreen = formatReactionTitle(item);
+    writeOutput(
+      reviewScreensDisplayed > 0
+        ? `${reviewScreenSeparator}${reviewScreen}`
+        : reviewScreen,
+    );
+    reviewScreensDisplayed += 1;
     const currentReaction = reactions[item.canonicalId];
     const existingReactionOutput =
       formatExistingReaction(currentReaction);
@@ -1143,6 +1305,11 @@ export async function runReactionSession({
         processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
+        continue;
+      }
+
+      if (reaction === 'info') {
+        writeOutput(formatTitleInformation(item));
         continue;
       }
 

@@ -17,6 +17,7 @@ import {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatTitleInformation,
   getSearchSelectionChoices,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
@@ -28,6 +29,10 @@ import {
   readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
+  reviewIndent,
+  reviewNestedIndent,
+  reviewPlotWrapColumns,
+  reviewTopBilledActorLimit,
   runReactionSession,
   searchReactionCatalog,
   selectFirstUnreactedTitle,
@@ -83,7 +88,11 @@ function testCatalog() {
       title: 'Alpha',
       releaseYear: 2001,
       description: 'This plot summary must not appear.',
+      posterUrl: 'https://example.test/poster-alpha.jpg',
       genres: ['Action', 'Sci-Fi'],
+      people: {
+        actors: ['Actor One', 'Actor Two', 'Actor Three', 'Actor Four'],
+      },
       ratings: {
         imdb: '9.9',
       },
@@ -95,6 +104,9 @@ function testCatalog() {
       releaseYear: 2002,
       description: 'Another plot summary must not appear.',
       genres: ['Drama'],
+      people: {
+        actors: ['Series Actor'],
+      },
     },
   };
 }
@@ -632,10 +644,26 @@ describe('reaction CLI', () => {
 
   it('formats only identifying metadata for a selected title', () => {
     expect(formatReactionTitle(testCatalog()['imdb:tt001'])).toBe(
-      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+      ].join('\n'),
     );
     expect(formatReactionTitle(testCatalog()['imdb:tt002'])).toBe(
-      ['Beta (2002)', 'Series · Drama'].join('\n'),
+      [
+        'Beta (2002)',
+        '',
+        `${reviewIndent}Series`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Series Actor`,
+      ].join('\n'),
     );
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
@@ -643,6 +671,117 @@ describe('reaction CLI', () => {
     expect(
       formatReactionTitle(testCatalog()['imdb:tt001']),
     ).not.toContain('9.9');
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('poster-alpha.jpg');
+    expect(
+      formatReactionTitle(testCatalog()['imdb:tt001']),
+    ).not.toContain('Actor Four');
+    expect(reviewTopBilledActorLimit).toBe(3);
+  });
+
+  it('handles missing actor metadata in review title formatting', () => {
+    expect(
+      formatReactionTitle({
+        canonicalId: 'imdb:missing-actors',
+        mediaType: 'movie',
+        title: 'Missing Actors',
+        releaseYear: 2020,
+      }),
+    ).toBe(
+      ['Missing Actors (2020)', '', `${reviewIndent}Movie`].join('\n'),
+    );
+  });
+
+  it('formats detailed title information with hydrated metadata', () => {
+    expect(formatTitleInformation(testCatalog()['imdb:tt001'])).toBe(
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Genres:`,
+        `${reviewNestedIndent}Action`,
+        `${reviewNestedIndent}Sci-Fi`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+        '',
+        `${reviewIndent}Plot:`,
+        `${reviewNestedIndent}This plot summary must not appear.`,
+        '',
+        `${reviewIndent}IMDb:`,
+        `${reviewNestedIndent}https://www.imdb.com/title/tt001/`,
+        '',
+        `${reviewIndent}Poster:`,
+        `${reviewNestedIndent}https://example.test/poster-alpha.jpg`,
+      ].join('\n'),
+    );
+  });
+
+  it('wraps plot summaries to the review information column width', () => {
+    const output = formatTitleInformation({
+      canonicalId: 'imdb:tt004',
+      mediaType: 'movie',
+      title: 'Wrapped Plot',
+      releaseYear: 2004,
+      description:
+        'A quiet archivist follows a trail of fragments through several cities while deciding whether memory is evidence, comfort, or a trap.',
+    });
+    const plotLines = output
+      .split('\n')
+      .filter((line) => line.startsWith(reviewNestedIndent));
+
+    expect(
+      plotLines.every((line) => line.length <= reviewPlotWrapColumns),
+    ).toBe(true);
+    expect(output).toContain(
+      [
+        `${reviewIndent}Plot:`,
+        `${reviewNestedIndent}A quiet archivist follows a trail of fragments through several`,
+        `${reviewNestedIndent}cities while deciding whether memory is evidence, comfort, or a`,
+        `${reviewNestedIndent}trap.`,
+      ].join('\n'),
+    );
+  });
+
+  it('omits unavailable metadata from detailed title information', () => {
+    expect(
+      formatTitleInformation({
+        canonicalId: 'manual:festival-short',
+        title: 'Sparse Title',
+        genres: ['', null],
+        people: {
+          actors: ['', null],
+        },
+      }),
+    ).toBe('Sparse Title');
+  });
+
+  it('filters unusable actor metadata in review title formatting', () => {
+    expect(
+      formatReactionTitle({
+        canonicalId: 'imdb:partial-actors',
+        mediaType: 'movie',
+        title: 'Partial Actors',
+        releaseYear: 2021,
+        people: {
+          actors: ['', 'Recognized Actor', null, 'Another Actor'],
+        },
+      }),
+    ).toBe(
+      [
+        'Partial Actors (2021)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Recognized Actor`,
+        `${reviewNestedIndent}- Another Actor`,
+      ].join('\n'),
+    );
   });
 
   it('formats an existing reaction with rating only', () => {
@@ -810,7 +949,8 @@ describe('reaction CLI', () => {
       { key: '2', name: '2', value: 2 },
       { key: '1', name: 'Hated', value: 1 },
       { key: 's', name: 'Skip', value: 'skip' },
-      { key: 'i', name: 'Ignore', value: 'ignore' },
+      { key: 'i', name: 'Info', value: 'info' },
+      { key: 'x', name: 'Ignore', value: 'ignore' },
       { key: 'q', name: 'Quit', value: 'quit' },
     ]);
 
@@ -849,6 +989,11 @@ describe('reaction CLI', () => {
     });
     expect(selectReactionChoiceByKey(choices, 'i')).toEqual({
       key: 'i',
+      name: 'Info',
+      value: 'info',
+    });
+    expect(selectReactionChoiceByKey(choices, 'x')).toEqual({
+      key: 'x',
       name: 'Ignore',
       value: 'ignore',
     });
@@ -875,10 +1020,12 @@ describe('reaction CLI', () => {
       '[2]',
       '[1] Hated',
       '',
-      '[s] Skip  [i] Ignore  [q] Quit',
+      '[s] Skip  [i] Info  [x] Ignore  [q] Quit',
+      '',
+      '>',
     ].join('\n');
 
-    expect(promptConfig.message).toBe('Rate this title:');
+    expect(promptConfig.message).toBe('');
     expect(formatVisibleRatingScale()).toBe(expectedOutput);
     expect(promptConfig.formatChoices(promptConfig.choices)).toBe(
       expectedOutput,
@@ -901,7 +1048,8 @@ describe('reaction CLI', () => {
         '[2] 2',
         '[1] Hated',
         '[s] Skip',
-        '[i] Ignore',
+        '[i] Info',
+        '[x] Ignore',
         '[q] Quit',
       ].join(' '),
     );
@@ -924,10 +1072,12 @@ describe('reaction CLI', () => {
     expect(promptConfig).not.toHaveProperty('default');
     expect(promptConfig.choices).toEqual(getReactionPromptChoices());
     expect(promptConfig.formatChoices).toBe(formatVisibleRatingScale);
+    expect(promptConfig.bare).toBe(true);
 
     await promptForReaction({
       reactionPrompt: async (config) => {
         expect(config).not.toHaveProperty('default');
+        expect(config.bare).toBe(true);
         return 8;
       },
     });
@@ -1189,6 +1339,37 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).not.toContain('Notes:');
   });
 
+  it('shows title information and returns to the active review prompt', async () => {
+    const rootDir = await createTempProject();
+    const prompts = [];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered'],
+      reactionPrompt: async () => {
+        prompts.push('reaction');
+        return prompts.length === 1 ? 'info' : 9;
+      },
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+
+    expect(prompts).toEqual(['reaction', 'reaction']);
+    expect(output).toContain(
+      formatTitleInformation(testCatalog()['imdb:tt001']),
+    );
+    expect(result.processedCount).toBe(1);
+    expect(result.bufferedEvents).toHaveLength(1);
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+    });
+    expect(eventText).toContain('"rating":9');
+    expect(eventText).not.toContain('"type":"title.ignored"');
+  });
+
   it('displays existing reaction details before prompting for an ID re-rating', async () => {
     const rootDir = await createTempProject({
       reactions: {
@@ -1215,7 +1396,16 @@ describe('reaction CLI', () => {
     });
 
     expect(outputBeforeRatingPrompt).toEqual([
-      ['Alpha (2001)', 'Movie · Action, Sci-Fi'].join('\n'),
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+      ].join('\n'),
       [
         'Existing reaction found.',
         '',
@@ -1813,6 +2003,25 @@ describe('reaction CLI', () => {
     ]);
     expect(output.join('\n')).toContain('Alpha (2001)');
     expect(output.join('\n')).toContain('Beta (2002)');
+    expect(output.slice(0, 2).join('\n')).toBe(
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+        '',
+        'Beta (2002)',
+        '',
+        `${reviewIndent}Series`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Series Actor`,
+      ].join('\n'),
+    );
     await expect(
       fs.readFile(
         path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
@@ -3009,7 +3218,7 @@ describe('reaction CLI', () => {
     expect(output).toEqual([
       'Too many titles found (3). Please refine your search.',
       '[1] Match 03 (2002) | Movie | imdb:match03',
-      ['Match 03 (2002)', 'Movie · Drama'].join('\n'),
+      ['Match 03 (2002)', '', `${reviewIndent}Movie`].join('\n'),
       [
         'Wrote 1 title reaction event(s).',
         'Wrote 0 title ignore event(s).',
