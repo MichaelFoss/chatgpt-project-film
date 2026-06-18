@@ -33,10 +33,12 @@ const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 export const reviewIndent = '  ';
 export const reviewNestedIndent = `${reviewIndent}${reviewIndent}`;
 export const reviewTopBilledActorLimit = 3;
+export const reviewPlotWrapColumns = 72;
 const reviewScreenSeparator = '\n';
 const reactionControlOptions = [
   { key: 's', name: 'Skip', value: 'skip' },
-  { key: 'i', name: 'Ignore', value: 'ignore' },
+  { key: 'i', name: 'Info', value: 'info' },
+  { key: 'x', name: 'Ignore', value: 'ignore' },
   { key: 'q', name: 'Quit', value: 'quit' },
 ];
 
@@ -587,6 +589,112 @@ function formatTopBilledActors(item) {
   return item.people.actors
     .filter(isNonEmptyString)
     .slice(0, reviewTopBilledActorLimit);
+}
+
+function formatImdbUrl(item) {
+  const match = /^imdb:(tt\d+)$/.exec(item?.canonicalId ?? '');
+  return match ? `https://www.imdb.com/title/${match[1]}/` : null;
+}
+
+function wrapText(text, columns = reviewPlotWrapColumns) {
+  const width = Math.max(1, columns - reviewNestedIndent.length);
+  const words = String(text).trim().replace(/\s+/g, ' ').split(' ');
+  const lines = [];
+  let line = '';
+
+  for (const word of words) {
+    if (word.length > width) {
+      if (line) {
+        lines.push(line);
+        line = '';
+      }
+
+      for (let index = 0; index < word.length; index += width) {
+        lines.push(word.slice(index, index + width));
+      }
+      continue;
+    }
+
+    const nextLine = line ? `${line} ${word}` : word;
+
+    if (nextLine.length > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = nextLine;
+    }
+  }
+
+  if (line) {
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+export function formatTitleInformation(item) {
+  if (!item) {
+    return 'No title information available.';
+  }
+
+  const year = Number.isInteger(item.releaseYear)
+    ? ` (${item.releaseYear})`
+    : '';
+  const lines = [`${item.title}${year}`];
+  const mediaType = formatMediaType(item.mediaType);
+  const genres = Array.isArray(item.genres)
+    ? item.genres.filter(isNonEmptyString)
+    : [];
+  const actors = formatTopBilledActors(item);
+  const imdbUrl = formatImdbUrl(item);
+
+  if (mediaType) {
+    lines.push('', `${reviewIndent}${mediaType}`);
+  }
+
+  if (genres.length > 0) {
+    lines.push(
+      '',
+      `${reviewIndent}Genres:`,
+      ...genres.map((genre) => `${reviewNestedIndent}${genre}`),
+    );
+  }
+
+  if (actors.length > 0) {
+    lines.push(
+      '',
+      `${reviewIndent}Actors:`,
+      ...actors.map((actor) => `${reviewNestedIndent}- ${actor}`),
+    );
+  }
+
+  if (isNonEmptyString(item.description)) {
+    lines.push(
+      '',
+      `${reviewIndent}Plot:`,
+      ...wrapText(item.description).map(
+        (line) => `${reviewNestedIndent}${line}`,
+      ),
+    );
+  }
+
+  if (imdbUrl) {
+    lines.push(
+      '',
+      `${reviewIndent}IMDb:`,
+      `${reviewNestedIndent}${imdbUrl}`,
+    );
+  }
+
+  if (isNonEmptyString(item.posterUrl)) {
+    lines.push(
+      '',
+      `${reviewIndent}Poster:`,
+      `${reviewNestedIndent}${item.posterUrl}`,
+    );
+  }
+
+  return lines.join('\n');
 }
 
 export function formatReactionTitle(item) {
@@ -1197,6 +1305,11 @@ export async function runReactionSession({
         processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
+        continue;
+      }
+
+      if (reaction === 'info') {
+        writeOutput(formatTitleInformation(item));
         continue;
       }
 

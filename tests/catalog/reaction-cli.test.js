@@ -17,6 +17,7 @@ import {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatTitleInformation,
   getSearchSelectionChoices,
   getQuitConfirmationChoices,
   getReactionPromptChoices,
@@ -30,6 +31,7 @@ import {
   readReactionState,
   reviewIndent,
   reviewNestedIndent,
+  reviewPlotWrapColumns,
   reviewTopBilledActorLimit,
   runReactionSession,
   searchReactionCatalog,
@@ -691,6 +693,73 @@ describe('reaction CLI', () => {
     );
   });
 
+  it('formats detailed title information with hydrated metadata', () => {
+    expect(formatTitleInformation(testCatalog()['imdb:tt001'])).toBe(
+      [
+        'Alpha (2001)',
+        '',
+        `${reviewIndent}Movie`,
+        '',
+        `${reviewIndent}Genres:`,
+        `${reviewNestedIndent}Action`,
+        `${reviewNestedIndent}Sci-Fi`,
+        '',
+        `${reviewIndent}Actors:`,
+        `${reviewNestedIndent}- Actor One`,
+        `${reviewNestedIndent}- Actor Two`,
+        `${reviewNestedIndent}- Actor Three`,
+        '',
+        `${reviewIndent}Plot:`,
+        `${reviewNestedIndent}This plot summary must not appear.`,
+        '',
+        `${reviewIndent}IMDb:`,
+        `${reviewNestedIndent}https://www.imdb.com/title/tt001/`,
+        '',
+        `${reviewIndent}Poster:`,
+        `${reviewNestedIndent}https://example.test/poster-alpha.jpg`,
+      ].join('\n'),
+    );
+  });
+
+  it('wraps plot summaries to the review information column width', () => {
+    const output = formatTitleInformation({
+      canonicalId: 'imdb:tt004',
+      mediaType: 'movie',
+      title: 'Wrapped Plot',
+      releaseYear: 2004,
+      description:
+        'A quiet archivist follows a trail of fragments through several cities while deciding whether memory is evidence, comfort, or a trap.',
+    });
+    const plotLines = output
+      .split('\n')
+      .filter((line) => line.startsWith(reviewNestedIndent));
+
+    expect(
+      plotLines.every((line) => line.length <= reviewPlotWrapColumns),
+    ).toBe(true);
+    expect(output).toContain(
+      [
+        `${reviewIndent}Plot:`,
+        `${reviewNestedIndent}A quiet archivist follows a trail of fragments through several`,
+        `${reviewNestedIndent}cities while deciding whether memory is evidence, comfort, or a`,
+        `${reviewNestedIndent}trap.`,
+      ].join('\n'),
+    );
+  });
+
+  it('omits unavailable metadata from detailed title information', () => {
+    expect(
+      formatTitleInformation({
+        canonicalId: 'manual:festival-short',
+        title: 'Sparse Title',
+        genres: ['', null],
+        people: {
+          actors: ['', null],
+        },
+      }),
+    ).toBe('Sparse Title');
+  });
+
   it('filters unusable actor metadata in review title formatting', () => {
     expect(
       formatReactionTitle({
@@ -880,7 +949,8 @@ describe('reaction CLI', () => {
       { key: '2', name: '2', value: 2 },
       { key: '1', name: 'Hated', value: 1 },
       { key: 's', name: 'Skip', value: 'skip' },
-      { key: 'i', name: 'Ignore', value: 'ignore' },
+      { key: 'i', name: 'Info', value: 'info' },
+      { key: 'x', name: 'Ignore', value: 'ignore' },
       { key: 'q', name: 'Quit', value: 'quit' },
     ]);
 
@@ -919,6 +989,11 @@ describe('reaction CLI', () => {
     });
     expect(selectReactionChoiceByKey(choices, 'i')).toEqual({
       key: 'i',
+      name: 'Info',
+      value: 'info',
+    });
+    expect(selectReactionChoiceByKey(choices, 'x')).toEqual({
+      key: 'x',
       name: 'Ignore',
       value: 'ignore',
     });
@@ -945,7 +1020,7 @@ describe('reaction CLI', () => {
       '[2]',
       '[1] Hated',
       '',
-      '[s] Skip  [i] Ignore  [q] Quit',
+      '[s] Skip  [i] Info  [x] Ignore  [q] Quit',
       '',
       '>',
     ].join('\n');
@@ -973,7 +1048,8 @@ describe('reaction CLI', () => {
         '[2] 2',
         '[1] Hated',
         '[s] Skip',
-        '[i] Ignore',
+        '[i] Info',
+        '[x] Ignore',
         '[q] Quit',
       ].join(' '),
     );
@@ -1261,6 +1337,37 @@ describe('reaction CLI', () => {
     expect(output.join('\n')).not.toContain('Rating:');
     expect(output.join('\n')).not.toContain('Reasons:');
     expect(output.join('\n')).not.toContain('Notes:');
+  });
+
+  it('shows title information and returns to the active review prompt', async () => {
+    const rootDir = await createTempProject();
+    const prompts = [];
+
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--ordered'],
+      reactionPrompt: async () => {
+        prompts.push('reaction');
+        return prompts.length === 1 ? 'info' : 9;
+      },
+    });
+    const eventText = await fs.readFile(
+      path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+      'utf8',
+    );
+
+    expect(prompts).toEqual(['reaction', 'reaction']);
+    expect(output).toContain(
+      formatTitleInformation(testCatalog()['imdb:tt001']),
+    );
+    expect(result.processedCount).toBe(1);
+    expect(result.bufferedEvents).toHaveLength(1);
+    expect(result.bufferedEvents[0]).toMatchObject({
+      canonicalId: 'imdb:tt001',
+      rating: 9,
+    });
+    expect(eventText).toContain('"rating":9');
+    expect(eventText).not.toContain('"type":"title.ignored"');
   });
 
   it('displays existing reaction details before prompting for an ID re-rating', async () => {
