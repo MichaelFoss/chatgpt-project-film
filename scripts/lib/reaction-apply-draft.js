@@ -18,6 +18,22 @@ function hasOwn(object, fieldName) {
   return Object.hasOwn(object, fieldName);
 }
 
+function uniqueNonEmptyStrings(values) {
+  return [
+    ...new Set(
+      values.filter(
+        (value) => typeof value === 'string' && value.length > 0,
+      ),
+    ),
+  ];
+}
+
+function shellQuotePath(filePath) {
+  return /^[A-Za-z0-9_./:-]+$/.test(filePath)
+    ? filePath
+    : `'${filePath.replaceAll("'", "'\\''")}'`;
+}
+
 function parseReactionApplyDraftCliArgs(args) {
   if (!Array.isArray(args) || args.length !== 1) {
     throw new CatalogBuildError(reactionApplyDraftUsage);
@@ -260,6 +276,14 @@ export async function applyReactionDraft({
     eventsWritten: appendReport.eventsAppended,
     appendReport,
     projectionReport,
+    filesWritten: uniqueNonEmptyStrings(
+      [
+        appendReport.outputPathWritten,
+        projectionReport.outputPathWritten,
+      ]
+        .filter(Boolean)
+        .map((filePath) => path.relative(rootDir, filePath)),
+    ),
   };
 
   writeOutput(formatReactionApplyDraftSummary(report));
@@ -268,12 +292,30 @@ export async function applyReactionDraft({
 }
 
 export function formatReactionApplyDraftSummary(report) {
-  return [
+  const lines = [
     `Imported ${report.reactionsImported} reaction draft entr${report.reactionsImported === 1 ? 'y' : 'ies'}.`,
     `Wrote ${report.eventsWritten} title reaction event(s).`,
     `Rebuilt ${path.relative(
       process.cwd(),
       report.projectionReport.outputPathWritten,
     )}.`,
-  ].join('\n');
+  ];
+  const filesWritten = uniqueNonEmptyStrings(report.filesWritten ?? []);
+
+  if (filesWritten.length > 0) {
+    const quotedFiles = filesWritten.map(shellQuotePath).join(' ');
+
+    lines.push(
+      '',
+      'Files changed:',
+      ...filesWritten.map((filePath) => `- ${filePath}`),
+      '',
+      'Next:',
+      `git diff ${quotedFiles}`,
+      `git add ${quotedFiles}`,
+      'git commit -m "Add movie reactions"',
+    );
+  }
+
+  return lines.join('\n');
 }

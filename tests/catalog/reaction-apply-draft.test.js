@@ -142,9 +142,22 @@ describe('reaction draft import', () => {
     });
 
     expect(report.eventsWritten).toBe(2);
-    expect(output.join('\n')).toContain(
-      'Imported 2 reaction draft entries.',
-    );
+    expect(output).toEqual([
+      [
+        'Imported 2 reaction draft entries.',
+        'Wrote 2 title reaction event(s).',
+        `Rebuilt ${path.relative(process.cwd(), reactionsPath(rootDir))}.`,
+        '',
+        'Files changed:',
+        '- events/title-reactions.events.ndjson',
+        '- data/title-reactions.json',
+        '',
+        'Next:',
+        'git diff events/title-reactions.events.ndjson data/title-reactions.json',
+        'git add events/title-reactions.events.ndjson data/title-reactions.json',
+        'git commit -m "Add movie reactions"',
+      ].join('\n'),
+    ]);
     const eventText = await fs.readFile(eventsPath(rootDir), 'utf8');
     expect(eventText.trim().split('\n').map(JSON.parse)).toEqual([
       {
