@@ -1,4 +1,42 @@
 {
+  "imdb:tt0062622": {
+    "canonicalId": "imdb:tt0062622",
+    "eventIds": ["d34835fb-4789-414c-a95a-e1ecd9645f32"],
+    "updatedAt": "2026-06-19T16:22:53.168Z",
+    "rating": 4,
+    "reasons": ["slow", "dated"]
+  },
+  "imdb:tt0068359": {
+    "canonicalId": "imdb:tt0068359",
+    "eventIds": ["da77cda8-565c-437a-8684-3a02f994653f"],
+    "updatedAt": "2026-06-19T16:22:53.168Z",
+    "rating": 7,
+    "reasons": ["nostalgic"]
+  },
+  "imdb:tt0068646": {
+    "canonicalId": "imdb:tt0068646",
+    "eventIds": ["ec829fb4-b471-45f4-9831-b9749695e5aa"],
+    "updatedAt": "2026-06-19T16:22:53.168Z",
+    "rating": 4,
+    "reasons": ["slow"]
+  },
+  "imdb:tt0070909": {
+    "canonicalId": "imdb:tt0070909",
+    "eventIds": ["d87ce3d6-2f74-43f6-bc77-b8c1c123b7a6"],
+    "updatedAt": "2026-06-19T16:22:53.168Z",
+    "rating": 3,
+    "reasons": ["dated"]
+  },
+  "imdb:tt0071853": {
+    "canonicalId": "imdb:tt0071853",
+    "eventIds": [
+      "20668ecd-24d1-490a-b044-ffe37c02608c",
+      "6781f091-477e-406c-b7e0-71ca7d76e850"
+    ],
+    "updatedAt": "2026-06-19T16:31:30.971Z",
+    "rating": 8,
+    "reasons": ["bonkers"]
+  },
   "imdb:tt0168122": {
     "canonicalId": "imdb:tt0168122",
     "eventIds": ["982c6904-8659-4b5a-a78d-e704e3b7dafc"],

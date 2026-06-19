@@ -22,3 +22,8 @@
 {"eventId":"ec18e65b-c83e-4f35-9b92-6528048f5078","type":"title.reaction.updated","occurredAt":"2026-06-13T14:44:31.350Z","canonicalId":"imdb:tt0480249","rating":9,"reasons":["solo","zombie","post-apocalyptic"]}
 {"eventId":"16d65a2c-4d0f-4abd-9b4f-d286f764b984","type":"title.reaction.updated","occurredAt":"2026-06-13T14:45:07.428Z","canonicalId":"imdb:tt31193180","rating":5,"reasons":["inventive","boring","agenda"]}
 {"eventId":"ca7ba590-fc8c-4a33-933b-843898ea7f31","type":"title.reaction.updated","occurredAt":"2026-06-15T07:28:12.755Z","canonicalId":"imdb:tt3272066","rating":6,"notes":"Don't remember this, just remember it was lackluster."}
+{"eventId":"d34835fb-4789-414c-a95a-e1ecd9645f32","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0062622","rating":4,"reasons":["slow","dated"]}
+{"eventId":"da77cda8-565c-437a-8684-3a02f994653f","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0068359","rating":7,"reasons":["nostalgic"]}
+{"eventId":"ec829fb4-b471-45f4-9831-b9749695e5aa","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0068646","rating":4,"reasons":["slow"]}
+{"eventId":"d87ce3d6-2f74-43f6-bc77-b8c1c123b7a6","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0070909","rating":3,"reasons":["dated"]}
+{"eventId":"20668ecd-24d1-490a-b044-ffe37c02608c","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0071853","rating":8,"reasons":["bonkers"]}
