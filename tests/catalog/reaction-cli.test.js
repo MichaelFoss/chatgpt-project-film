@@ -839,6 +839,10 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'reasons: Array.isArray(existing?.reasons) ? existing.reasons : []',
     );
+    expect(html).toContain('const formatNotes = (notes) =>');
+    expect(html).toContain(
+      'const assignNotes = (reaction, notes) => {',
+    );
     expect(html).toContain('const normalizeReasons = (value) => {');
     expect(html).toContain('reason.trim().toLowerCase()');
     expect(html).toContain(
@@ -849,6 +853,12 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain(
       'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain(
+      'input.value = formatNotes(storedReaction?.notes);',
+    );
+    expect(html).toContain(
+      'input.addEventListener("input", () => { persistNotes(input); updateExportButtonState(); });',
     );
     expect(html).toContain(
       'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
@@ -877,9 +887,6 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'exportButton.disabled = getCurrentDraft().reactions.length === 0;',
     );
-    expect(html).not.toContain('persistNotes');
-    expect(html).not.toContain('storedReaction?.notes');
-    expect(html).not.toContain('notes:');
   });
 
   it('renders an HTML review export button near the reset button', () => {
@@ -914,17 +921,19 @@ describe('reaction CLI', () => {
     ).toBe('reaction-draft-2026-01-03-0407.json');
   });
 
-  it('generates HTML review export payloads from reacted LocalStorage records', () => {
+  it('generates HTML review export payloads from reacted LocalStorage records without notes', () => {
     const draft = createReactionReviewDraft(
       {
         'imdb:tt001': {
           titleId: 'imdb:tt001',
           rating: 9,
+          notes: 'Keep this local-only note out of draft export.',
           reasons: [' Sci-Fi ', 'action, sci-fi'],
         },
         'imdb:tt002': {
           titleId: 'imdb:tt002',
           rating: 5,
+          notes: 'Another local-only note.',
           reasons: [],
         },
       },
@@ -952,6 +961,8 @@ describe('reaction CLI', () => {
     });
     expect(typeof draft.reactions[0].rating).toBe('number');
     expect(Array.isArray(draft.reactions[0].reasons)).toBe(true);
+    expect(draft.reactions[0]).not.toHaveProperty('notes');
+    expect(draft.reactions[1]).not.toHaveProperty('notes');
   });
 
   it('excludes empty, unreacted, reasons-only, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
@@ -1045,6 +1056,24 @@ describe('reaction CLI', () => {
     );
   });
 
+  it('keeps HTML review notes editable regardless of rating state', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const notesControl = html.slice(
+      html.indexOf('<label class="notes-control">'),
+      html.indexOf(
+        '</label>',
+        html.indexOf('<label class="notes-control">'),
+      ),
+    );
+
+    expect(notesControl).toContain('<textarea class="notes-input"');
+    expect(notesControl).toContain('data-notes-input');
+    expect(notesControl).not.toContain('disabled');
+    expect(html).not.toContain('updateNotesInputDisabledState');
+  });
+
   it('enables HTML review reason editing when a rating is selected', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
@@ -1074,7 +1103,14 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
     );
+    expect(html).toContain(
+      'const existingNotes = formatNotes(reactions[titleId]?.notes);',
+    );
+    expect(html).toContain(
+      'if (existingReasons.length > 0 || existingNotes.length > 0) {',
+    );
     expect(html).toContain('reasons: existingReasons,');
+    expect(html).toContain('}, existingNotes);');
     expect(html).not.toContain('input.value = "";');
   });
 
@@ -1095,7 +1131,7 @@ describe('reaction CLI', () => {
     expect(html).toContain('input.value = reasons.join(", ");');
   });
 
-  it('persists, restores, and clears HTML review reasons in LocalStorage', () => {
+  it('persists, restores, and clears HTML review reasons and notes in LocalStorage', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
     ]);
@@ -1114,17 +1150,31 @@ describe('reaction CLI', () => {
       'input.value = formatReasons(storedReaction?.reasons);',
     );
     expect(html).toContain(
+      'input.value = formatNotes(storedReaction?.notes);',
+    );
+    expect(html).toContain(
       'if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
     );
     expect(html).toContain('titleId,');
     expect(html).toContain('rating: existing.rating,');
     expect(html).toContain('reasons,');
-    expect(html).toContain('} else if (reasons.length > 0) {');
+    expect(html).toContain(
+      '} else if (reasons.length > 0 || existingNotes.length > 0) {',
+    );
+    expect(html).toContain(
+      '} else if (reasons.length > 0 || notes.length > 0) {',
+    );
     expect(html).toContain('delete reactions[titleId];');
     expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
     );
+    expect(html).toContain(
+      'const existingNotes = formatNotes(reactions[titleId]?.notes);',
+    );
+    expect(html).toContain('const notes = input.value;');
     expect(html).toContain('reasons: existingReasons,');
+    expect(html).toContain('const persistNotes = (input) => {');
+    expect(html).toContain('reaction.notes = notes;');
     expect(html).not.toContain('autocomplete-list');
     expect(html).not.toContain('taxonomy');
   });
@@ -2355,9 +2405,9 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('setRating(control, "10")');
     expect(html).toContain('event.key === "Backspace"');
-    expect(html).not.toContain('persistNotes');
-    expect(html).not.toContain('storedReaction?.notes');
-    expect(html).not.toContain('notes:');
+    expect(html).toContain('persistNotes');
+    expect(html).toContain('storedReaction?.notes');
+    expect(html).toContain('reaction.notes = notes;');
     expect(html).not.toContain('type="radio"');
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');
