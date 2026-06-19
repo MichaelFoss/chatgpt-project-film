@@ -40,3 +40,13 @@
 {"eventId":"037b5681-3bb8-4f35-a4e6-45d591e0f2f2","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt1253863","rating":8,"reasons":["underdog","artistic"]}
 {"eventId":"33e0466a-0a11-4e4b-af86-c6cc65e9e6ca","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt1853728","rating":8,"reasons":["leo","witty"]}
 {"eventId":"0708bb7c-c5b1-496c-b9bf-fee167f9af9a","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0084649","rating":7,"reasons":["family","artistic"]}
+{"eventId":"bf9a6d69-d16b-477b-a666-22f0b7b63f35","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt16366836","rating":6,"reasons":["mcu"]}
+{"eventId":"d8c2b480-bc18-45f5-95a0-fbffd3a0ffe4","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt5453522","rating":2}
+{"eventId":"8c1eb398-acb1-428b-9e51-17f46681fb3c","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt0448011","rating":8,"reasons":["apocalyptic","alien"]}
+{"eventId":"9617173a-9b86-4c8f-aac2-2bf21406bf89","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt0770828","rating":8,"reasons":["superhero","origin"]}
+{"eventId":"56f57f20-5306-4413-b0d6-b04651e93558","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt2051879","rating":10,"reasons":["found-footage"]}
+{"eventId":"70bbe1b0-0cdf-4f7b-88e5-b9109e3ae619","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt2231554","rating":8,"reasons":["terrifying","found-footage"]}
+{"eventId":"69d40ed2-c5c6-4547-b96e-3e3f7a580d5a","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt1800241","rating":8,"reasons":["star-studded"]}
+{"eventId":"be9e9a00-5508-43e7-a624-27d94c24c2b5","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt7144666","rating":7,"reasons":["supernatural","creepy"]}
+{"eventId":"429ba647-4108-484d-bfd4-8e46288876db","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt1446714","rating":9,"reasons":["alien"]}
+{"eventId":"c2580c34-7bf1-4cab-8d96-3f90469309c5","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt5442430","rating":7,"reasons":["alien"]}

@@ -95,6 +95,13 @@
     "rating": 8,
     "reasons": ["science fantasy", "action", "otherworldly"]
   },
+  "imdb:tt0448011": {
+    "canonicalId": "imdb:tt0448011",
+    "eventIds": ["8c1eb398-acb1-428b-9e51-17f46681fb3c"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 8,
+    "reasons": ["apocalyptic", "alien"]
+  },
   "imdb:tt0478970": {
     "canonicalId": "imdb:tt0478970",
     "eventIds": ["aaf180aa-13c3-4d78-9335-df52dfc6294b"],
@@ -108,6 +115,13 @@
     "updatedAt": "2026-06-13T14:44:31.350Z",
     "rating": 9,
     "reasons": ["solo", "zombie", "post-apocalyptic"]
+  },
+  "imdb:tt0770828": {
+    "canonicalId": "imdb:tt0770828",
+    "eventIds": ["9617173a-9b86-4c8f-aac2-2bf21406bf89"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 8,
+    "reasons": ["superhero", "origin"]
   },
   "imdb:tt11858890": {
     "canonicalId": "imdb:tt11858890",
@@ -129,6 +143,13 @@
     "updatedAt": "2026-06-13T14:43:20.627Z",
     "rating": 8,
     "reasons": ["reynolds", "mcu", "4th wall"]
+  },
+  "imdb:tt1446714": {
+    "canonicalId": "imdb:tt1446714",
+    "eventIds": ["429ba647-4108-484d-bfd4-8e46288876db"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 9,
+    "reasons": ["alien"]
   },
   "imdb:tt1462764": {
     "canonicalId": "imdb:tt1462764",
@@ -171,6 +192,13 @@
     "rating": 7,
     "reasons": ["leo"]
   },
+  "imdb:tt16366836": {
+    "canonicalId": "imdb:tt16366836",
+    "eventIds": ["bf9a6d69-d16b-477b-a666-22f0b7b63f35"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 6,
+    "reasons": ["mcu"]
+  },
   "imdb:tt1713476": {
     "canonicalId": "imdb:tt1713476",
     "eventIds": ["091f605d-b05e-4ec9-879e-66b9554af7be"],
@@ -186,6 +214,13 @@
     "rating": 9,
     "notes": "Don't remember why I loved this, but I did."
   },
+  "imdb:tt1800241": {
+    "canonicalId": "imdb:tt1800241",
+    "eventIds": ["69d40ed2-c5c6-4547-b96e-3e3f7a580d5a"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 8,
+    "reasons": ["star-studded"]
+  },
   "imdb:tt1853728": {
     "canonicalId": "imdb:tt1853728",
     "eventIds": ["33e0466a-0a11-4e4b-af86-c6cc65e9e6ca"],
@@ -193,12 +228,26 @@
     "rating": 8,
     "reasons": ["leo", "witty"]
   },
+  "imdb:tt2051879": {
+    "canonicalId": "imdb:tt2051879",
+    "eventIds": ["56f57f20-5306-4413-b0d6-b04651e93558"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 10,
+    "reasons": ["found-footage"]
+  },
   "imdb:tt20969586": {
     "canonicalId": "imdb:tt20969586",
     "eventIds": ["61b553ff-5076-49a4-b109-528387abf087"],
     "updatedAt": "2026-06-12T12:14:23.279Z",
     "rating": 5,
     "reasons": ["mcu", "overrated"]
+  },
+  "imdb:tt2231554": {
+    "canonicalId": "imdb:tt2231554",
+    "eventIds": ["70bbe1b0-0cdf-4f7b-88e5-b9109e3ae619"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 8,
+    "reasons": ["terrifying", "found-footage"]
   },
   "imdb:tt2369317": {
     "canonicalId": "imdb:tt2369317",
@@ -255,6 +304,19 @@
     "rating": 9,
     "reasons": ["terrifying"]
   },
+  "imdb:tt5442430": {
+    "canonicalId": "imdb:tt5442430",
+    "eventIds": ["c2580c34-7bf1-4cab-8d96-3f90469309c5"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 7,
+    "reasons": ["alien"]
+  },
+  "imdb:tt5453522": {
+    "canonicalId": "imdb:tt5453522",
+    "eventIds": ["d8c2b480-bc18-45f5-95a0-fbffd3a0ffe4"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 2
+  },
   "imdb:tt6565702": {
     "canonicalId": "imdb:tt6565702",
     "eventIds": ["1bf923ce-981d-4755-a9ce-e046353bda63"],
@@ -268,6 +330,13 @@
     "updatedAt": "2026-06-19T23:12:11.405Z",
     "rating": 8,
     "reasons": ["family", "fun"]
+  },
+  "imdb:tt7144666": {
+    "canonicalId": "imdb:tt7144666",
+    "eventIds": ["be9e9a00-5508-43e7-a624-27d94c24c2b5"],
+    "updatedAt": "2026-06-19T23:29:47.262Z",
+    "rating": 7,
+    "reasons": ["supernatural", "creepy"]
   },
   "imdb:tt7286456": {
     "canonicalId": "imdb:tt7286456",
