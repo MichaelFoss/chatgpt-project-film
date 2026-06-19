@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   createPrompt,
   makeTheme,
@@ -28,6 +29,7 @@ import { ratingForReaction, ratingScale } from './reaction-ratings.js';
 import { loadRepoEnv } from './local-env.js';
 
 const defaultLimit = 1;
+export const DEFAULT_HTML_LIMIT = 100;
 const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 export const reviewIndent = '  ';
@@ -334,6 +336,12 @@ export function createReactionCommand() {
         'search the catalog and react to a selected title',
       ).conflicts('id'),
     )
+    .addOption(
+      new Option(
+        '--html',
+        'generate a static HTML review artifact instead of using the CLI prompt',
+      ),
+    )
     .action(() => {});
 }
 
@@ -349,15 +357,21 @@ export function parseReactionCliArgs(args) {
   const options = command.opts();
   const hasTargetSelector =
     Boolean(options.id) || Boolean(options.search);
+  const html = Boolean(options.html);
+  const limit =
+    html && command.getOptionValueSource('limit') === 'default'
+      ? DEFAULT_HTML_LIMIT
+      : options.limit;
 
   return {
-    limit: options.limit,
+    limit,
     movies: Boolean(options.movies),
     tv: Boolean(options.tv),
     random: !hasTargetSelector && !options.ordered,
     ordered: Boolean(options.ordered),
     id: options.id ?? null,
     search: Boolean(options.search),
+    html,
   };
 }
 
@@ -790,6 +804,17 @@ export function formatSearchResults(items) {
     .join('\n');
 }
 
+export function shouldWriteSearchResultsBeforeSelection({
+  items,
+  selectionPrompt,
+} = {}) {
+  return (
+    Boolean(selectionPrompt) ||
+    !Array.isArray(items) ||
+    items.length > searchSelectionKeys.length
+  );
+}
+
 export function formatSearchResultThresholdMessage(count) {
   return `Too many titles found (${count}). Please refine your search.`;
 }
@@ -1005,7 +1030,12 @@ export async function selectReactionTitleFromSearch({
     );
   }
 
-  writeOutput(formatSearchResults(items));
+  if (
+    shouldWriteSearchResultsBeforeSelection({ items, selectionPrompt })
+  ) {
+    writeOutput(formatSearchResults(items));
+  }
+
   const canonicalId = await promptForSearchSelection({
     items,
     selectionPrompt,
@@ -1160,6 +1190,533 @@ export function hasReachedSessionLimit(processedCount, limit) {
   return limit !== 'none' && processedCount >= limit;
 }
 
+export function selectReactionSessionTitles({
+  catalog,
+  reactions,
+  ignored,
+  options,
+  targetItem = null,
+  random = Math.random,
+} = {}) {
+  if (targetItem) {
+    return [targetItem];
+  }
+
+  const selectedItems = [];
+  const selectedTitleIds = new Set();
+  const ignoredTitleIds = getIgnoredTitleIds(ignored);
+
+  while (!hasReachedSessionLimit(selectedItems.length, options.limit)) {
+    const excludedTitleIds = new Set([
+      ...selectedTitleIds,
+      ...ignoredTitleIds,
+    ]);
+    const item = options.random
+      ? selectRandomUnreactedTitle(
+          catalog,
+          reactions,
+          excludedTitleIds,
+          random,
+          options,
+        )
+      : selectFirstUnreactedTitle(
+          catalog,
+          reactions,
+          excludedTitleIds,
+          options,
+        );
+
+    if (!item) {
+      break;
+    }
+
+    selectedItems.push(item);
+    selectedTitleIds.add(item.canonicalId);
+  }
+
+  return selectedItems;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatHtmlList(values, emptyText) {
+  const items = Array.isArray(values)
+    ? values.filter(isNonEmptyString)
+    : [];
+
+  return items.length > 0
+    ? escapeHtml(items.join(', '))
+    : `<span class="muted">${escapeHtml(emptyText)}</span>`;
+}
+
+function formatHtmlActorList(values) {
+  const actors = Array.isArray(values)
+    ? values.filter(isNonEmptyString)
+    : [];
+
+  if (actors.length === 0) {
+    return '<span class="muted">No actors available</span>';
+  }
+
+  return [
+    '<ul class="actor-list">',
+    ...actors.map((actor) => `<li>${escapeHtml(actor)}</li>`),
+    '</ul>',
+  ].join('\n');
+}
+
+function formatHtmlPoster(item) {
+  if (!isNonEmptyString(item?.posterUrl)) {
+    return '<div class="poster poster-missing" aria-label="No poster available">No poster</div>';
+  }
+
+  return [
+    `<img class="poster" src="${escapeHtml(item.posterUrl)}"`,
+    `alt="${escapeHtml(`${item.title} poster`)}" loading="lazy">`,
+  ].join(' ');
+}
+
+function formatHtmlRatingControls(item, index) {
+  const groupName = `rating-${index}`;
+
+  return [
+    `<div class="rating-control" role="group" aria-label="Rating" tabindex="0" data-rating-control data-rating-name="${escapeHtml(groupName)}" data-title-id="${escapeHtml(item.canonicalId)}">`,
+    '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>',
+    '<div class="rating-options" aria-hidden="false">',
+    ...ratingScale.map(({ rating, label }) => {
+      const labelText = label ? `${rating} ${label}` : `${rating}`;
+
+      return [
+        '<button class="rating-option" type="button" tabindex="-1"',
+        `data-rating="${rating}" aria-pressed="false" aria-label="${escapeHtml(labelText)}" title="${escapeHtml(labelText)}">`,
+        `${rating}`,
+        '</button>',
+      ].join('');
+    }),
+    '</div>',
+    '</div>',
+  ].join('\n');
+}
+
+function formatHtmlReasonInput(item, index) {
+  const inputId = `reasons-${index}`;
+
+  return [
+    '<label class="reason-control">',
+    `<span class="reason-label" id="${escapeHtml(inputId)}-label">Reasons</span>`,
+    '<input class="reason-input" type="text"',
+    `aria-labelledby="${escapeHtml(inputId)}-label"`,
+    `data-reason-input data-title-id="${escapeHtml(item.canonicalId)}"`,
+    `id="${escapeHtml(inputId)}"`,
+    'inputmode="text" autocomplete="off"',
+    'disabled',
+    'placeholder="comma-separated reasons">',
+    '</label>',
+  ].join('\n');
+}
+
+function formatHtmlReviewTitle(item, index) {
+  const year = item.releaseYear
+    ? escapeHtml(item.releaseYear)
+    : 'Unknown';
+  const genres = formatHtmlList(item.genres, 'No genres available');
+  const actors = formatHtmlActorList(formatTopBilledActors(item));
+
+  return [
+    '<article class="title-card">',
+    formatHtmlPoster(item),
+    '<div class="card-body">',
+    `<h2>${escapeHtml(item.title)}</h2>`,
+    formatHtmlRatingControls(item, index),
+    formatHtmlReasonInput(item, index),
+    '<dl class="metadata">',
+    `<div><dt>Year</dt><dd>${year}</dd></div>`,
+    `<div><dt>Genres</dt><dd>${genres}</dd></div>`,
+    `<div><dt>Top-billed actors</dt><dd>${actors}</dd></div>`,
+    '</dl>',
+    '</div>',
+    '</article>',
+  ].join('\n');
+}
+
+export function createReactionReviewDraft(
+  storedReactions,
+  { generatedAt = new Date().toISOString(), titleCount } = {},
+) {
+  const normalizeReasons = (value) => {
+    const values = Array.isArray(value) ? value : [value];
+    const seen = new Set();
+    const reasons = [];
+
+    for (const item of values) {
+      if (typeof item !== 'string') {
+        continue;
+      }
+
+      for (const rawReason of item.split(',')) {
+        const reason = rawReason.trim().toLowerCase();
+
+        if (!reason || seen.has(reason)) {
+          continue;
+        }
+
+        seen.add(reason);
+        reasons.push(reason);
+      }
+    }
+
+    return reasons;
+  };
+  const isValidRating = (rating) =>
+    Number.isInteger(rating) && rating >= 1 && rating <= 10;
+  const source =
+    storedReactions &&
+    typeof storedReactions === 'object' &&
+    !Array.isArray(storedReactions)
+      ? storedReactions
+      : {};
+  const reactions = Object.entries(source)
+    .map(([key, reaction]) => {
+      if (
+        !reaction ||
+        typeof reaction !== 'object' ||
+        Array.isArray(reaction)
+      ) {
+        return null;
+      }
+
+      const titleId =
+        typeof reaction.titleId === 'string'
+          ? reaction.titleId.trim()
+          : typeof key === 'string' && key.trim().length > 0
+            ? key.trim()
+            : '';
+      const reasons = normalizeReasons(reaction.reasons);
+      const rating = isValidRating(reaction.rating)
+        ? reaction.rating
+        : null;
+
+      if (!titleId || rating === null) {
+        return null;
+      }
+
+      return {
+        titleId,
+        rating,
+        reasons,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    generatedAt,
+    titleCount: Number.isInteger(titleCount)
+      ? titleCount
+      : reactions.length,
+    reactions,
+  };
+}
+
+export function formatReactionDraftDownloadFilename(generatedAt) {
+  const date = new Date(generatedAt);
+  const pad = (value) => String(value).padStart(2, '0');
+
+  return [
+    'reaction-draft-',
+    date.getUTCFullYear(),
+    '-',
+    pad(date.getUTCMonth() + 1),
+    '-',
+    pad(date.getUTCDate()),
+    '-',
+    pad(date.getUTCHours()),
+    pad(date.getUTCMinutes()),
+    '.json',
+  ].join('');
+}
+
+export function renderReactionReviewHtml(items) {
+  const titleCards =
+    items.length > 0
+      ? items.map(formatHtmlReviewTitle).join('\n')
+      : '<p class="empty-state">No eligible-unreacted titles found.</p>';
+
+  return [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<title>Reaction Review</title>',
+    '<style>',
+    ':root { color-scheme: light; --bg: #f4f1ec; --ink: #1e2320; --muted: #6b6258; --panel: #fffdfa; --line: #d7d0c6; --accent: #1c6f6a; --accent-ink: #ffffff; --poster: #d8d6cf; }',
+    '* { box-sizing: border-box; }',
+    'body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }',
+    'main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }',
+    'header { margin-bottom: 22px; }',
+    'h1 { margin: 0 0 6px; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; }',
+    '.review-actions { display: flex; flex-wrap: wrap; gap: 8px; }',
+    '.action-button { min-height: 32px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; cursor: pointer; }',
+    '.action-button:hover { border-color: var(--accent); }',
+    '.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; align-items: start; }',
+    '.title-card { min-width: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(30, 35, 32, 0.08); }',
+    '.poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: var(--poster); }',
+    '.poster-missing { display: grid; place-items: center; color: var(--muted); font-size: 0.9rem; }',
+    '.card-body { padding: 14px; }',
+    'h2 { margin: 0 0 10px; font-size: 1.02rem; line-height: 1.2; overflow-wrap: anywhere; }',
+    '.metadata { display: grid; gap: 8px; margin: 12px 0 0; }',
+    '.metadata div { min-width: 0; }',
+    'dt { margin: 0 0 2px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }',
+    'dd { margin: 0; font-size: 0.9rem; line-height: 1.35; overflow-wrap: anywhere; }',
+    '.actor-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }',
+    '.actor-list li { min-width: 0; overflow-wrap: anywhere; }',
+    '.muted { color: var(--muted); }',
+    '.rating-control { margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #f8f5f0; }',
+    '.rating-control:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-color: var(--accent); box-shadow: none; }',
+    '.rating-label { min-height: 1rem; margin-bottom: 5px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }',
+    '.rating-status { color: var(--ink); }',
+    '.rating-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }',
+    '.rating-option { min-width: 0; min-height: 28px; padding: 4px 0; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; }',
+    '.rating-option[data-rating="10"] { grid-column: 2; }',
+    '.rating-option[data-rating="9"], .rating-option[data-rating="6"], .rating-option[data-rating="3"] { grid-column: 1; }',
+    '.rating-option:hover { border-color: var(--accent); }',
+    '.rating-option.is-selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; }',
+    '.reason-control { display: block; margin: 6px 0 0; }',
+    '.reason-label { display: block; margin: 0 0 3px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; text-transform: uppercase; }',
+    '.reason-input { display: block; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; line-height: 1.2; }',
+    '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    '.reason-input:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-color: var(--accent); }',
+    '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
+    '.empty-state { padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }',
+    '@media (max-width: 560px) { main { width: min(100% - 20px, 1480px); padding-top: 18px; } .poster-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; } .card-body { padding: 11px; } }',
+    '</style>',
+    '<script>',
+    'document.addEventListener("DOMContentLoaded", () => {',
+    '  const storageKey = "film-reaction-review-v1";',
+    `  const reviewTitleCount = ${JSON.stringify(items.length)};`,
+    `  const createReactionReviewDraft = ${createReactionReviewDraft.toString()};`,
+    `  const formatReactionDraftDownloadFilename = ${formatReactionDraftDownloadFilename.toString()};`,
+    '  const labels = { "10": "Exceptional", "9": "Loved", "8": "Liked↔Loved", "7": "Liked", "6": "Mixed↔Liked", "5": "Mixed", "4": "Disliked↔Mixed", "3": "Disliked", "2": "Hated↔Disliked", "1": "Hated" };',
+    '  const validRatings = new Set(Object.keys(labels));',
+    '  const readStoredReactions = () => {',
+    '    try {',
+    '      const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");',
+    '      return stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};',
+    '    } catch {',
+    '      return {};',
+    '    }',
+    '  };',
+    '  const writeStoredReactions = (reactions) => {',
+    '    localStorage.setItem(storageKey, JSON.stringify(reactions));',
+    '    updateExportButtonState();',
+    '  };',
+    '  const normalizeReasons = (value) => {',
+    '    const seen = new Set();',
+    '    return value.split(",").map((reason) => reason.trim().toLowerCase()).filter((reason) => {',
+    '      if (!reason || seen.has(reason)) {',
+    '        return false;',
+    '      }',
+    '      seen.add(reason);',
+    '      return true;',
+    '    });',
+    '  };',
+    '  const formatReasons = (reasons) => Array.isArray(reasons) ? reasons.join(", ") : "";',
+    '  const getCurrentDraft = () => createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
+    '  const updateExportButtonState = () => {',
+    '    const exportButton = document.querySelector("[data-export-review]");',
+    '    if (exportButton) {',
+    '      exportButton.disabled = getCurrentDraft().reactions.length === 0;',
+    '    }',
+    '  };',
+    '  const updateReasonInputDisabledState = (titleId, rating) => {',
+    '    document.querySelectorAll("[data-reason-input]").forEach((input) => {',
+    '      if (input.dataset.titleId === titleId) {',
+    '        input.disabled = !validRatings.has(rating);',
+    '      }',
+    '    });',
+    '  };',
+    '  const persistRating = (control, rating) => {',
+    '    const titleId = control.dataset.titleId;',
+    '    if (!titleId) {',
+    '      return;',
+    '    }',
+    '    const reactions = readStoredReactions();',
+    '    if (validRatings.has(rating)) {',
+    '      const existing = reactions[titleId];',
+    '      reactions[titleId] = {',
+    '        titleId,',
+    '        rating: Number(rating),',
+    '        reasons: Array.isArray(existing?.reasons) ? existing.reasons : [],',
+    '      };',
+    '    } else {',
+    '      const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
+    '      if (existingReasons.length > 0) {',
+    '        reactions[titleId] = {',
+    '          titleId,',
+    '          reasons: existingReasons,',
+    '        };',
+    '      } else {',
+    '        delete reactions[titleId];',
+    '      }',
+    '    }',
+    '    writeStoredReactions(reactions);',
+    '  };',
+    '  const persistReasons = (input, { syncValue = false } = {}) => {',
+    '    const titleId = input.dataset.titleId;',
+    '    if (!titleId) {',
+    '      return;',
+    '    }',
+    '    const reactions = readStoredReactions();',
+    '    const existing = reactions[titleId];',
+    '    const reasons = normalizeReasons(input.value);',
+    '    if (syncValue) {',
+    '      input.value = reasons.join(", ");',
+    '    }',
+    '    if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
+    '      reactions[titleId] = {',
+    '        titleId,',
+    '        rating: existing.rating,',
+    '        reasons,',
+    '      };',
+    '    } else if (reasons.length > 0) {',
+    '      reactions[titleId] = {',
+    '        titleId,',
+    '        reasons,',
+    '      };',
+    '    } else {',
+    '      delete reactions[titleId];',
+    '    }',
+    '    writeStoredReactions(reactions);',
+    '  };',
+    '  const updateRatingControl = (control, nextRating) => {',
+    '    control.dataset.rating = nextRating;',
+    '    control.querySelectorAll("[data-rating]").forEach((button) => {',
+    '      const selected = button.dataset.rating === nextRating;',
+    '      button.classList.toggle("is-selected", selected);',
+    '      button.setAttribute("aria-pressed", selected ? "true" : "false");',
+    '    });',
+    '    const status = control.querySelector(".rating-status");',
+    '    if (status) {',
+    '      status.textContent = nextRating ? labels[nextRating] : "Unrated";',
+    '    }',
+    '  };',
+    '  const setRating = (control, rating) => {',
+    '    const currentRating = control.dataset.rating || "";',
+    '    const nextRating = currentRating === rating ? "" : rating;',
+    '    updateRatingControl(control, nextRating);',
+    '    persistRating(control, nextRating);',
+    '    updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+    '    updateExportButtonState();',
+    '  };',
+    '  const storedReactions = readStoredReactions();',
+    '  document.querySelectorAll("[data-rating-control]").forEach((control) => {',
+    '    const storedReaction = storedReactions[control.dataset.titleId];',
+    '    const storedRating = storedReaction?.rating;',
+    '    if (Number.isInteger(storedRating) && validRatings.has(String(storedRating))) {',
+    '      updateRatingControl(control, String(storedRating));',
+    '      updateReasonInputDisabledState(control.dataset.titleId, String(storedRating));',
+    '    }',
+    '    control.querySelectorAll("[data-rating]").forEach((button) => {',
+    '      button.addEventListener("click", () => setRating(control, button.dataset.rating));',
+    '    });',
+    '    control.addEventListener("keydown", (event) => {',
+    '      if (/^[1-9]$/.test(event.key)) {',
+    '        event.preventDefault();',
+    '        setRating(control, event.key);',
+    '      } else if (event.key === "0") {',
+    '        event.preventDefault();',
+    '        setRating(control, "10");',
+    '      } else if (event.key === "Backspace" || event.key === "Delete" || event.key === "Escape") {',
+    '        event.preventDefault();',
+    '        setRating(control, "");',
+    '      }',
+    '    });',
+    '  });',
+    '  document.querySelectorAll("[data-reason-input]").forEach((input) => {',
+    '    const storedReaction = storedReactions[input.dataset.titleId];',
+    '    input.value = formatReasons(storedReaction?.reasons);',
+    '    input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
+    '    input.addEventListener("input", () => { persistReasons(input); updateExportButtonState(); });',
+    '    input.addEventListener("change", () => { persistReasons(input, { syncValue: true }); updateExportButtonState(); });',
+    '    input.addEventListener("blur", () => { persistReasons(input, { syncValue: true }); updateExportButtonState(); });',
+    '  });',
+    '  const exportButton = document.querySelector("[data-export-review]");',
+    '  if (exportButton) {',
+    '    updateExportButtonState();',
+    '    exportButton.addEventListener("click", () => {',
+    '      const draft = getCurrentDraft();',
+    '      if (draft.reactions.length === 0) {',
+    '        updateExportButtonState();',
+    '        return;',
+    '      }',
+    '      const blob = new Blob([`${JSON.stringify(draft, null, 2)}\\n`], { type: "application/json" });',
+    '      const url = URL.createObjectURL(blob);',
+    '      const link = document.createElement("a");',
+    '      link.href = url;',
+    '      link.download = formatReactionDraftDownloadFilename(draft.generatedAt);',
+    '      document.body.append(link);',
+    '      link.click();',
+    '      link.remove();',
+    '      URL.revokeObjectURL(url);',
+    '    });',
+    '  }',
+    '  const resetButton = document.querySelector("[data-reset-review]");',
+    '  if (resetButton) {',
+    '    resetButton.addEventListener("click", () => {',
+    '      if (window.confirm("Clear all saved HTML review ratings?")) {',
+    '        localStorage.removeItem(storageKey);',
+    '        updateExportButtonState();',
+    '        window.location.reload();',
+    '      }',
+    '    });',
+    '  }',
+    '});',
+    '</script>',
+    '</head>',
+    '<body>',
+    '<main>',
+    '<header>',
+    '<h1>Reaction Review</h1>',
+    '<div class="review-actions">',
+    '<button class="action-button" type="button" data-export-review disabled>Export</button>',
+    '<button class="action-button" type="button" data-reset-review>Reset</button>',
+    '</div>',
+    '</header>',
+    '<section class="poster-grid" aria-label="Selected titles">',
+    titleCards,
+    '</section>',
+    '</main>',
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
+}
+
+export async function writeReactionReviewHtml({
+  rootDir = process.cwd(),
+  items,
+  outputPath = path.join(rootDir, 'reports', 'reaction-review.html'),
+} = {}) {
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(
+    outputPath,
+    renderReactionReviewHtml(items),
+    'utf8',
+  );
+
+  return {
+    outputPath,
+    fileUrl: pathToFileURL(outputPath).href,
+  };
+}
+
 async function persistReactionEvents({
   rootDir,
   catalog,
@@ -1228,7 +1785,6 @@ export async function runReactionSession({
     readReactionState({ rootDir }),
     readReactionIgnoredState({ rootDir }),
   ]);
-  const processedTitleIds = new Set();
   const bufferedEvents = [];
   const targetItem = await resolveTargetReactionTitle({
     rootDir,
@@ -1249,39 +1805,40 @@ export async function runReactionSession({
     };
   }
 
+  const sessionTitles = selectReactionSessionTitles({
+    catalog,
+    reactions,
+    ignored,
+    options,
+    targetItem,
+    random,
+  });
+
+  if (options.html) {
+    const report = await writeReactionReviewHtml({
+      rootDir,
+      items: sessionTitles,
+    });
+
+    writeOutput(report.fileUrl);
+
+    return {
+      status: 'html-generated',
+      outputPath: report.outputPath,
+      fileUrl: report.fileUrl,
+      selectedTitles: sessionTitles,
+      processedCount: sessionTitles.length,
+    };
+  }
+
   let processedCount = 0;
-  const ignoredTitleIds = getIgnoredTitleIds(ignored);
   let reviewScreensDisplayed = 0;
 
-  while (
-    targetItem
-      ? processedCount === 0
-      : !hasReachedSessionLimit(processedCount, options.limit)
-  ) {
-    const item =
-      targetItem ??
-      (options.random
-        ? selectRandomUnreactedTitle(
-            catalog,
-            reactions,
-            new Set([...processedTitleIds, ...ignoredTitleIds]),
-            random,
-            options,
-          )
-        : selectFirstUnreactedTitle(
-            catalog,
-            reactions,
-            new Set([...processedTitleIds, ...ignoredTitleIds]),
-            options,
-          ));
+  if (sessionTitles.length === 0) {
+    writeOutput(formatReactionTitle(null));
+  }
 
-    if (!item) {
-      if (processedCount === 0) {
-        writeOutput(formatReactionTitle(null));
-      }
-      break;
-    }
-
+  for (const item of sessionTitles) {
     const reviewScreen = formatReactionTitle(item);
     writeOutput(
       reviewScreensDisplayed > 0
@@ -1302,7 +1859,6 @@ export async function runReactionSession({
       const reaction = await promptForReaction({ reactionPrompt });
 
       if (reaction === 'skip') {
-        processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
         continue;
@@ -1359,7 +1915,6 @@ export async function runReactionSession({
           ...event,
           title: item.title,
         });
-        processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
         continue;
@@ -1385,7 +1940,6 @@ export async function runReactionSession({
         ...event,
         title: item.title,
       });
-      processedTitleIds.add(item.canonicalId);
       processedCount += 1;
       needsReaction = false;
     }

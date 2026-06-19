@@ -3,12 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { CatalogBuildError } from './lib/catalog-build-error.js';
 import {
   formatReactionValidationReport,
+  hasNormalizedReasonValues,
   validateReactionProjection,
   validateReactionProjectionFromFiles,
 } from './lib/reaction-validation.js';
 
 export {
   formatReactionValidationReport,
+  hasNormalizedReasonValues,
   validateReactionProjection,
   validateReactionProjectionFromFiles,
 } from './lib/reaction-validation.js';

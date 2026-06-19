@@ -2,6 +2,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionPromptConfig,
+  createReactionReviewDraft,
+  DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
@@ -15,6 +17,7 @@ import {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatReactionDraftDownloadFilename,
   formatTitleInformation,
   reviewIndent,
   reviewNestedIndent,
@@ -27,9 +30,11 @@ export { ratingForReaction } from './lib/reaction-ratings.js';
 
 export {
   createReactionPromptConfig,
+  DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
+  createReactionReviewDraft,
   formatExistingReaction,
   formatIgnoredTitleRateError,
   formatReactedTitleIgnoreError,
@@ -37,6 +42,7 @@ export {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatReactionDraftDownloadFilename,
   formatTitleInformation,
   reviewIndent,
   reviewNestedIndent,
@@ -59,14 +65,18 @@ export {
   readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
+  renderReactionReviewHtml,
   runReactionSession,
   searchReactionCatalog,
   selectReactionChoiceByKey,
   selectEligibleReactionTitles,
   selectFirstUnreactedTitle,
   selectRandomUnreactedTitle,
+  selectReactionSessionTitles,
   selectReactionTitleFromSearch,
   selectReactionTitle,
+  shouldWriteSearchResultsBeforeSelection,
+  writeReactionReviewHtml,
 } from './lib/reaction-cli.js';
 
 async function main() {
