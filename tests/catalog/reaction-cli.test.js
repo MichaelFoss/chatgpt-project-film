@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createReactionCommand,
+  createReactionReviewDraft,
   DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
@@ -18,6 +19,7 @@ import {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatReactionDraftDownloadFilename,
   formatTitleInformation,
   getSearchSelectionChoices,
   getQuitConfirmationChoices,
@@ -835,7 +837,111 @@ describe('reaction CLI', () => {
     expect(html).toContain('rating: existing.rating,');
     expect(html).toContain('reasons,');
     expect(html).not.toContain('rating: null');
-    expect(html).not.toContain('Export');
+    expect(html).toContain(
+      '<button class="action-button" type="button" data-export-review>Export</button>',
+    );
+  });
+
+  it('renders an HTML review export button near the reset button', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain('data-export-review');
+    expect(html).toContain('const reviewTitleCount = 1;');
+    expect(html).toContain(
+      'createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount })',
+    );
+    expect(html).toContain('new Blob');
+    expect(html).toContain('URL.createObjectURL(blob)');
+    expect(html).toContain(
+      'link.download = formatReactionDraftDownloadFilename(draft.generatedAt);',
+    );
+    expect(html.indexOf('data-export-review')).toBeLessThan(
+      html.indexOf('data-reset-review'),
+    );
+  });
+
+  it('formats HTML review draft download filenames from generatedAt in UTC minute precision', () => {
+    expect(
+      formatReactionDraftDownloadFilename('2026-06-19T14:56:29.664Z'),
+    ).toBe('reaction-draft-2026-06-19-1456.json');
+    expect(
+      formatReactionDraftDownloadFilename('2026-01-03T04:07:00.000Z'),
+    ).toBe('reaction-draft-2026-01-03-0407.json');
+  });
+
+  it('generates HTML review export payloads from reacted LocalStorage records', () => {
+    const draft = createReactionReviewDraft(
+      {
+        'imdb:tt001': {
+          titleId: 'imdb:tt001',
+          rating: 9,
+          reasons: [' Sci-Fi ', 'action, sci-fi'],
+        },
+        'imdb:tt002': {
+          titleId: 'imdb:tt002',
+          rating: 5,
+          reasons: [],
+        },
+      },
+      {
+        generatedAt: '2026-06-18T12:00:00.000Z',
+        titleCount: 100,
+      },
+    );
+
+    expect(draft).toEqual({
+      generatedAt: '2026-06-18T12:00:00.000Z',
+      titleCount: 100,
+      reactions: [
+        {
+          titleId: 'imdb:tt001',
+          rating: 9,
+          reasons: ['sci-fi', 'action'],
+        },
+        {
+          titleId: 'imdb:tt002',
+          rating: 5,
+          reasons: [],
+        },
+      ],
+    });
+    expect(typeof draft.reactions[0].rating).toBe('number');
+    expect(Array.isArray(draft.reactions[0].reasons)).toBe(true);
+  });
+
+  it('excludes empty, unreacted, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
+    const draft = createReactionReviewDraft(
+      {
+        empty: {},
+        string: 'not a reaction',
+        placeholder: { titleId: '', rating: 8, reasons: ['ignored'] },
+        unrated: { titleId: 'imdb:tt001', reasons: [] },
+        invalidLow: { titleId: 'imdb:tt002', rating: 0, reasons: [] },
+        invalidHigh: { titleId: 'imdb:tt003', rating: 11, reasons: [] },
+        invalidString: {
+          titleId: 'imdb:tt004',
+          rating: '9',
+          reasons: [],
+        },
+        reasonsOnly: {
+          titleId: 'imdb:tt005',
+          reasons: ['surreal'],
+        },
+      },
+      { generatedAt: '2026-06-18T12:00:00.000Z' },
+    );
+
+    expect(draft.generatedAt).toBe('2026-06-18T12:00:00.000Z');
+    expect(draft.titleCount).toBe(1);
+    expect(draft.reactions).toEqual([
+      {
+        titleId: 'imdb:tt005',
+        reasons: ['surreal'],
+      },
+    ]);
+    expect(draft.reactions[0]).not.toHaveProperty('rating');
   });
 
   it('normalizes HTML review reason input using reaction conventions', () => {
@@ -2086,15 +2192,21 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('window.location.reload();');
     expect(html).toContain(
-      '<button class="reset-button" type="button" data-reset-review>Reset</button>',
+      '<button class="action-button" type="button" data-export-review>Export</button>',
+    );
+    expect(html).toContain(
+      '<button class="action-button" type="button" data-reset-review>Reset</button>',
     );
     expect(html).toContain('setRating(control, "10")');
     expect(html).toContain('event.key === "Backspace"');
     expect(html).not.toContain('type="radio"');
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');
-    expect(html).not.toContain('Export');
-    expect(html).not.toContain('Draft');
+    expect(html).toContain(
+      'createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount })',
+    );
+    expect(html).toContain('new Blob');
+    expect(html).toContain('URL.createObjectURL(blob)');
     expect(html).not.toContain('createTitleReactionEvent');
     expect(html).not.toContain('appendTitleReactionEvents');
     expect(html).not.toContain('Gamma (2003)');

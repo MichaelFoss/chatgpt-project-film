@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionPromptConfig,
+  createReactionReviewDraft,
   DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
@@ -16,6 +17,7 @@ import {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatReactionDraftDownloadFilename,
   formatTitleInformation,
   reviewIndent,
   reviewNestedIndent,
@@ -32,6 +34,7 @@ export {
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
+  createReactionReviewDraft,
   formatExistingReaction,
   formatIgnoredTitleRateError,
   formatReactedTitleIgnoreError,
@@ -39,6 +42,7 @@ export {
   formatVisibleReactionChoices,
   formatReactionWriteSummary,
   formatReactionTitle,
+  formatReactionDraftDownloadFilename,
   formatTitleInformation,
   reviewIndent,
   reviewNestedIndent,

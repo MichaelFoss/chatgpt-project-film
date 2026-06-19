@@ -1345,6 +1345,102 @@ function formatHtmlReviewTitle(item, index) {
   ].join('\n');
 }
 
+export function createReactionReviewDraft(
+  storedReactions,
+  { generatedAt = new Date().toISOString(), titleCount } = {},
+) {
+  const normalizeReasons = (value) => {
+    const values = Array.isArray(value) ? value : [value];
+    const seen = new Set();
+    const reasons = [];
+
+    for (const item of values) {
+      if (typeof item !== 'string') {
+        continue;
+      }
+
+      for (const rawReason of item.split(',')) {
+        const reason = rawReason.trim().toLowerCase();
+
+        if (!reason || seen.has(reason)) {
+          continue;
+        }
+
+        seen.add(reason);
+        reasons.push(reason);
+      }
+    }
+
+    return reasons;
+  };
+  const isValidRating = (rating) =>
+    Number.isInteger(rating) && rating >= 1 && rating <= 10;
+  const source =
+    storedReactions &&
+    typeof storedReactions === 'object' &&
+    !Array.isArray(storedReactions)
+      ? storedReactions
+      : {};
+  const reactions = Object.entries(source)
+    .map(([key, reaction]) => {
+      if (
+        !reaction ||
+        typeof reaction !== 'object' ||
+        Array.isArray(reaction)
+      ) {
+        return null;
+      }
+
+      const titleId =
+        typeof reaction.titleId === 'string'
+          ? reaction.titleId.trim()
+          : typeof key === 'string' && key.trim().length > 0
+            ? key.trim()
+            : '';
+      const reasons = normalizeReasons(reaction.reasons);
+      const rating = isValidRating(reaction.rating)
+        ? reaction.rating
+        : null;
+
+      if (!titleId || (rating === null && reasons.length === 0)) {
+        return null;
+      }
+
+      return {
+        titleId,
+        ...(rating === null ? {} : { rating }),
+        reasons,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    generatedAt,
+    titleCount: Number.isInteger(titleCount)
+      ? titleCount
+      : reactions.length,
+    reactions,
+  };
+}
+
+export function formatReactionDraftDownloadFilename(generatedAt) {
+  const date = new Date(generatedAt);
+  const pad = (value) => String(value).padStart(2, '0');
+
+  return [
+    'reaction-draft-',
+    date.getUTCFullYear(),
+    '-',
+    pad(date.getUTCMonth() + 1),
+    '-',
+    pad(date.getUTCDate()),
+    '-',
+    pad(date.getUTCHours()),
+    pad(date.getUTCMinutes()),
+    '.json',
+  ].join('');
+}
+
 export function renderReactionReviewHtml(items) {
   const titleCards =
     items.length > 0
@@ -1365,8 +1461,9 @@ export function renderReactionReviewHtml(items) {
     'main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }',
     'header { margin-bottom: 22px; }',
     'h1 { margin: 0 0 6px; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; }',
-    '.reset-button { min-height: 32px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; cursor: pointer; }',
-    '.reset-button:hover { border-color: var(--accent); }',
+    '.review-actions { display: flex; flex-wrap: wrap; gap: 8px; }',
+    '.action-button { min-height: 32px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; cursor: pointer; }',
+    '.action-button:hover { border-color: var(--accent); }',
     '.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; align-items: start; }',
     '.title-card { min-width: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(30, 35, 32, 0.08); }',
     '.poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: var(--poster); }',
@@ -1400,6 +1497,9 @@ export function renderReactionReviewHtml(items) {
     '<script>',
     'document.addEventListener("DOMContentLoaded", () => {',
     '  const storageKey = "film-reaction-review-v1";',
+    `  const reviewTitleCount = ${JSON.stringify(items.length)};`,
+    `  const createReactionReviewDraft = ${createReactionReviewDraft.toString()};`,
+    `  const formatReactionDraftDownloadFilename = ${formatReactionDraftDownloadFilename.toString()};`,
     '  const labels = { "10": "Exceptional", "9": "Loved", "8": "Liked↔Loved", "7": "Liked", "6": "Mixed↔Liked", "5": "Mixed", "4": "Disliked↔Mixed", "3": "Disliked", "2": "Hated↔Disliked", "1": "Hated" };',
     '  const validRatings = new Set(Object.keys(labels));',
     '  const readStoredReactions = () => {',
@@ -1525,6 +1625,21 @@ export function renderReactionReviewHtml(items) {
     '    input.addEventListener("change", () => persistReasons(input, { syncValue: true }));',
     '    input.addEventListener("blur", () => persistReasons(input, { syncValue: true }));',
     '  });',
+    '  const exportButton = document.querySelector("[data-export-review]");',
+    '  if (exportButton) {',
+    '    exportButton.addEventListener("click", () => {',
+    '      const draft = createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
+    '      const blob = new Blob([`${JSON.stringify(draft, null, 2)}\\n`], { type: "application/json" });',
+    '      const url = URL.createObjectURL(blob);',
+    '      const link = document.createElement("a");',
+    '      link.href = url;',
+    '      link.download = formatReactionDraftDownloadFilename(draft.generatedAt);',
+    '      document.body.append(link);',
+    '      link.click();',
+    '      link.remove();',
+    '      URL.revokeObjectURL(url);',
+    '    });',
+    '  }',
     '  const resetButton = document.querySelector("[data-reset-review]");',
     '  if (resetButton) {',
     '    resetButton.addEventListener("click", () => {',
@@ -1541,7 +1656,10 @@ export function renderReactionReviewHtml(items) {
     '<main>',
     '<header>',
     '<h1>Reaction Review</h1>',
-    '<button class="reset-button" type="button" data-reset-review>Reset</button>',
+    '<div class="review-actions">',
+    '<button class="action-button" type="button" data-export-review>Export</button>',
+    '<button class="action-button" type="button" data-reset-review>Reset</button>',
+    '</div>',
     '</header>',
     '<section class="poster-grid" aria-label="Selected titles">',
     titleCards,
