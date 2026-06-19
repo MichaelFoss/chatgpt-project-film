@@ -46,6 +46,7 @@ import {
   selectReactionTitle,
   shouldWriteSearchResultsBeforeSelection,
 } from '../../scripts/react.js';
+import { normalizeReactionReasons } from '../../scripts/lib/title-reactions.js';
 
 const tempDirs = [];
 let originalSearchResultThreshold;
@@ -786,6 +787,21 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>',
     );
+    expect(html).toContain('<label class="reason-control">');
+    expect(html).toContain(
+      '<span class="reason-label" id="reasons-0-label">Reasons</span>',
+    );
+    expect(html).toContain('class="reason-input" type="text"');
+    expect(html).toContain(
+      'data-reason-input data-title-id="manual:a&amp;b"',
+    );
+    expect(html).toContain('placeholder="comma-separated reasons"');
+    expect(html.indexOf('data-rating-control')).toBeLessThan(
+      html.indexOf('data-reason-input'),
+    );
+    expect(html.indexOf('data-reason-input')).toBeLessThan(
+      html.indexOf('<dl class="metadata">'),
+    );
     expect(html).not.toContain('<output class="rating-status"');
     expect(html).not.toContain('Rating for Alpha &lt;Beta&gt;');
     expect(html).toContain('10 Exceptional');
@@ -805,7 +821,71 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'reasons: Array.isArray(existing?.reasons) ? existing.reasons : []',
     );
+    expect(html).toContain('const normalizeReasons = (value) => {');
+    expect(html).toContain('reason.trim().toLowerCase()');
+    expect(html).toContain(
+      'input.addEventListener("input", () => persistReasons(input));',
+    );
+    expect(html).toContain(
+      'input.addEventListener("change", () => persistReasons(input, { syncValue: true }));',
+    );
+    expect(html).toContain(
+      'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain('rating: existing.rating,');
+    expect(html).toContain('reasons,');
+    expect(html).not.toContain('rating: null');
     expect(html).not.toContain('Export');
+  });
+
+  it('normalizes HTML review reason input using reaction conventions', () => {
+    expect(
+      normalizeReactionReasons(' Sci-Fi, , ACTION, sci-fi, surreal '),
+    ).toEqual(['sci-fi', 'action', 'surreal']);
+
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain('value.split(",")');
+    expect(html).toContain('const seen = new Set();');
+    expect(html).toContain('if (!reason || seen.has(reason)) {');
+    expect(html).toContain('return false;');
+    expect(html).toContain('seen.add(reason);');
+    expect(html).toContain('input.value = reasons.join(", ");');
+  });
+
+  it('persists, restores, and clears HTML review reasons in LocalStorage', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain(
+      'const storageKey = "film-reaction-review-v1";',
+    );
+    expect(html).toContain(
+      'localStorage.setItem(storageKey, JSON.stringify(reactions))',
+    );
+    expect(html).toContain(
+      'const storedReaction = storedReactions[input.dataset.titleId];',
+    );
+    expect(html).toContain(
+      'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain(
+      'if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
+    );
+    expect(html).toContain('titleId,');
+    expect(html).toContain('rating: existing.rating,');
+    expect(html).toContain('reasons,');
+    expect(html).toContain('} else if (reasons.length > 0) {');
+    expect(html).toContain('delete reactions[titleId];');
+    expect(html).toContain(
+      'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
+    );
+    expect(html).toContain('reasons: existingReasons,');
+    expect(html).not.toContain('autocomplete-list');
+    expect(html).not.toContain('taxonomy');
   });
 
   it('formats detailed title information with hydrated metadata', () => {
@@ -1927,8 +2007,13 @@ describe('reaction CLI', () => {
     );
     expect(html).not.toContain('.title-card:focus');
     expect(
-      html.indexOf('</button>\n</div>\n</div>\n<dl class="metadata">'),
+      html.indexOf(
+        '</button>\n</div>\n</div>\n<label class="reason-control">',
+      ),
     ).toBeGreaterThan(-1);
+    expect(html.indexOf('data-reason-input')).toBeLessThan(
+      html.indexOf('<dl class="metadata">'),
+    );
     expect(html).toContain('.rating-label { min-height: 1rem;');
     expect(html).toContain('white-space: nowrap;');
     expect(html).toContain('text-overflow: ellipsis;');
