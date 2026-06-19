@@ -29,13 +29,31 @@
   },
   "imdb:tt0071853": {
     "canonicalId": "imdb:tt0071853",
-    "eventIds": [
-      "20668ecd-24d1-490a-b044-ffe37c02608c",
-      "6781f091-477e-406c-b7e0-71ca7d76e850"
-    ],
-    "updatedAt": "2026-06-19T16:31:30.971Z",
+    "eventIds": ["20668ecd-24d1-490a-b044-ffe37c02608c"],
+    "updatedAt": "2026-06-19T16:22:53.168Z",
     "rating": 8,
     "reasons": ["bonkers"]
+  },
+  "imdb:tt0084649": {
+    "canonicalId": "imdb:tt0084649",
+    "eventIds": ["0708bb7c-c5b1-496c-b9bf-fee167f9af9a"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 7,
+    "reasons": ["family", "artistic"]
+  },
+  "imdb:tt0113409": {
+    "canonicalId": "imdb:tt0113409",
+    "eventIds": ["8cf2cb19-18d4-4b8e-bb39-516a6ae0abfc"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 3,
+    "reasons": ["dated"]
+  },
+  "imdb:tt0167261": {
+    "canonicalId": "imdb:tt0167261",
+    "eventIds": ["3c463c9a-2871-4706-8971-5de0f7a3c0ff"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["epic", "magic", "medieval"]
   },
   "imdb:tt0168122": {
     "canonicalId": "imdb:tt0168122",
@@ -56,6 +74,19 @@
     "updatedAt": "2026-06-12T12:19:18.722Z",
     "rating": 7,
     "reasons": ["mcu"]
+  },
+  "imdb:tt0372784": {
+    "canonicalId": "imdb:tt0372784",
+    "eventIds": ["69500c0f-cccc-4a78-90b1-d63606cc5af4"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["dark", "superhero"]
+  },
+  "imdb:tt0379865": {
+    "canonicalId": "imdb:tt0379865",
+    "eventIds": ["47eac951-3bef-4418-8c2e-c91e73e0f053"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8
   },
   "imdb:tt0401729": {
     "canonicalId": "imdb:tt0401729",
@@ -85,6 +116,13 @@
     "rating": 5,
     "reasons": ["overrated"]
   },
+  "imdb:tt1253863": {
+    "canonicalId": "imdb:tt1253863",
+    "eventIds": ["037b5681-3bb8-4f35-a4e6-45d591e0f2f2"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["underdog", "artistic"]
+  },
   "imdb:tt1431045": {
     "canonicalId": "imdb:tt1431045",
     "eventIds": ["dfd75c34-8f4e-46a9-9c73-a1bc96756073"],
@@ -105,6 +143,19 @@
     "updatedAt": "2026-06-12T12:18:23.139Z",
     "rating": 3,
     "reasons": ["overrated", "boring"]
+  },
+  "imdb:tt1504320": {
+    "canonicalId": "imdb:tt1504320",
+    "eventIds": ["ce25c4b8-8940-460b-b347-d957d7edff12"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["inspirational", "dramatic"]
+  },
+  "imdb:tt15398776": {
+    "canonicalId": "imdb:tt15398776",
+    "eventIds": ["89b3ea42-465e-4503-a87e-cd24fd9b0fb9"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 7
   },
   "imdb:tt1591095": {
     "canonicalId": "imdb:tt1591095",
@@ -135,6 +186,13 @@
     "rating": 9,
     "notes": "Don't remember why I loved this, but I did."
   },
+  "imdb:tt1853728": {
+    "canonicalId": "imdb:tt1853728",
+    "eventIds": ["33e0466a-0a11-4e4b-af86-c6cc65e9e6ca"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["leo", "witty"]
+  },
   "imdb:tt20969586": {
     "canonicalId": "imdb:tt20969586",
     "eventIds": ["61b553ff-5076-49a4-b109-528387abf087"],
@@ -156,6 +214,13 @@
     "rating": 9,
     "reasons": ["unnerving", "scary", "sci-fi"]
   },
+  "imdb:tt2870612": {
+    "canonicalId": "imdb:tt2870612",
+    "eventIds": ["2019ce70-5559-4e10-9886-7e5121a8cea1"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 9,
+    "reasons": ["terrifying"]
+  },
   "imdb:tt31193180": {
     "canonicalId": "imdb:tt31193180",
     "eventIds": ["16d65a2c-4d0f-4abd-9b4f-d286f764b984"],
@@ -170,6 +235,12 @@
     "rating": 6,
     "notes": "Don't remember this, just remember it was lackluster."
   },
+  "imdb:tt3450958": {
+    "canonicalId": "imdb:tt3450958",
+    "eventIds": ["178279e3-dc72-42d5-9648-feec042b4cd3"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8
+  },
   "imdb:tt4123432": {
     "canonicalId": "imdb:tt4123432",
     "eventIds": ["2204c123-64dc-4864-9ea4-623e5e406f0e"],
@@ -177,12 +248,26 @@
     "rating": 3,
     "reasons": ["gay agenda"]
   },
+  "imdb:tt4263482": {
+    "canonicalId": "imdb:tt4263482",
+    "eventIds": ["3cef996e-7bc5-40b2-beb6-f306f76d76b7"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 9,
+    "reasons": ["terrifying"]
+  },
   "imdb:tt6565702": {
     "canonicalId": "imdb:tt6565702",
     "eventIds": ["1bf923ce-981d-4755-a9ce-e046353bda63"],
     "updatedAt": "2026-06-12T12:11:36.767Z",
     "rating": 7,
     "reasons": ["dark", "serious", "mcu"]
+  },
+  "imdb:tt6718170": {
+    "canonicalId": "imdb:tt6718170",
+    "eventIds": ["83db1b30-deb6-4451-9a5d-3f8e3a211a34"],
+    "updatedAt": "2026-06-19T23:12:11.405Z",
+    "rating": 8,
+    "reasons": ["family", "fun"]
   },
   "imdb:tt7286456": {
     "canonicalId": "imdb:tt7286456",

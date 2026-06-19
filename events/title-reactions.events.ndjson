@@ -27,3 +27,16 @@
 {"eventId":"ec829fb4-b471-45f4-9831-b9749695e5aa","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0068646","rating":4,"reasons":["slow"]}
 {"eventId":"d87ce3d6-2f74-43f6-bc77-b8c1c123b7a6","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0070909","rating":3,"reasons":["dated"]}
 {"eventId":"20668ecd-24d1-490a-b044-ffe37c02608c","type":"title.reaction.updated","occurredAt":"2026-06-19T16:22:53.168Z","canonicalId":"imdb:tt0071853","rating":8,"reasons":["bonkers"]}
+{"eventId":"ce25c4b8-8940-460b-b347-d957d7edff12","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt1504320","rating":8,"reasons":["inspirational","dramatic"]}
+{"eventId":"3cef996e-7bc5-40b2-beb6-f306f76d76b7","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt4263482","rating":9,"reasons":["terrifying"]}
+{"eventId":"83db1b30-deb6-4451-9a5d-3f8e3a211a34","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt6718170","rating":8,"reasons":["family","fun"]}
+{"eventId":"89b3ea42-465e-4503-a87e-cd24fd9b0fb9","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt15398776","rating":7}
+{"eventId":"69500c0f-cccc-4a78-90b1-d63606cc5af4","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0372784","rating":8,"reasons":["dark","superhero"]}
+{"eventId":"47eac951-3bef-4418-8c2e-c91e73e0f053","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0379865","rating":8}
+{"eventId":"2019ce70-5559-4e10-9886-7e5121a8cea1","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt2870612","rating":9,"reasons":["terrifying"]}
+{"eventId":"8cf2cb19-18d4-4b8e-bb39-516a6ae0abfc","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0113409","rating":3,"reasons":["dated"]}
+{"eventId":"178279e3-dc72-42d5-9648-feec042b4cd3","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt3450958","rating":8}
+{"eventId":"3c463c9a-2871-4706-8971-5de0f7a3c0ff","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0167261","rating":8,"reasons":["epic","magic","medieval"]}
+{"eventId":"037b5681-3bb8-4f35-a4e6-45d591e0f2f2","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt1253863","rating":8,"reasons":["underdog","artistic"]}
+{"eventId":"33e0466a-0a11-4e4b-af86-c6cc65e9e6ca","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt1853728","rating":8,"reasons":["leo","witty"]}
+{"eventId":"0708bb7c-c5b1-496c-b9bf-fee167f9af9a","type":"title.reaction.updated","occurredAt":"2026-06-19T23:12:11.405Z","canonicalId":"imdb:tt0084649","rating":7,"reasons":["family","artistic"]}
