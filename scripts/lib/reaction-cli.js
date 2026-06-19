@@ -1322,6 +1322,22 @@ function formatHtmlReasonInput(item, index) {
   ].join('\n');
 }
 
+function formatHtmlNotesInput(item, index) {
+  const inputId = `notes-${index}`;
+
+  return [
+    '<label class="notes-control">',
+    `<span class="notes-label" id="${escapeHtml(inputId)}-label">Notes</span>`,
+    '<textarea class="notes-input"',
+    `aria-labelledby="${escapeHtml(inputId)}-label"`,
+    `data-notes-input data-title-id="${escapeHtml(item.canonicalId)}"`,
+    `id="${escapeHtml(inputId)}"`,
+    'rows="3"',
+    'placeholder="private review notes"></textarea>',
+    '</label>',
+  ].join('\n');
+}
+
 function formatHtmlReviewTitle(item, index) {
   const year = item.releaseYear
     ? escapeHtml(item.releaseYear)
@@ -1336,6 +1352,7 @@ function formatHtmlReviewTitle(item, index) {
     `<h2>${escapeHtml(item.title)}</h2>`,
     formatHtmlRatingControls(item, index),
     formatHtmlReasonInput(item, index),
+    formatHtmlNotesInput(item, index),
     '<dl class="metadata">',
     `<div><dt>Year</dt><dd>${year}</dd></div>`,
     `<div><dt>Genres</dt><dd>${genres}</dd></div>`,
@@ -1374,6 +1391,10 @@ export function createReactionReviewDraft(
 
     return reasons;
   };
+  const normalizeNotes = (value) =>
+    typeof value === 'string' && value.trim().length > 0
+      ? value.trim()
+      : null;
   const isValidRating = (rating) =>
     Number.isInteger(rating) && rating >= 1 && rating <= 10;
   const source =
@@ -1399,6 +1420,7 @@ export function createReactionReviewDraft(
             ? key.trim()
             : '';
       const reasons = normalizeReasons(reaction.reasons);
+      const notes = normalizeNotes(reaction.notes);
       const rating = isValidRating(reaction.rating)
         ? reaction.rating
         : null;
@@ -1410,6 +1432,7 @@ export function createReactionReviewDraft(
       return {
         titleId,
         rating,
+        ...(notes ? { notes } : {}),
         reasons,
       };
     })
@@ -1488,11 +1511,13 @@ export function renderReactionReviewHtml(items) {
     '.rating-option[data-rating="9"], .rating-option[data-rating="6"], .rating-option[data-rating="3"] { grid-column: 1; }',
     '.rating-option:hover { border-color: var(--accent); }',
     '.rating-option.is-selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; }',
-    '.reason-control { display: block; margin: 6px 0 0; }',
-    '.reason-label { display: block; margin: 0 0 3px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; text-transform: uppercase; }',
-    '.reason-input { display: block; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; line-height: 1.2; }',
+    '.reason-control, .notes-control { display: block; margin: 6px 0 0; }',
+    '.reason-label, .notes-label { display: block; margin: 0 0 3px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; text-transform: uppercase; }',
+    '.reason-input, .notes-input { display: block; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; line-height: 1.2; }',
+    '.notes-input { min-height: 72px; resize: vertical; }',
     '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
-    '.reason-input:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-color: var(--accent); }',
+    '.notes-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    '.reason-input:focus, .notes-input:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-color: var(--accent); }',
     '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
     '.empty-state { padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }',
     '@media (max-width: 560px) { main { width: min(100% - 20px, 1480px); padding-top: 18px; } .poster-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; } .card-body { padding: 11px; } }',
@@ -1528,6 +1553,13 @@ export function renderReactionReviewHtml(items) {
     '    });',
     '  };',
     '  const formatReasons = (reasons) => Array.isArray(reasons) ? reasons.join(", ") : "";',
+    '  const formatNotes = (notes) => typeof notes === "string" ? notes : "";',
+    '  const assignNotes = (reaction, notes) => {',
+    '    if (typeof notes === "string" && notes.length > 0) {',
+    '      reaction.notes = notes;',
+    '    }',
+    '    return reaction;',
+    '  };',
     '  const getCurrentDraft = () => createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
     '  const updateExportButtonState = () => {',
     '    const exportButton = document.querySelector("[data-export-review]");',
@@ -1550,18 +1582,20 @@ export function renderReactionReviewHtml(items) {
     '    const reactions = readStoredReactions();',
     '    if (validRatings.has(rating)) {',
     '      const existing = reactions[titleId];',
-    '      reactions[titleId] = {',
+    '      const existingNotes = formatNotes(existing?.notes);',
+    '      reactions[titleId] = assignNotes({',
     '        titleId,',
     '        rating: Number(rating),',
     '        reasons: Array.isArray(existing?.reasons) ? existing.reasons : [],',
-    '      };',
+    '      }, existingNotes);',
     '    } else {',
     '      const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
-    '      if (existingReasons.length > 0) {',
-    '        reactions[titleId] = {',
+    '      const existingNotes = formatNotes(reactions[titleId]?.notes);',
+    '      if (existingReasons.length > 0 || existingNotes.length > 0) {',
+    '        reactions[titleId] = assignNotes({',
     '          titleId,',
     '          reasons: existingReasons,',
-    '        };',
+    '        }, existingNotes);',
     '      } else {',
     '        delete reactions[titleId];',
     '      }',
@@ -1576,20 +1610,46 @@ export function renderReactionReviewHtml(items) {
     '    const reactions = readStoredReactions();',
     '    const existing = reactions[titleId];',
     '    const reasons = normalizeReasons(input.value);',
+    '    const existingNotes = formatNotes(existing?.notes);',
     '    if (syncValue) {',
     '      input.value = reasons.join(", ");',
     '    }',
     '    if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
-    '      reactions[titleId] = {',
+    '      reactions[titleId] = assignNotes({',
     '        titleId,',
     '        rating: existing.rating,',
     '        reasons,',
-    '      };',
-    '    } else if (reasons.length > 0) {',
-    '      reactions[titleId] = {',
+    '      }, existingNotes);',
+    '    } else if (reasons.length > 0 || existingNotes.length > 0) {',
+    '      reactions[titleId] = assignNotes({',
     '        titleId,',
     '        reasons,',
-    '      };',
+    '      }, existingNotes);',
+    '    } else {',
+    '      delete reactions[titleId];',
+    '    }',
+    '    writeStoredReactions(reactions);',
+    '  };',
+    '  const persistNotes = (input) => {',
+    '    const titleId = input.dataset.titleId;',
+    '    if (!titleId) {',
+    '      return;',
+    '    }',
+    '    const reactions = readStoredReactions();',
+    '    const existing = reactions[titleId];',
+    '    const reasons = Array.isArray(existing?.reasons) ? existing.reasons : [];',
+    '    const notes = input.value;',
+    '    if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
+    '      reactions[titleId] = assignNotes({',
+    '        titleId,',
+    '        rating: existing.rating,',
+    '        reasons,',
+    '      }, notes);',
+    '    } else if (reasons.length > 0 || notes.length > 0) {',
+    '      reactions[titleId] = assignNotes({',
+    '        titleId,',
+    '        reasons,',
+    '      }, notes);',
     '    } else {',
     '      delete reactions[titleId];',
     '    }',
@@ -1646,6 +1706,13 @@ export function renderReactionReviewHtml(items) {
     '    input.addEventListener("input", () => { persistReasons(input); updateExportButtonState(); });',
     '    input.addEventListener("change", () => { persistReasons(input, { syncValue: true }); updateExportButtonState(); });',
     '    input.addEventListener("blur", () => { persistReasons(input, { syncValue: true }); updateExportButtonState(); });',
+    '  });',
+    '  document.querySelectorAll("[data-notes-input]").forEach((input) => {',
+    '    const storedReaction = storedReactions[input.dataset.titleId];',
+    '    input.value = formatNotes(storedReaction?.notes);',
+    '    input.addEventListener("input", () => { persistNotes(input); updateExportButtonState(); });',
+    '    input.addEventListener("change", () => { persistNotes(input); updateExportButtonState(); });',
+    '    input.addEventListener("blur", () => { persistNotes(input); updateExportButtonState(); });',
     '  });',
     '  const exportButton = document.querySelector("[data-export-review]");',
     '  if (exportButton) {',

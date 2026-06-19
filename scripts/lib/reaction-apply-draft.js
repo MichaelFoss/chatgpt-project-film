@@ -96,6 +96,18 @@ function validateDraftReasons(reaction, label) {
   return [...reaction.reasons];
 }
 
+function validateDraftNotes(reaction, label) {
+  if (!hasOwn(reaction, 'notes')) {
+    return null;
+  }
+
+  if (typeof reaction.notes !== 'string') {
+    throw new CatalogBuildError(`${label} notes must be a string.`);
+  }
+
+  return reaction.notes;
+}
+
 export function validateReactionDraft({ draft, catalog }) {
   assertDraftObject(draft);
 
@@ -121,7 +133,8 @@ export function validateReactionDraft({ draft, catalog }) {
     }
 
     const unknownFields = Object.keys(reaction).filter(
-      (field) => !['titleId', 'rating', 'reasons'].includes(field),
+      (field) =>
+        !['titleId', 'rating', 'notes', 'reasons'].includes(field),
     );
 
     if (unknownFields.length > 0) {
@@ -163,6 +176,7 @@ export function validateReactionDraft({ draft, catalog }) {
     return {
       item: catalog[canonicalId],
       rating: reaction.rating,
+      notes: validateDraftNotes(reaction, label),
       reasons: validateDraftReasons(reaction, label),
     };
   });
@@ -193,10 +207,11 @@ export function createReactionDraftEvents({
   eventIdFactory,
   occurredAt = new Date().toISOString(),
 }) {
-  return validatedReactions.map(({ item, rating, reasons }) =>
+  return validatedReactions.map(({ item, rating, notes, reasons }) =>
     createTitleReactionEvent(item, rating, {
       eventId: eventIdFactory?.(),
       occurredAt,
+      notes,
       reasons,
     }),
   );

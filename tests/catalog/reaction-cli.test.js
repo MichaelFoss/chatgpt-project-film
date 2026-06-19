@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
@@ -177,6 +178,207 @@ function reaction(canonicalId, overrides = {}) {
     eventIds: [`evt-${canonicalId}`],
     rating: 8,
     ...overrides,
+  };
+}
+
+function extractReviewHtmlScript(html) {
+  const match = /<script>\n(?<script>[\s\S]*?)\n<\/script>/.exec(html);
+
+  if (!match?.groups?.script) {
+    throw new Error('Unable to find review HTML script.');
+  }
+
+  return match.groups.script;
+}
+
+function createFakeElement({
+  dataset = {},
+  value = '',
+  disabled = false,
+} = {}) {
+  const listeners = new Map();
+
+  return {
+    dataset,
+    value,
+    disabled,
+    textContent: '',
+    href: '',
+    download: '',
+    removed: false,
+    clicked: false,
+    classList: {
+      toggle() {},
+    },
+    setAttribute(name, nextValue) {
+      this[name] = nextValue;
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    dispatchEvent(type) {
+      listeners.get(type)?.({ preventDefault() {} });
+    },
+    click() {
+      this.clicked = true;
+      listeners.get('click')?.({ preventDefault() {} });
+    },
+    remove() {
+      this.removed = true;
+    },
+    querySelectorAll() {
+      return [];
+    },
+    querySelector() {
+      return null;
+    },
+  };
+}
+
+function runReviewHtmlScript({ html, storedReactions = {} }) {
+  const ratingButtons = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+  ].map((rating) =>
+    createFakeElement({
+      dataset: {
+        rating,
+      },
+    }),
+  );
+  const ratingStatus = createFakeElement();
+  const ratingControl = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const reasonInput = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const notesInput = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const exportButton = createFakeElement({
+    disabled: true,
+  });
+  const resetButton = createFakeElement();
+  const localStorageValues = new Map([
+    ['film-reaction-review-v1', JSON.stringify(storedReactions)],
+  ]);
+  const appendedLinks = [];
+  let domContentLoaded;
+  let exportedBlob = null;
+
+  ratingControl.querySelectorAll = (selector) =>
+    selector === '[data-rating]' ? ratingButtons : [];
+  ratingControl.querySelector = (selector) =>
+    selector === '.rating-status' ? ratingStatus : null;
+
+  const document = {
+    body: {
+      append(link) {
+        appendedLinks.push(link);
+      },
+    },
+    addEventListener(type, listener) {
+      if (type === 'DOMContentLoaded') {
+        domContentLoaded = listener;
+      }
+    },
+    querySelectorAll(selector) {
+      if (selector === '[data-rating-control]') {
+        return [ratingControl];
+      }
+
+      if (selector === '[data-reason-input]') {
+        return [reasonInput];
+      }
+
+      if (selector === '[data-notes-input]') {
+        return [notesInput];
+      }
+
+      return [];
+    },
+    querySelector(selector) {
+      if (selector === '[data-export-review]') {
+        return exportButton;
+      }
+
+      if (selector === '[data-reset-review]') {
+        return resetButton;
+      }
+
+      return null;
+    },
+    createElement(tagName) {
+      if (tagName !== 'a') {
+        throw new Error(`Unexpected created element: ${tagName}`);
+      }
+
+      return createFakeElement();
+    },
+  };
+
+  vm.runInNewContext(extractReviewHtmlScript(html), {
+    Blob,
+    Date,
+    document,
+    JSON,
+    Number,
+    Object,
+    Set,
+    String,
+    URL: {
+      createObjectURL(blob) {
+        exportedBlob = blob;
+        return 'blob:review-draft';
+      },
+      revokeObjectURL() {},
+    },
+    localStorage: {
+      getItem(key) {
+        return localStorageValues.get(key) ?? null;
+      },
+      removeItem(key) {
+        localStorageValues.delete(key);
+      },
+      setItem(key, value) {
+        localStorageValues.set(key, value);
+      },
+    },
+    window: {
+      confirm: () => false,
+      location: {
+        reload() {},
+      },
+    },
+  });
+
+  domContentLoaded();
+
+  return {
+    appendedLinks,
+    exportButton,
+    getExportedDraft: async () => JSON.parse(await exportedBlob.text()),
+    getStoredReactions: () =>
+      JSON.parse(localStorageValues.get('film-reaction-review-v1')),
+    notesInput,
+    ratingControl,
+    ratingStatus,
+    reasonInput,
   };
 }
 
@@ -799,10 +1001,25 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('disabled');
     expect(html).toContain('placeholder="comma-separated reasons"');
+    expect(html).toContain('<label class="notes-control">');
+    expect(html).toContain(
+      '<span class="notes-label" id="notes-0-label">Notes</span>',
+    );
+    expect(html).toContain('<textarea class="notes-input"');
+    expect(html).toContain(
+      'data-notes-input data-title-id="manual:a&amp;b"',
+    );
+    expect(html).toContain('rows="3"');
+    expect(html).toContain(
+      'placeholder="private review notes"></textarea>',
+    );
     expect(html.indexOf('<div class="rating-control"')).toBeLessThan(
       html.indexOf('<label class="reason-control">'),
     );
     expect(html.indexOf('<label class="reason-control">')).toBeLessThan(
+      html.indexOf('<label class="notes-control">'),
+    );
+    expect(html.indexOf('<label class="notes-control">')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
     );
     expect(html).not.toContain('<output class="rating-status"');
@@ -824,6 +1041,10 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'reasons: Array.isArray(existing?.reasons) ? existing.reasons : []',
     );
+    expect(html).toContain('const formatNotes = (notes) =>');
+    expect(html).toContain(
+      'const assignNotes = (reaction, notes) => {',
+    );
     expect(html).toContain('const normalizeReasons = (value) => {');
     expect(html).toContain('reason.trim().toLowerCase()');
     expect(html).toContain(
@@ -834,6 +1055,12 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain(
       'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain(
+      'input.value = formatNotes(storedReaction?.notes);',
+    );
+    expect(html).toContain(
+      'input.addEventListener("input", () => { persistNotes(input); updateExportButtonState(); });',
     );
     expect(html).toContain(
       'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
@@ -896,17 +1123,19 @@ describe('reaction CLI', () => {
     ).toBe('reaction-draft-2026-01-03-0407.json');
   });
 
-  it('generates HTML review export payloads from reacted LocalStorage records', () => {
+  it('generates HTML review export payloads from reacted LocalStorage records with notes', () => {
     const draft = createReactionReviewDraft(
       {
         'imdb:tt001': {
           titleId: 'imdb:tt001',
           rating: 9,
+          notes: ' Keep this note in draft export. ',
           reasons: [' Sci-Fi ', 'action, sci-fi'],
         },
         'imdb:tt002': {
           titleId: 'imdb:tt002',
           rating: 5,
+          notes: 'Another exported note.',
           reasons: [],
         },
       },
@@ -923,17 +1152,62 @@ describe('reaction CLI', () => {
         {
           titleId: 'imdb:tt001',
           rating: 9,
+          notes: 'Keep this note in draft export.',
           reasons: ['sci-fi', 'action'],
         },
         {
           titleId: 'imdb:tt002',
           rating: 5,
+          notes: 'Another exported note.',
           reasons: [],
         },
       ],
     });
     expect(typeof draft.reactions[0].rating).toBe('number');
     expect(Array.isArray(draft.reactions[0].reasons)).toBe(true);
+  });
+
+  it('omits empty HTML review notes from draft exports', () => {
+    const draft = createReactionReviewDraft({
+      emptyNotes: {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        notes: '',
+        reasons: [],
+      },
+      whitespaceNotes: {
+        titleId: 'imdb:tt002',
+        rating: 7,
+        notes: '   ',
+        reasons: [],
+      },
+      missingNotes: {
+        titleId: 'imdb:tt003',
+        rating: 6,
+        reasons: [],
+      },
+    });
+
+    expect(draft.reactions).toEqual([
+      {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        reasons: [],
+      },
+      {
+        titleId: 'imdb:tt002',
+        rating: 7,
+        reasons: [],
+      },
+      {
+        titleId: 'imdb:tt003',
+        rating: 6,
+        reasons: [],
+      },
+    ]);
+    expect(
+      draft.reactions.every((reaction) => !('notes' in reaction)),
+    ).toBe(true);
   });
 
   it('excludes empty, unreacted, reasons-only, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
@@ -957,6 +1231,7 @@ describe('reaction CLI', () => {
         validRatedEmptyReasons: {
           titleId: 'imdb:tt006',
           rating: 8,
+          notes: 'Still exported.',
           reasons: [],
         },
       },
@@ -969,6 +1244,7 @@ describe('reaction CLI', () => {
       {
         titleId: 'imdb:tt006',
         rating: 8,
+        notes: 'Still exported.',
         reasons: [],
       },
     ]);
@@ -1027,6 +1303,24 @@ describe('reaction CLI', () => {
     );
   });
 
+  it('keeps HTML review notes editable regardless of rating state', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const notesControl = html.slice(
+      html.indexOf('<label class="notes-control">'),
+      html.indexOf(
+        '</label>',
+        html.indexOf('<label class="notes-control">'),
+      ),
+    );
+
+    expect(notesControl).toContain('<textarea class="notes-input"');
+    expect(notesControl).toContain('data-notes-input');
+    expect(notesControl).not.toContain('disabled');
+    expect(html).not.toContain('updateNotesInputDisabledState');
+  });
+
   it('enables HTML review reason editing when a rating is selected', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
@@ -1056,7 +1350,14 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
     );
+    expect(html).toContain(
+      'const existingNotes = formatNotes(reactions[titleId]?.notes);',
+    );
+    expect(html).toContain(
+      'if (existingReasons.length > 0 || existingNotes.length > 0) {',
+    );
     expect(html).toContain('reasons: existingReasons,');
+    expect(html).toContain('}, existingNotes);');
     expect(html).not.toContain('input.value = "";');
   });
 
@@ -1077,7 +1378,7 @@ describe('reaction CLI', () => {
     expect(html).toContain('input.value = reasons.join(", ");');
   });
 
-  it('persists, restores, and clears HTML review reasons in LocalStorage', () => {
+  it('persists, restores, and clears HTML review reasons and notes in LocalStorage', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
     ]);
@@ -1096,19 +1397,85 @@ describe('reaction CLI', () => {
       'input.value = formatReasons(storedReaction?.reasons);',
     );
     expect(html).toContain(
+      'input.value = formatNotes(storedReaction?.notes);',
+    );
+    expect(html).toContain(
       'if (existing && Number.isInteger(existing.rating) && validRatings.has(String(existing.rating))) {',
     );
     expect(html).toContain('titleId,');
     expect(html).toContain('rating: existing.rating,');
     expect(html).toContain('reasons,');
-    expect(html).toContain('} else if (reasons.length > 0) {');
+    expect(html).toContain(
+      '} else if (reasons.length > 0 || existingNotes.length > 0) {',
+    );
+    expect(html).toContain(
+      '} else if (reasons.length > 0 || notes.length > 0) {',
+    );
     expect(html).toContain('delete reactions[titleId];');
     expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
     );
+    expect(html).toContain(
+      'const existingNotes = formatNotes(reactions[titleId]?.notes);',
+    );
+    expect(html).toContain('const notes = input.value;');
     expect(html).toContain('reasons: existingReasons,');
+    expect(html).toContain('const persistNotes = (input) => {');
+    expect(html).toContain('reaction.notes = notes;');
     expect(html).not.toContain('autocomplete-list');
     expect(html).not.toContain('taxonomy');
+  });
+
+  it('restores existing HTML review notes as editable and exportable draft data', async () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const page = runReviewHtmlScript({
+      html,
+      storedReactions: {
+        'imdb:tt001': {
+          titleId: 'imdb:tt001',
+          rating: 8,
+          notes: 'Existing restored note.',
+          reasons: ['sci-fi', 'action'],
+        },
+      },
+    });
+
+    expect(page.ratingControl.dataset.rating).toBe('8');
+    expect(page.ratingStatus.textContent).toBe('Liked↔Loved');
+    expect(page.reasonInput.value).toBe('sci-fi, action');
+    expect(page.reasonInput.disabled).toBe(false);
+    expect(page.notesInput.value).toBe('Existing restored note.');
+    expect(page.notesInput.disabled).toBe(false);
+    expect(page.exportButton.disabled).toBe(false);
+
+    page.notesInput.value = 'Edited restored note.';
+    page.notesInput.dispatchEvent('input');
+
+    expect(page.getStoredReactions()).toEqual({
+      'imdb:tt001': {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        notes: 'Edited restored note.',
+        reasons: ['sci-fi', 'action'],
+      },
+    });
+
+    page.exportButton.click();
+
+    expect(await page.getExportedDraft()).toMatchObject({
+      titleCount: 1,
+      reactions: [
+        {
+          titleId: 'imdb:tt001',
+          rating: 8,
+          notes: 'Edited restored note.',
+          reasons: ['sci-fi', 'action'],
+        },
+      ],
+    });
+    expect(page.appendedLinks).toHaveLength(1);
   });
 
   it('formats detailed title information with hydrated metadata', () => {
@@ -2235,10 +2602,24 @@ describe('reaction CLI', () => {
       ),
     ).toBeGreaterThan(-1);
     expect(html.indexOf('data-reason-input')).toBeLessThan(
+      html.indexOf('data-notes-input'),
+    );
+    expect(html.indexOf('data-notes-input')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
+    );
+    expect(html).toContain('<textarea class="notes-input"');
+    expect(html).toContain('data-notes-input');
+    expect(html).toContain(
+      '.reason-control, .notes-control { display: block; margin: 6px 0 0; }',
+    );
+    expect(html).toContain(
+      '.notes-input { min-height: 72px; resize: vertical; }',
     );
     expect(html).toContain(
       '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    );
+    expect(html).toContain(
+      '.notes-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
     );
     expect(html).toContain(
       '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
@@ -2323,6 +2704,9 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('setRating(control, "10")');
     expect(html).toContain('event.key === "Backspace"');
+    expect(html).toContain('persistNotes');
+    expect(html).toContain('storedReaction?.notes');
+    expect(html).toContain('reaction.notes = notes;');
     expect(html).not.toContain('type="radio"');
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');

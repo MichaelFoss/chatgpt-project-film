@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applyReactionDraft,
+  createReactionDraftEvents,
   parseReactionApplyDraftCliArgs,
   reactionApplyDraftUsage,
   validateReactionDraft,
@@ -118,7 +119,12 @@ describe('reaction draft import', () => {
     const draftPath = await writeDraft(rootDir, {
       ...draft(),
       reactions: [
-        { titleId: 'tt001', rating: 9, reasons: ['sci-fi', 'action'] },
+        {
+          titleId: 'tt001',
+          rating: 9,
+          notes: ' Test notes. ',
+          reasons: ['sci-fi', 'action'],
+        },
         { titleId: 'imdb:tt002', rating: 7, reasons: [] },
       ],
     });
@@ -147,6 +153,7 @@ describe('reaction draft import', () => {
         occurredAt: '2026-06-19T12:00:00.000Z',
         canonicalId: 'imdb:tt001',
         rating: 9,
+        notes: 'Test notes.',
         reasons: ['sci-fi', 'action'],
       },
       {
@@ -160,9 +167,41 @@ describe('reaction draft import', () => {
     await expect(
       readJson(reactionsPath(rootDir)),
     ).resolves.toMatchObject({
-      'imdb:tt001': { rating: 9, reasons: ['sci-fi', 'action'] },
+      'imdb:tt001': {
+        rating: 9,
+        notes: 'Test notes.',
+        reasons: ['sci-fi', 'action'],
+      },
       'imdb:tt002': { rating: 7 },
     });
+  });
+
+  it('omits empty and whitespace-only draft notes from events', () => {
+    const validatedReactions = validateReactionDraft({
+      draft: draft({
+        reactions: [
+          { titleId: 'tt001', rating: 8, notes: '', reasons: [] },
+          {
+            titleId: 'tt002',
+            rating: 7,
+            notes: '   ',
+            reasons: [],
+          },
+        ],
+      }),
+      catalog: testCatalog(),
+    });
+
+    expect(
+      createReactionDraftEvents({
+        validatedReactions,
+        eventIdFactory: vi
+          .fn()
+          .mockReturnValueOnce('event-1')
+          .mockReturnValueOnce('event-2'),
+        occurredAt: '2026-06-19T12:00:00.000Z',
+      }).map((event) => event.notes),
+    ).toEqual([undefined, undefined]);
   });
 
   it('rejects invalid JSON before writing anything', async () => {
@@ -278,6 +317,19 @@ describe('reaction draft import', () => {
     );
   });
 
+  it('rejects invalid notes values', () => {
+    expect(() =>
+      validateReactionDraft({
+        draft: draft({
+          reactions: [
+            { titleId: 'tt001', rating: 8, notes: ['not valid'] },
+          ],
+        }),
+        catalog: testCatalog(),
+      }),
+    ).toThrow('reaction 1 notes must be a string.');
+  });
+
   it('is all-or-nothing when any draft entry fails validation', async () => {
     const rootDir = await createTempProject();
     const draftPath = await writeDraft(rootDir, {
@@ -299,6 +351,35 @@ describe('reaction draft import', () => {
         writeOutput: () => {},
       }),
     ).rejects.toThrow('titleId does not exist');
+    expect(appendEvents).not.toHaveBeenCalled();
+    expect(rebuildProjections).not.toHaveBeenCalled();
+    await expect(
+      fs.readFile(eventsPath(rootDir), 'utf8'),
+    ).resolves.toBe('');
+    await expect(readJson(reactionsPath(rootDir))).resolves.toEqual({});
+  });
+
+  it('is all-or-nothing when any draft note fails validation', async () => {
+    const rootDir = await createTempProject();
+    const draftPath = await writeDraft(rootDir, {
+      ...draft(),
+      reactions: [
+        { titleId: 'tt001', rating: 8, notes: 'valid' },
+        { titleId: 'tt002', rating: 9, notes: 123 },
+      ],
+    });
+    const appendEvents = vi.fn();
+    const rebuildProjections = vi.fn();
+
+    await expect(
+      applyReactionDraft({
+        rootDir,
+        draftPath,
+        appendEvents,
+        rebuildProjections,
+        writeOutput: () => {},
+      }),
+    ).rejects.toThrow('reaction 2 notes must be a string.');
     expect(appendEvents).not.toHaveBeenCalled();
     expect(rebuildProjections).not.toHaveBeenCalled();
     await expect(
