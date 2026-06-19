@@ -1391,6 +1391,10 @@ export function createReactionReviewDraft(
 
     return reasons;
   };
+  const normalizeNotes = (value) =>
+    typeof value === 'string' && value.trim().length > 0
+      ? value.trim()
+      : null;
   const isValidRating = (rating) =>
     Number.isInteger(rating) && rating >= 1 && rating <= 10;
   const source =
@@ -1416,6 +1420,7 @@ export function createReactionReviewDraft(
             ? key.trim()
             : '';
       const reasons = normalizeReasons(reaction.reasons);
+      const notes = normalizeNotes(reaction.notes);
       const rating = isValidRating(reaction.rating)
         ? reaction.rating
         : null;
@@ -1427,6 +1432,7 @@ export function createReactionReviewDraft(
       return {
         titleId,
         rating,
+        ...(notes ? { notes } : {}),
         reasons,
       };
     })

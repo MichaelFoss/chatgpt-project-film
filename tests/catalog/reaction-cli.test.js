@@ -921,19 +921,19 @@ describe('reaction CLI', () => {
     ).toBe('reaction-draft-2026-01-03-0407.json');
   });
 
-  it('generates HTML review export payloads from reacted LocalStorage records without notes', () => {
+  it('generates HTML review export payloads from reacted LocalStorage records with notes', () => {
     const draft = createReactionReviewDraft(
       {
         'imdb:tt001': {
           titleId: 'imdb:tt001',
           rating: 9,
-          notes: 'Keep this local-only note out of draft export.',
+          notes: ' Keep this note in draft export. ',
           reasons: [' Sci-Fi ', 'action, sci-fi'],
         },
         'imdb:tt002': {
           titleId: 'imdb:tt002',
           rating: 5,
-          notes: 'Another local-only note.',
+          notes: 'Another exported note.',
           reasons: [],
         },
       },
@@ -950,19 +950,62 @@ describe('reaction CLI', () => {
         {
           titleId: 'imdb:tt001',
           rating: 9,
+          notes: 'Keep this note in draft export.',
           reasons: ['sci-fi', 'action'],
         },
         {
           titleId: 'imdb:tt002',
           rating: 5,
+          notes: 'Another exported note.',
           reasons: [],
         },
       ],
     });
     expect(typeof draft.reactions[0].rating).toBe('number');
     expect(Array.isArray(draft.reactions[0].reasons)).toBe(true);
-    expect(draft.reactions[0]).not.toHaveProperty('notes');
-    expect(draft.reactions[1]).not.toHaveProperty('notes');
+  });
+
+  it('omits empty HTML review notes from draft exports', () => {
+    const draft = createReactionReviewDraft({
+      emptyNotes: {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        notes: '',
+        reasons: [],
+      },
+      whitespaceNotes: {
+        titleId: 'imdb:tt002',
+        rating: 7,
+        notes: '   ',
+        reasons: [],
+      },
+      missingNotes: {
+        titleId: 'imdb:tt003',
+        rating: 6,
+        reasons: [],
+      },
+    });
+
+    expect(draft.reactions).toEqual([
+      {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        reasons: [],
+      },
+      {
+        titleId: 'imdb:tt002',
+        rating: 7,
+        reasons: [],
+      },
+      {
+        titleId: 'imdb:tt003',
+        rating: 6,
+        reasons: [],
+      },
+    ]);
+    expect(
+      draft.reactions.every((reaction) => !('notes' in reaction)),
+    ).toBe(true);
   });
 
   it('excludes empty, unreacted, reasons-only, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
@@ -986,6 +1029,7 @@ describe('reaction CLI', () => {
         validRatedEmptyReasons: {
           titleId: 'imdb:tt006',
           rating: 8,
+          notes: 'Still exported.',
           reasons: [],
         },
       },
@@ -998,6 +1042,7 @@ describe('reaction CLI', () => {
       {
         titleId: 'imdb:tt006',
         rating: 8,
+        notes: 'Still exported.',
         reasons: [],
       },
     ]);
