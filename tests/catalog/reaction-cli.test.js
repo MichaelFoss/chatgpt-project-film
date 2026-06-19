@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
@@ -177,6 +178,207 @@ function reaction(canonicalId, overrides = {}) {
     eventIds: [`evt-${canonicalId}`],
     rating: 8,
     ...overrides,
+  };
+}
+
+function extractReviewHtmlScript(html) {
+  const match = /<script>\n(?<script>[\s\S]*?)\n<\/script>/.exec(html);
+
+  if (!match?.groups?.script) {
+    throw new Error('Unable to find review HTML script.');
+  }
+
+  return match.groups.script;
+}
+
+function createFakeElement({
+  dataset = {},
+  value = '',
+  disabled = false,
+} = {}) {
+  const listeners = new Map();
+
+  return {
+    dataset,
+    value,
+    disabled,
+    textContent: '',
+    href: '',
+    download: '',
+    removed: false,
+    clicked: false,
+    classList: {
+      toggle() {},
+    },
+    setAttribute(name, nextValue) {
+      this[name] = nextValue;
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    dispatchEvent(type) {
+      listeners.get(type)?.({ preventDefault() {} });
+    },
+    click() {
+      this.clicked = true;
+      listeners.get('click')?.({ preventDefault() {} });
+    },
+    remove() {
+      this.removed = true;
+    },
+    querySelectorAll() {
+      return [];
+    },
+    querySelector() {
+      return null;
+    },
+  };
+}
+
+function runReviewHtmlScript({ html, storedReactions = {} }) {
+  const ratingButtons = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+  ].map((rating) =>
+    createFakeElement({
+      dataset: {
+        rating,
+      },
+    }),
+  );
+  const ratingStatus = createFakeElement();
+  const ratingControl = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const reasonInput = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const notesInput = createFakeElement({
+    dataset: {
+      titleId: 'imdb:tt001',
+    },
+  });
+  const exportButton = createFakeElement({
+    disabled: true,
+  });
+  const resetButton = createFakeElement();
+  const localStorageValues = new Map([
+    ['film-reaction-review-v1', JSON.stringify(storedReactions)],
+  ]);
+  const appendedLinks = [];
+  let domContentLoaded;
+  let exportedBlob = null;
+
+  ratingControl.querySelectorAll = (selector) =>
+    selector === '[data-rating]' ? ratingButtons : [];
+  ratingControl.querySelector = (selector) =>
+    selector === '.rating-status' ? ratingStatus : null;
+
+  const document = {
+    body: {
+      append(link) {
+        appendedLinks.push(link);
+      },
+    },
+    addEventListener(type, listener) {
+      if (type === 'DOMContentLoaded') {
+        domContentLoaded = listener;
+      }
+    },
+    querySelectorAll(selector) {
+      if (selector === '[data-rating-control]') {
+        return [ratingControl];
+      }
+
+      if (selector === '[data-reason-input]') {
+        return [reasonInput];
+      }
+
+      if (selector === '[data-notes-input]') {
+        return [notesInput];
+      }
+
+      return [];
+    },
+    querySelector(selector) {
+      if (selector === '[data-export-review]') {
+        return exportButton;
+      }
+
+      if (selector === '[data-reset-review]') {
+        return resetButton;
+      }
+
+      return null;
+    },
+    createElement(tagName) {
+      if (tagName !== 'a') {
+        throw new Error(`Unexpected created element: ${tagName}`);
+      }
+
+      return createFakeElement();
+    },
+  };
+
+  vm.runInNewContext(extractReviewHtmlScript(html), {
+    Blob,
+    Date,
+    document,
+    JSON,
+    Number,
+    Object,
+    Set,
+    String,
+    URL: {
+      createObjectURL(blob) {
+        exportedBlob = blob;
+        return 'blob:review-draft';
+      },
+      revokeObjectURL() {},
+    },
+    localStorage: {
+      getItem(key) {
+        return localStorageValues.get(key) ?? null;
+      },
+      removeItem(key) {
+        localStorageValues.delete(key);
+      },
+      setItem(key, value) {
+        localStorageValues.set(key, value);
+      },
+    },
+    window: {
+      confirm: () => false,
+      location: {
+        reload() {},
+      },
+    },
+  });
+
+  domContentLoaded();
+
+  return {
+    appendedLinks,
+    exportButton,
+    getExportedDraft: async () => JSON.parse(await exportedBlob.text()),
+    getStoredReactions: () =>
+      JSON.parse(localStorageValues.get('film-reaction-review-v1')),
+    notesInput,
+    ratingControl,
+    ratingStatus,
+    reasonInput,
   };
 }
 
@@ -1222,6 +1424,58 @@ describe('reaction CLI', () => {
     expect(html).toContain('reaction.notes = notes;');
     expect(html).not.toContain('autocomplete-list');
     expect(html).not.toContain('taxonomy');
+  });
+
+  it('restores existing HTML review notes as editable and exportable draft data', async () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const page = runReviewHtmlScript({
+      html,
+      storedReactions: {
+        'imdb:tt001': {
+          titleId: 'imdb:tt001',
+          rating: 8,
+          notes: 'Existing restored note.',
+          reasons: ['sci-fi', 'action'],
+        },
+      },
+    });
+
+    expect(page.ratingControl.dataset.rating).toBe('8');
+    expect(page.ratingStatus.textContent).toBe('Liked↔Loved');
+    expect(page.reasonInput.value).toBe('sci-fi, action');
+    expect(page.reasonInput.disabled).toBe(false);
+    expect(page.notesInput.value).toBe('Existing restored note.');
+    expect(page.notesInput.disabled).toBe(false);
+    expect(page.exportButton.disabled).toBe(false);
+
+    page.notesInput.value = 'Edited restored note.';
+    page.notesInput.dispatchEvent('input');
+
+    expect(page.getStoredReactions()).toEqual({
+      'imdb:tt001': {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        notes: 'Edited restored note.',
+        reasons: ['sci-fi', 'action'],
+      },
+    });
+
+    page.exportButton.click();
+
+    expect(await page.getExportedDraft()).toMatchObject({
+      titleCount: 1,
+      reactions: [
+        {
+          titleId: 'imdb:tt001',
+          rating: 8,
+          notes: 'Edited restored note.',
+          reasons: ['sci-fi', 'action'],
+        },
+      ],
+    });
+    expect(page.appendedLinks).toHaveLength(1);
   });
 
   it('formats detailed title information with hydrated metadata', () => {
