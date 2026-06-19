@@ -298,15 +298,24 @@ function runReviewHtmlScript({ html, storedReactions = {} }) {
       }
     },
     querySelectorAll(selector) {
-      if (selector === '[data-rating-control]') {
+      const selectors = selector.split(',').map((item) => item.trim());
+
+      if (selectors.includes('[data-rating-control]')) {
         return [ratingControl];
       }
 
-      if (selector === '[data-reason-input]') {
+      if (
+        selectors.includes('[data-reason-input]') &&
+        selectors.includes('[data-notes-input]')
+      ) {
+        return [reasonInput, notesInput];
+      }
+
+      if (selectors.includes('[data-reason-input]')) {
         return [reasonInput];
       }
 
-      if (selector === '[data-notes-input]') {
+      if (selectors.includes('[data-notes-input]')) {
         return [notesInput];
       }
 
@@ -376,6 +385,7 @@ function runReviewHtmlScript({ html, storedReactions = {} }) {
     getStoredReactions: () =>
       JSON.parse(localStorageValues.get('film-reaction-review-v1')),
     notesInput,
+    ratingButtons,
     ratingControl,
     ratingStatus,
     reasonInput,
@@ -1063,19 +1073,19 @@ describe('reaction CLI', () => {
       'input.addEventListener("input", () => { persistNotes(input); updateExportButtonState(); });',
     );
     expect(html).toContain(
-      'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
+      'input.disabled = !isEnabledRating(storedReaction?.rating);',
     );
     expect(html).toContain(
-      'const updateReasonInputDisabledState = (titleId, rating) => {',
+      'const updateReactionFieldDisabledState = (titleId, rating) => {',
     );
     expect(html).toContain(
-      'input.disabled = !validRatings.has(rating);',
+      'input.disabled = !isEnabledRating(rating);',
     );
     expect(html).toContain(
-      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+      'updateReactionFieldDisabledState(control.dataset.titleId, nextRating);',
     );
     expect(html).toContain(
-      'updateReasonInputDisabledState(control.dataset.titleId, String(storedRating));',
+      'updateReactionFieldDisabledState(control.dataset.titleId, String(storedRating));',
     );
     expect(html).toContain('rating: existing.rating,');
     expect(html).toContain('reasons,');
@@ -1299,11 +1309,11 @@ describe('reaction CLI', () => {
       'input.value = formatReasons(storedReaction?.reasons);',
     );
     expect(html).toContain(
-      'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
+      'input.disabled = !isEnabledRating(storedReaction?.rating);',
     );
   });
 
-  it('keeps HTML review notes editable regardless of rating state', () => {
+  it('keeps HTML review notes visible but disabled until a rating exists', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
     ]);
@@ -1317,35 +1327,40 @@ describe('reaction CLI', () => {
 
     expect(notesControl).toContain('<textarea class="notes-input"');
     expect(notesControl).toContain('data-notes-input');
-    expect(notesControl).not.toContain('disabled');
-    expect(html).not.toContain('updateNotesInputDisabledState');
+    expect(notesControl).toContain('disabled');
+    expect(html).toContain(
+      'document.querySelectorAll("[data-reason-input], [data-notes-input]")',
+    );
+    expect(html).toContain(
+      'input.disabled = !isEnabledRating(storedReaction?.rating);',
+    );
   });
 
-  it('enables HTML review reason editing when a rating is selected', () => {
+  it('enables HTML review reason and notes editing when a rating is selected', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
     ]);
 
     expect(html).toContain(
-      'input.disabled = !validRatings.has(rating);',
+      'input.disabled = !isEnabledRating(rating);',
     );
     expect(html).toContain(
-      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+      'updateReactionFieldDisabledState(control.dataset.titleId, nextRating);',
     );
     expect(html).toContain('persistRating(control, nextRating)');
   });
 
-  it('disables HTML review reason editing after rating removal without clearing reasons', () => {
+  it('disables HTML review reason and notes editing after rating removal without clearing values', () => {
     const html = renderReactionReviewHtml([
       testCatalog()['imdb:tt001'],
     ]);
 
     expect(html).toContain('currentRating === rating ? "" : rating');
     expect(html).toContain(
-      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+      'updateReactionFieldDisabledState(control.dataset.titleId, nextRating);',
     );
     expect(html).toContain(
-      'input.disabled = !validRatings.has(rating);',
+      'input.disabled = !isEnabledRating(rating);',
     );
     expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
@@ -1476,6 +1491,81 @@ describe('reaction CLI', () => {
       ],
     });
     expect(page.appendedLinks).toHaveLength(1);
+  });
+
+  it('restores unrated HTML review notes as visible disabled non-exportable data', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const page = runReviewHtmlScript({
+      html,
+      storedReactions: {
+        'imdb:tt001': {
+          titleId: 'imdb:tt001',
+          notes: 'Unrated restored note.',
+          reasons: ['surreal'],
+        },
+      },
+    });
+
+    expect(page.ratingControl.dataset.rating).toBeUndefined();
+    expect(page.ratingStatus.textContent).toBe('');
+    expect(page.reasonInput.value).toBe('surreal');
+    expect(page.reasonInput.disabled).toBe(true);
+    expect(page.notesInput.value).toBe('Unrated restored note.');
+    expect(page.notesInput.disabled).toBe(true);
+    expect(page.exportButton.disabled).toBe(true);
+  });
+
+  it('toggles HTML review notes disabled state with rating selection and removal without clearing notes', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+    const page = runReviewHtmlScript({
+      html,
+      storedReactions: {
+        'imdb:tt001': {
+          titleId: 'imdb:tt001',
+          notes: 'Keep visible after unrating.',
+          reasons: ['action'],
+        },
+      },
+    });
+
+    expect(page.notesInput.disabled).toBe(true);
+
+    page.ratingButtons
+      .find((button) => button.dataset.rating === '8')
+      .click();
+
+    expect(page.reasonInput.disabled).toBe(false);
+    expect(page.notesInput.disabled).toBe(false);
+    expect(page.notesInput.value).toBe('Keep visible after unrating.');
+    expect(page.getStoredReactions()).toEqual({
+      'imdb:tt001': {
+        titleId: 'imdb:tt001',
+        rating: 8,
+        notes: 'Keep visible after unrating.',
+        reasons: ['action'],
+      },
+    });
+
+    page.ratingButtons
+      .find((button) => button.dataset.rating === '8')
+      .click();
+
+    expect(page.reasonInput.disabled).toBe(true);
+    expect(page.notesInput.disabled).toBe(true);
+    expect(page.reasonInput.value).toBe('action');
+    expect(page.notesInput.value).toBe('Keep visible after unrating.');
+    expect(page.exportButton.disabled).toBe(true);
+    expect(page.getStoredReactions()).toEqual({
+      'imdb:tt001': {
+        titleId: 'imdb:tt001',
+        notes: 'Keep visible after unrating.',
+        reasons: ['action'],
+      },
+    });
   });
 
   it('formats detailed title information with hydrated metadata', () => {
@@ -2622,7 +2712,7 @@ describe('reaction CLI', () => {
       '.notes-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
     );
     expect(html).toContain(
-      '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
+      '.reason-input:disabled, .notes-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
     );
     expect(html).not.toContain('.reason-input:disabled::placeholder');
     expect(html).toContain('.rating-label { min-height: 1rem;');
