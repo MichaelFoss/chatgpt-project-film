@@ -91,10 +91,13 @@ ordering. `--random` and `--ordered` are mutually exclusive selection
 mode flags.
 
 `yarn react --html` uses the same review-session title selection path
-and writes a minimal static review artifact to
+and writes a static poster-grid review artifact to
 `reports/reaction-review.html`, then prints a clickable `file://` URL.
 HTML mode defaults to 100 selected titles unless `--limit` is provided.
-It does not write reaction events.
+The artifact displays poster, title, compact non-persistent rating
+controls, year, genres, and top-billed actors. Ratings can be assigned
+with digit keys, clicked or tapped, and deselected before refresh, but
+HTML mode does not write reaction events.
 
 Interactive reaction review screens use a consistent terminal layout:
 the title and year start at column 0, hydrated media type and top-billed

@@ -769,7 +769,7 @@ describe('reaction CLI', () => {
     );
   });
 
-  it('renders minimal HTML review content with escaped title metadata', () => {
+  it('renders poster-grid HTML review content with escaped title metadata', () => {
     const html = renderReactionReviewHtml([
       {
         canonicalId: 'manual:a&b',
@@ -779,10 +779,25 @@ describe('reaction CLI', () => {
     ]);
 
     expect(html).toContain('<title>Reaction Review</title>');
-    expect(html).toContain('Alpha &lt;Beta&gt; (2001)');
-    expect(html).toContain('<code>manual:a&amp;b</code>');
-    expect(html).not.toContain('poster');
+    expect(html).toContain('class="poster-grid"');
+    expect(html).toContain('<h2>Alpha &lt;Beta&gt;</h2>');
+    expect(html).toContain('<dt>Year</dt><dd>2001</dd>');
+    expect(html).toContain('No poster');
+    expect(html).toContain(
+      '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>',
+    );
+    expect(html).not.toContain('<output class="rating-status"');
+    expect(html).not.toContain('Rating for Alpha &lt;Beta&gt;');
+    expect(html).toContain('10 Exceptional');
+    expect(html).toContain('data-rating-control');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('setRating(control, event.key)');
+    expect(html).toContain('"6": "Mixed↔Liked"');
+    expect(html).toContain('"2": "Hated↔Disliked"');
+    expect(html).not.toContain('Selected ${labels[nextRating]}');
+    expect(html).not.toContain('<code>manual:a&amp;b</code>');
     expect(html).not.toContain('localStorage');
+    expect(html).not.toContain('Export');
   });
 
   it('formats detailed title information with hydrated metadata', () => {
@@ -1855,9 +1870,115 @@ describe('reaction CLI', () => {
     expect(result.outputPath).toBe(
       path.join(rootDir, 'reports', 'reaction-review.html'),
     );
-    expect(html).toContain('Alpha (2001)');
-    expect(html).toContain('<code>imdb:tt001</code>');
-    expect(html).toContain('Beta (2002)');
+    expect(html).toContain('class="poster-grid"');
+    expect(html).toContain(
+      'src="https://example.test/poster-alpha.jpg"',
+    );
+    expect(html).toContain('alt="Alpha poster"');
+    expect(html).toContain('<h2>Alpha</h2>');
+    const ratingHeader =
+      '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>';
+    expect(html.indexOf('<h2>Alpha</h2>')).toBeLessThan(
+      html.indexOf(ratingHeader),
+    );
+    expect(html.indexOf(ratingHeader)).toBeLessThan(
+      html.indexOf('<dt>Year</dt><dd>2001</dd>'),
+    );
+    expect(html).toContain('<dt>Year</dt><dd>2001</dd>');
+    expect(html).toContain('<dt>Genres</dt><dd>Action, Sci-Fi</dd>');
+    expect(html).toContain(
+      [
+        '<dt>Top-billed actors</dt><dd><ul class="actor-list">',
+        '<li>Actor One</li>',
+        '<li>Actor Two</li>',
+        '<li>Actor Three</li>',
+        '</ul></dd>',
+      ].join('\n'),
+    );
+    expect(html).toContain('<h2>Beta</h2>');
+    expect(html).toContain('<dt>Year</dt><dd>2002</dd>');
+    expect(html).toContain('<dt>Genres</dt><dd>Drama</dd>');
+    expect(html).toContain(
+      [
+        '<dt>Top-billed actors</dt><dd><ul class="actor-list">',
+        '<li>Series Actor</li>',
+        '</ul></dd>',
+      ].join('\n'),
+    );
+    expect(html).toContain(
+      '.rating-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));',
+    );
+    expect(html).toContain(
+      '.rating-option[data-rating="10"] { grid-column: 2; }',
+    );
+    expect(html).toContain(
+      '.rating-option[data-rating="9"], .rating-option[data-rating="6"], .rating-option[data-rating="3"] { grid-column: 1; }',
+    );
+    expect(html).toContain(
+      '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>',
+    );
+    expect(html).not.toContain('.title-card:focus');
+    expect(
+      html.indexOf('</button>\n</div>\n</div>\n<dl class="metadata">'),
+    ).toBeGreaterThan(-1);
+    expect(html).toContain('.rating-label { min-height: 1rem;');
+    expect(html).toContain('white-space: nowrap;');
+    expect(html).toContain('text-overflow: ellipsis;');
+    expect(html).toContain(
+      '.rating-control:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-color: var(--accent); box-shadow: none; }',
+    );
+    expect(html).not.toContain('<output class="rating-status"');
+    expect(html).not.toContain(
+      '.rating-status { display: block; min-height:',
+    );
+    expect(html).not.toContain('Rating for Alpha');
+    expect(html).toContain('data-rating-control');
+    expect(html).toContain('data-rating-name="rating-0"');
+    expect(html).toContain('data-rating="10"');
+    expect(html).toContain('10 Exceptional');
+    expect(html).toContain('data-rating="9"');
+    expect(html).toContain('9 Loved');
+    expect(html).toContain('data-rating="8"');
+    expect(html).toContain('data-rating="7"');
+    expect(html).toContain('7 Liked');
+    expect(html).toContain('data-rating="6"');
+    expect(html).toContain('data-rating="5"');
+    expect(html).toContain('5 Mixed');
+    expect(html).toContain('data-rating="4"');
+    expect(html).toContain('data-rating="3"');
+    expect(html).toContain('3 Disliked');
+    expect(html).toContain('data-rating="2"');
+    expect(html).toContain('data-rating="1"');
+    expect(html).toContain('1 Hated');
+    expect(html).not.toContain('data-clear-rating');
+    expect(html).not.toContain('Clear rating');
+    expect(html).toContain('"10": "Exceptional"');
+    expect(html).toContain('"9": "Loved"');
+    expect(html).toContain('"8": "Liked↔Loved"');
+    expect(html).toContain('"7": "Liked"');
+    expect(html).toContain('"6": "Mixed↔Liked"');
+    expect(html).toContain('"5": "Mixed"');
+    expect(html).toContain('"4": "Disliked↔Mixed"');
+    expect(html).toContain('"3": "Disliked"');
+    expect(html).toContain('"2": "Hated↔Disliked"');
+    expect(html).toContain('"1": "Hated"');
+    expect(html).toContain(
+      'status.textContent = nextRating ? labels[nextRating] : "Unrated";',
+    );
+    expect(html.indexOf('data-rating="10"')).toBeLessThan(
+      html.indexOf('data-rating="9"'),
+    );
+    expect(html.indexOf('data-rating="9"')).toBeLessThan(
+      html.indexOf('data-rating="8"'),
+    );
+    expect(html).toContain('currentRating === rating ? "" : rating');
+    expect(html).toContain('setRating(control, "10")');
+    expect(html).toContain('event.key === "Backspace"');
+    expect(html).not.toContain('type="radio"');
+    expect(html).not.toContain('This plot summary must not appear.');
+    expect(html).not.toContain('imdb.com/title');
+    expect(html).not.toContain('localStorage');
+    expect(html).not.toContain('Export');
     expect(html).not.toContain('Gamma (2003)');
     await expect(
       fs.readFile(
@@ -1902,9 +2023,10 @@ describe('reaction CLI', () => {
     expect(
       result.selectedTitles.map((item) => item.canonicalId),
     ).toEqual(['imdb:tt003', 'imdb:tt001']);
-    expect(html).toContain('Gamma (2003)');
-    expect(html).toContain('Alpha (2001)');
-    expect(html).not.toContain('Beta (2002)');
+    expect(html).toContain('<h2>Gamma</h2>');
+    expect(html).toContain('<dt>Year</dt><dd>2003</dd>');
+    expect(html).toContain('<h2>Alpha</h2>');
+    expect(html).not.toContain('<h2>Beta</h2>');
   });
 
   it('excludes ignored titles from --limit workflows', async () => {

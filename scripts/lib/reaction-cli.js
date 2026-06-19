@@ -1246,24 +1246,93 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function formatHtmlReviewTitle(item) {
-  const year = item.releaseYear
-    ? ` (${escapeHtml(item.releaseYear)})`
-    : '';
+function formatHtmlList(values, emptyText) {
+  const items = Array.isArray(values)
+    ? values.filter(isNonEmptyString)
+    : [];
+
+  return items.length > 0
+    ? escapeHtml(items.join(', '))
+    : `<span class="muted">${escapeHtml(emptyText)}</span>`;
+}
+
+function formatHtmlActorList(values) {
+  const actors = Array.isArray(values)
+    ? values.filter(isNonEmptyString)
+    : [];
+
+  if (actors.length === 0) {
+    return '<span class="muted">No actors available</span>';
+  }
 
   return [
-    '<li>',
-    `<strong>${escapeHtml(item.title)}${year}</strong>`,
-    `<br><code>${escapeHtml(item.canonicalId)}</code>`,
-    '</li>',
-  ].join('');
+    '<ul class="actor-list">',
+    ...actors.map((actor) => `<li>${escapeHtml(actor)}</li>`),
+    '</ul>',
+  ].join('\n');
+}
+
+function formatHtmlPoster(item) {
+  if (!isNonEmptyString(item?.posterUrl)) {
+    return '<div class="poster poster-missing" aria-label="No poster available">No poster</div>';
+  }
+
+  return [
+    `<img class="poster" src="${escapeHtml(item.posterUrl)}"`,
+    `alt="${escapeHtml(`${item.title} poster`)}" loading="lazy">`,
+  ].join(' ');
+}
+
+function formatHtmlRatingControls(item, index) {
+  const groupName = `rating-${index}`;
+
+  return [
+    `<div class="rating-control" role="group" aria-label="Rating" tabindex="0" data-rating-control data-rating-name="${escapeHtml(groupName)}">`,
+    '<div class="rating-label">Rating: <span class="rating-status" aria-live="polite">Unrated</span></div>',
+    '<div class="rating-options" aria-hidden="false">',
+    ...ratingScale.map(({ rating, label }) => {
+      const labelText = label ? `${rating} ${label}` : `${rating}`;
+
+      return [
+        '<button class="rating-option" type="button" tabindex="-1"',
+        `data-rating="${rating}" aria-pressed="false" aria-label="${escapeHtml(labelText)}" title="${escapeHtml(labelText)}">`,
+        `${rating}`,
+        '</button>',
+      ].join('');
+    }),
+    '</div>',
+    '</div>',
+  ].join('\n');
+}
+
+function formatHtmlReviewTitle(item, index) {
+  const year = item.releaseYear
+    ? escapeHtml(item.releaseYear)
+    : 'Unknown';
+  const genres = formatHtmlList(item.genres, 'No genres available');
+  const actors = formatHtmlActorList(formatTopBilledActors(item));
+
+  return [
+    '<article class="title-card">',
+    formatHtmlPoster(item),
+    '<div class="card-body">',
+    `<h2>${escapeHtml(item.title)}</h2>`,
+    formatHtmlRatingControls(item, index),
+    '<dl class="metadata">',
+    `<div><dt>Year</dt><dd>${year}</dd></div>`,
+    `<div><dt>Genres</dt><dd>${genres}</dd></div>`,
+    `<div><dt>Top-billed actors</dt><dd>${actors}</dd></div>`,
+    '</dl>',
+    '</div>',
+    '</article>',
+  ].join('\n');
 }
 
 export function renderReactionReviewHtml(items) {
-  const titleList =
+  const titleCards =
     items.length > 0
       ? items.map(formatHtmlReviewTitle).join('\n')
-      : '<li>No eligible-unreacted titles found.</li>';
+      : '<p class="empty-state">No eligible-unreacted titles found.</p>';
 
   return [
     '<!doctype html>',
@@ -1272,12 +1341,85 @@ export function renderReactionReviewHtml(items) {
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<title>Reaction Review</title>',
+    '<style>',
+    ':root { color-scheme: light; --bg: #f4f1ec; --ink: #1e2320; --muted: #6b6258; --panel: #fffdfa; --line: #d7d0c6; --accent: #1c6f6a; --accent-ink: #ffffff; --poster: #d8d6cf; }',
+    '* { box-sizing: border-box; }',
+    'body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }',
+    'main { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }',
+    'header { margin-bottom: 22px; }',
+    'h1 { margin: 0 0 6px; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; }',
+    '.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; align-items: start; }',
+    '.title-card { min-width: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(30, 35, 32, 0.08); }',
+    '.poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: var(--poster); }',
+    '.poster-missing { display: grid; place-items: center; color: var(--muted); font-size: 0.9rem; }',
+    '.card-body { padding: 14px; }',
+    'h2 { margin: 0 0 10px; font-size: 1.02rem; line-height: 1.2; overflow-wrap: anywhere; }',
+    '.metadata { display: grid; gap: 8px; margin: 12px 0 0; }',
+    '.metadata div { min-width: 0; }',
+    'dt { margin: 0 0 2px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }',
+    'dd { margin: 0; font-size: 0.9rem; line-height: 1.35; overflow-wrap: anywhere; }',
+    '.actor-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }',
+    '.actor-list li { min-width: 0; overflow-wrap: anywhere; }',
+    '.muted { color: var(--muted); }',
+    '.rating-control { margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #f8f5f0; }',
+    '.rating-control:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-color: var(--accent); box-shadow: none; }',
+    '.rating-label { min-height: 1rem; margin-bottom: 5px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }',
+    '.rating-status { color: var(--ink); }',
+    '.rating-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }',
+    '.rating-option { min-width: 0; min-height: 28px; padding: 4px 0; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; }',
+    '.rating-option[data-rating="10"] { grid-column: 2; }',
+    '.rating-option[data-rating="9"], .rating-option[data-rating="6"], .rating-option[data-rating="3"] { grid-column: 1; }',
+    '.rating-option:hover { border-color: var(--accent); }',
+    '.rating-option.is-selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; }',
+    '.empty-state { padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }',
+    '@media (max-width: 560px) { main { width: min(100% - 20px, 1480px); padding-top: 18px; } .poster-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; } .card-body { padding: 11px; } }',
+    '</style>',
+    '<script>',
+    'document.addEventListener("DOMContentLoaded", () => {',
+    '  const labels = { "10": "Exceptional", "9": "Loved", "8": "Liked↔Loved", "7": "Liked", "6": "Mixed↔Liked", "5": "Mixed", "4": "Disliked↔Mixed", "3": "Disliked", "2": "Hated↔Disliked", "1": "Hated" };',
+    '  const setRating = (control, rating) => {',
+    '    const currentRating = control.dataset.rating || "";',
+    '    const nextRating = currentRating === rating ? "" : rating;',
+    '    control.dataset.rating = nextRating;',
+    '    control.querySelectorAll("[data-rating]").forEach((button) => {',
+    '      const selected = button.dataset.rating === nextRating;',
+    '      button.classList.toggle("is-selected", selected);',
+    '      button.setAttribute("aria-pressed", selected ? "true" : "false");',
+    '    });',
+    '    const status = control.querySelector(".rating-status");',
+    '    if (status) {',
+    '      status.textContent = nextRating ? labels[nextRating] : "Unrated";',
+    '    }',
+    '  };',
+    '  document.querySelectorAll("[data-rating-control]").forEach((control) => {',
+    '    control.querySelectorAll("[data-rating]").forEach((button) => {',
+    '      button.addEventListener("click", () => setRating(control, button.dataset.rating));',
+    '    });',
+    '    control.addEventListener("keydown", (event) => {',
+    '      if (/^[1-9]$/.test(event.key)) {',
+    '        event.preventDefault();',
+    '        setRating(control, event.key);',
+    '      } else if (event.key === "0") {',
+    '        event.preventDefault();',
+    '        setRating(control, "10");',
+    '      } else if (event.key === "Backspace" || event.key === "Delete" || event.key === "Escape") {',
+    '        event.preventDefault();',
+    '        setRating(control, "");',
+    '      }',
+    '    });',
+    '  });',
+    '});',
+    '</script>',
     '</head>',
     '<body>',
+    '<main>',
+    '<header>',
     '<h1>Reaction Review</h1>',
-    '<ol>',
-    titleList,
-    '</ol>',
+    '</header>',
+    '<section class="poster-grid" aria-label="Selected titles">',
+    titleCards,
+    '</section>',
+    '</main>',
     '</body>',
     '</html>',
     '',
