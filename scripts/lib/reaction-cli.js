@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   createPrompt,
   makeTheme,
@@ -28,6 +29,7 @@ import { ratingForReaction, ratingScale } from './reaction-ratings.js';
 import { loadRepoEnv } from './local-env.js';
 
 const defaultLimit = 1;
+export const DEFAULT_HTML_LIMIT = 100;
 const defaultSearchResultThreshold = 25;
 const searchResultThresholdEnvVar = 'REACTION_SEARCH_RESULT_THRESHOLD';
 export const reviewIndent = '  ';
@@ -334,6 +336,12 @@ export function createReactionCommand() {
         'search the catalog and react to a selected title',
       ).conflicts('id'),
     )
+    .addOption(
+      new Option(
+        '--html',
+        'generate a static HTML review artifact instead of using the CLI prompt',
+      ),
+    )
     .action(() => {});
 }
 
@@ -349,15 +357,21 @@ export function parseReactionCliArgs(args) {
   const options = command.opts();
   const hasTargetSelector =
     Boolean(options.id) || Boolean(options.search);
+  const html = Boolean(options.html);
+  const limit =
+    html && command.getOptionValueSource('limit') === 'default'
+      ? DEFAULT_HTML_LIMIT
+      : options.limit;
 
   return {
-    limit: options.limit,
+    limit,
     movies: Boolean(options.movies),
     tv: Boolean(options.tv),
     random: !hasTargetSelector && !options.ordered,
     ordered: Boolean(options.ordered),
     id: options.id ?? null,
     search: Boolean(options.search),
+    html,
   };
 }
 
@@ -1160,6 +1174,118 @@ export function hasReachedSessionLimit(processedCount, limit) {
   return limit !== 'none' && processedCount >= limit;
 }
 
+export function selectReactionSessionTitles({
+  catalog,
+  reactions,
+  ignored,
+  options,
+  targetItem = null,
+  random = Math.random,
+} = {}) {
+  if (targetItem) {
+    return [targetItem];
+  }
+
+  const selectedItems = [];
+  const selectedTitleIds = new Set();
+  const ignoredTitleIds = getIgnoredTitleIds(ignored);
+
+  while (!hasReachedSessionLimit(selectedItems.length, options.limit)) {
+    const excludedTitleIds = new Set([
+      ...selectedTitleIds,
+      ...ignoredTitleIds,
+    ]);
+    const item = options.random
+      ? selectRandomUnreactedTitle(
+          catalog,
+          reactions,
+          excludedTitleIds,
+          random,
+          options,
+        )
+      : selectFirstUnreactedTitle(
+          catalog,
+          reactions,
+          excludedTitleIds,
+          options,
+        );
+
+    if (!item) {
+      break;
+    }
+
+    selectedItems.push(item);
+    selectedTitleIds.add(item.canonicalId);
+  }
+
+  return selectedItems;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatHtmlReviewTitle(item) {
+  const year = item.releaseYear
+    ? ` (${escapeHtml(item.releaseYear)})`
+    : '';
+
+  return [
+    '<li>',
+    `<strong>${escapeHtml(item.title)}${year}</strong>`,
+    `<br><code>${escapeHtml(item.canonicalId)}</code>`,
+    '</li>',
+  ].join('');
+}
+
+export function renderReactionReviewHtml(items) {
+  const titleList =
+    items.length > 0
+      ? items.map(formatHtmlReviewTitle).join('\n')
+      : '<li>No eligible-unreacted titles found.</li>';
+
+  return [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<title>Reaction Review</title>',
+    '</head>',
+    '<body>',
+    '<h1>Reaction Review</h1>',
+    '<ol>',
+    titleList,
+    '</ol>',
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
+}
+
+export async function writeReactionReviewHtml({
+  rootDir = process.cwd(),
+  items,
+  outputPath = path.join(rootDir, 'reports', 'reaction-review.html'),
+} = {}) {
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(
+    outputPath,
+    renderReactionReviewHtml(items),
+    'utf8',
+  );
+
+  return {
+    outputPath,
+    fileUrl: pathToFileURL(outputPath).href,
+  };
+}
+
 async function persistReactionEvents({
   rootDir,
   catalog,
@@ -1228,7 +1354,6 @@ export async function runReactionSession({
     readReactionState({ rootDir }),
     readReactionIgnoredState({ rootDir }),
   ]);
-  const processedTitleIds = new Set();
   const bufferedEvents = [];
   const targetItem = await resolveTargetReactionTitle({
     rootDir,
@@ -1249,39 +1374,40 @@ export async function runReactionSession({
     };
   }
 
+  const sessionTitles = selectReactionSessionTitles({
+    catalog,
+    reactions,
+    ignored,
+    options,
+    targetItem,
+    random,
+  });
+
+  if (options.html) {
+    const report = await writeReactionReviewHtml({
+      rootDir,
+      items: sessionTitles,
+    });
+
+    writeOutput(report.fileUrl);
+
+    return {
+      status: 'html-generated',
+      outputPath: report.outputPath,
+      fileUrl: report.fileUrl,
+      selectedTitles: sessionTitles,
+      processedCount: sessionTitles.length,
+    };
+  }
+
   let processedCount = 0;
-  const ignoredTitleIds = getIgnoredTitleIds(ignored);
   let reviewScreensDisplayed = 0;
 
-  while (
-    targetItem
-      ? processedCount === 0
-      : !hasReachedSessionLimit(processedCount, options.limit)
-  ) {
-    const item =
-      targetItem ??
-      (options.random
-        ? selectRandomUnreactedTitle(
-            catalog,
-            reactions,
-            new Set([...processedTitleIds, ...ignoredTitleIds]),
-            random,
-            options,
-          )
-        : selectFirstUnreactedTitle(
-            catalog,
-            reactions,
-            new Set([...processedTitleIds, ...ignoredTitleIds]),
-            options,
-          ));
+  if (sessionTitles.length === 0) {
+    writeOutput(formatReactionTitle(null));
+  }
 
-    if (!item) {
-      if (processedCount === 0) {
-        writeOutput(formatReactionTitle(null));
-      }
-      break;
-    }
-
+  for (const item of sessionTitles) {
     const reviewScreen = formatReactionTitle(item);
     writeOutput(
       reviewScreensDisplayed > 0
@@ -1302,7 +1428,6 @@ export async function runReactionSession({
       const reaction = await promptForReaction({ reactionPrompt });
 
       if (reaction === 'skip') {
-        processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
         continue;
@@ -1359,7 +1484,6 @@ export async function runReactionSession({
           ...event,
           title: item.title,
         });
-        processedTitleIds.add(item.canonicalId);
         processedCount += 1;
         needsReaction = false;
         continue;
@@ -1385,7 +1509,6 @@ export async function runReactionSession({
         ...event,
         title: item.title,
       });
-      processedTitleIds.add(item.canonicalId);
       processedCount += 1;
       needsReaction = false;
     }

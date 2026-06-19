@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createReactionPromptConfig,
   createReactionCommand,
+  DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   findReactionTitleById,
@@ -29,6 +30,7 @@ import {
   readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
+  renderReactionReviewHtml,
   reviewIndent,
   reviewNestedIndent,
   reviewPlotWrapColumns,
@@ -38,6 +40,7 @@ import {
   selectFirstUnreactedTitle,
   selectEligibleReactionTitles,
   selectRandomUnreactedTitle,
+  selectReactionSessionTitles,
   selectReactionTitleFromSearch,
   selectReactionChoiceByKey,
   selectReactionTitle,
@@ -222,6 +225,7 @@ describe('reaction CLI', () => {
       ordered: false,
       id: null,
       search: false,
+      html: false,
     });
   });
 
@@ -236,6 +240,7 @@ describe('reaction CLI', () => {
       ordered: false,
       id: null,
       search: false,
+      html: false,
     });
     expect(parseReactionCliArgs(['--limit', 'none', '--tv'])).toEqual({
       limit: 'none',
@@ -245,6 +250,7 @@ describe('reaction CLI', () => {
       ordered: false,
       id: null,
       search: false,
+      html: false,
     });
     expect(parseReactionCliArgs(['--ordered'])).toEqual({
       limit: 1,
@@ -254,6 +260,7 @@ describe('reaction CLI', () => {
       ordered: true,
       id: null,
       search: false,
+      html: false,
     });
     expect(parseReactionCliArgs(['--id', 'imdb:tt0133093'])).toEqual({
       limit: 1,
@@ -263,6 +270,7 @@ describe('reaction CLI', () => {
       ordered: false,
       id: 'imdb:tt0133093',
       search: false,
+      html: false,
     });
     expect(parseReactionCliArgs(['--search'])).toEqual({
       limit: 1,
@@ -272,6 +280,30 @@ describe('reaction CLI', () => {
       ordered: false,
       id: null,
       search: true,
+      html: false,
+    });
+  });
+
+  it('parses HTML mode with an HTML-specific default limit', () => {
+    expect(parseReactionCliArgs(['--html'])).toEqual({
+      limit: DEFAULT_HTML_LIMIT,
+      movies: false,
+      tv: false,
+      random: true,
+      ordered: false,
+      id: null,
+      search: false,
+      html: true,
+    });
+    expect(parseReactionCliArgs(['--html', '--limit', '25'])).toEqual({
+      limit: 25,
+      movies: false,
+      tv: false,
+      random: true,
+      ordered: false,
+      id: null,
+      search: false,
+      html: true,
     });
   });
 
@@ -329,6 +361,7 @@ describe('reaction CLI', () => {
     expect(helpText).toContain(
       '--ordered           use deterministic title ordering',
     );
+    expect(helpText).toContain('--html');
     expect(helpText).not.toContain('only include television titles');
   });
 
@@ -516,6 +549,48 @@ describe('reaction CLI', () => {
     });
   });
 
+  it('selects session title lists with the same ordered selector used by review sessions', () => {
+    const titles = selectReactionSessionTitles({
+      catalog: extendedCatalog(),
+      reactions: {},
+      ignored: {},
+      options: {
+        limit: 2,
+        movies: false,
+        tv: false,
+        random: false,
+        ordered: true,
+      },
+    });
+
+    expect(titles.map((item) => item.canonicalId)).toEqual([
+      'imdb:tt001',
+      'imdb:tt002',
+    ]);
+  });
+
+  it('selects session title lists with the same random selector used by review sessions', () => {
+    const randomValues = [0.999, 0];
+    const titles = selectReactionSessionTitles({
+      catalog: extendedCatalog(),
+      reactions: {},
+      ignored: {},
+      options: {
+        limit: 2,
+        movies: false,
+        tv: false,
+        random: true,
+        ordered: false,
+      },
+      random: () => randomValues.shift(),
+    });
+
+    expect(titles.map((item) => item.canonicalId)).toEqual([
+      'imdb:tt003',
+      'imdb:tt001',
+    ]);
+  });
+
   it('selects random movie titles only from movie candidates', () => {
     const firstMovie = selectRandomUnreactedTitle(
       extendedCatalog(),
@@ -691,6 +766,22 @@ describe('reaction CLI', () => {
     ).toBe(
       ['Missing Actors (2020)', '', `${reviewIndent}Movie`].join('\n'),
     );
+  });
+
+  it('renders minimal HTML review content with escaped title metadata', () => {
+    const html = renderReactionReviewHtml([
+      {
+        canonicalId: 'manual:a&b',
+        title: 'Alpha <Beta>',
+        releaseYear: 2001,
+      },
+    ]);
+
+    expect(html).toContain('<title>Reaction Review</title>');
+    expect(html).toContain('Alpha &lt;Beta&gt; (2001)');
+    expect(html).toContain('<code>manual:a&amp;b</code>');
+    expect(html).not.toContain('poster');
+    expect(html).not.toContain('localStorage');
   });
 
   it('formats detailed title information with hydrated metadata', () => {
@@ -1714,6 +1805,83 @@ describe('reaction CLI', () => {
     expect(
       result.bufferedEvents.map((event) => event.canonicalId),
     ).toEqual(['imdb:tt003', 'imdb:tt001', 'imdb:tt002']);
+  });
+
+  it('generates an HTML review artifact from the shared ordered session selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const { output, result } = await captureReactionSession({
+      rootDir,
+      args: ['--html', '--ordered', '--limit', '2'],
+      reactionPrompt: async () => {
+        throw new Error('HTML mode should not prompt for reactions');
+      },
+    });
+    const html = await fs.readFile(result.outputPath, 'utf8');
+
+    expect(result).toMatchObject({
+      status: 'html-generated',
+      processedCount: 2,
+    });
+    expect(
+      result.selectedTitles.map((item) => item.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt002']);
+    expect(output).toEqual([result.fileUrl]);
+    expect(result.fileUrl).toMatch(/^file:\/\//);
+    expect(result.outputPath).toBe(
+      path.join(rootDir, 'reports', 'reaction-review.html'),
+    );
+    expect(html).toContain('Alpha (2001)');
+    expect(html).toContain('<code>imdb:tt001</code>');
+    expect(html).toContain('Beta (2002)');
+    expect(html).not.toContain('Gamma (2003)');
+    await expect(
+      fs.readFile(
+        path.join(rootDir, 'events', 'title-reactions.events.ndjson'),
+        'utf8',
+      ),
+    ).resolves.toBe('');
+  });
+
+  it('uses the HTML default limit without changing CLI session defaults', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--html', '--ordered'],
+    });
+
+    expect(result).toMatchObject({
+      status: 'html-generated',
+      processedCount: 3,
+    });
+    expect(
+      result.selectedTitles.map((item) => item.canonicalId),
+    ).toEqual(['imdb:tt001', 'imdb:tt002', 'imdb:tt003']);
+  });
+
+  it('generates an HTML review artifact from the shared random session selection', async () => {
+    const rootDir = await createTempProject({
+      catalog: extendedCatalog(),
+    });
+    const randomValues = [0.999, 0];
+
+    const { result } = await captureReactionSession({
+      rootDir,
+      args: ['--html', '--random', '--limit', '2'],
+      random: () => randomValues.shift(),
+    });
+    const html = await fs.readFile(result.outputPath, 'utf8');
+
+    expect(
+      result.selectedTitles.map((item) => item.canonicalId),
+    ).toEqual(['imdb:tt003', 'imdb:tt001']);
+    expect(html).toContain('Gamma (2003)');
+    expect(html).toContain('Alpha (2001)');
+    expect(html).not.toContain('Beta (2002)');
   });
 
   it('excludes ignored titles from --limit workflows', async () => {

@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createReactionPromptConfig,
+  DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
@@ -27,6 +28,7 @@ export { ratingForReaction } from './lib/reaction-ratings.js';
 
 export {
   createReactionPromptConfig,
+  DEFAULT_HTML_LIMIT,
   createTitleIgnoredEvent,
   createTitleReactionEvent,
   createReactionCommand,
@@ -59,14 +61,17 @@ export {
   readReactionIgnoredState,
   readReactionSearchResultThreshold,
   readReactionState,
+  renderReactionReviewHtml,
   runReactionSession,
   searchReactionCatalog,
   selectReactionChoiceByKey,
   selectEligibleReactionTitles,
   selectFirstUnreactedTitle,
   selectRandomUnreactedTitle,
+  selectReactionSessionTitles,
   selectReactionTitleFromSearch,
   selectReactionTitle,
+  writeReactionReviewHtml,
 } from './lib/reaction-cli.js';
 
 async function main() {

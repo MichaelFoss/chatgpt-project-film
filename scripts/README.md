@@ -90,6 +90,12 @@ ordering, while `yarn react --ordered` uses deterministic catalog
 ordering. `--random` and `--ordered` are mutually exclusive selection
 mode flags.
 
+`yarn react --html` uses the same review-session title selection path
+and writes a minimal static review artifact to
+`reports/reaction-review.html`, then prints a clickable `file://` URL.
+HTML mode defaults to 100 selected titles unless `--limit` is provided.
+It does not write reaction events.
+
 Interactive reaction review screens use a consistent terminal layout:
 the title and year start at column 0, hydrated media type and top-billed
 actor metadata are separated from the title by a blank line and indented
