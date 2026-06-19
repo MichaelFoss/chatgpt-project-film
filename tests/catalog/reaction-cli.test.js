@@ -2237,6 +2237,13 @@ describe('reaction CLI', () => {
     expect(html.indexOf('data-reason-input')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
     );
+    expect(html).toContain(
+      '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    );
+    expect(html).toContain(
+      '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
+    );
+    expect(html).not.toContain('.reason-input:disabled::placeholder');
     expect(html).toContain('.rating-label { min-height: 1rem;');
     expect(html).toContain('white-space: nowrap;');
     expect(html).toContain('text-overflow: ellipsis;');
