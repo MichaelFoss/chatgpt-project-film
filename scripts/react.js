@@ -71,6 +71,7 @@ export {
   selectReactionSessionTitles,
   selectReactionTitleFromSearch,
   selectReactionTitle,
+  shouldWriteSearchResultsBeforeSelection,
   writeReactionReviewHtml,
 } from './lib/reaction-cli.js';
 

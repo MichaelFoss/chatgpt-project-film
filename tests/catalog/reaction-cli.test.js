@@ -44,6 +44,7 @@ import {
   selectReactionTitleFromSearch,
   selectReactionChoiceByKey,
   selectReactionTitle,
+  shouldWriteSearchResultsBeforeSelection,
 } from '../../scripts/react.js';
 
 const tempDirs = [];
@@ -1001,6 +1002,28 @@ describe('reaction CLI', () => {
     );
     expect(output).not.toContain('Showing 35 of 36 matches');
     expect(output.split('\n')).toHaveLength(36);
+  });
+
+  it('does not pre-render search results when the default single-key prompt renders them', () => {
+    expect(
+      shouldWriteSearchResultsBeforeSelection({
+        items: Object.values(testCatalog()),
+      }),
+    ).toBe(false);
+  });
+
+  it('pre-renders search results for numeric and injected selection prompts', () => {
+    expect(
+      shouldWriteSearchResultsBeforeSelection({
+        items: Object.values(largeSearchCatalog()),
+      }),
+    ).toBe(true);
+    expect(
+      shouldWriteSearchResultsBeforeSelection({
+        items: Object.values(testCatalog()),
+        selectionPrompt: async () => 'imdb:tt001',
+      }),
+    ).toBe(true);
   });
 
   it('reads the search result threshold from the environment', () => {

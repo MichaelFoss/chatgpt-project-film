@@ -804,6 +804,17 @@ export function formatSearchResults(items) {
     .join('\n');
 }
 
+export function shouldWriteSearchResultsBeforeSelection({
+  items,
+  selectionPrompt,
+} = {}) {
+  return (
+    Boolean(selectionPrompt) ||
+    !Array.isArray(items) ||
+    items.length > searchSelectionKeys.length
+  );
+}
+
 export function formatSearchResultThresholdMessage(count) {
   return `Too many titles found (${count}). Please refine your search.`;
 }
@@ -1019,7 +1030,12 @@ export async function selectReactionTitleFromSearch({
     );
   }
 
-  writeOutput(formatSearchResults(items));
+  if (
+    shouldWriteSearchResultsBeforeSelection({ items, selectionPrompt })
+  ) {
+    writeOutput(formatSearchResults(items));
+  }
+
   const canonicalId = await promptForSearchSelection({
     items,
     selectionPrompt,
