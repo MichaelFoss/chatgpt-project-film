@@ -1322,6 +1322,22 @@ function formatHtmlReasonInput(item, index) {
   ].join('\n');
 }
 
+function formatHtmlNotesInput(item, index) {
+  const inputId = `notes-${index}`;
+
+  return [
+    '<label class="notes-control">',
+    `<span class="notes-label" id="${escapeHtml(inputId)}-label">Notes</span>`,
+    '<textarea class="notes-input"',
+    `aria-labelledby="${escapeHtml(inputId)}-label"`,
+    `data-notes-input data-title-id="${escapeHtml(item.canonicalId)}"`,
+    `id="${escapeHtml(inputId)}"`,
+    'rows="3"',
+    'placeholder="private review notes"></textarea>',
+    '</label>',
+  ].join('\n');
+}
+
 function formatHtmlReviewTitle(item, index) {
   const year = item.releaseYear
     ? escapeHtml(item.releaseYear)
@@ -1336,6 +1352,7 @@ function formatHtmlReviewTitle(item, index) {
     `<h2>${escapeHtml(item.title)}</h2>`,
     formatHtmlRatingControls(item, index),
     formatHtmlReasonInput(item, index),
+    formatHtmlNotesInput(item, index),
     '<dl class="metadata">',
     `<div><dt>Year</dt><dd>${year}</dd></div>`,
     `<div><dt>Genres</dt><dd>${genres}</dd></div>`,
@@ -1488,11 +1505,13 @@ export function renderReactionReviewHtml(items) {
     '.rating-option[data-rating="9"], .rating-option[data-rating="6"], .rating-option[data-rating="3"] { grid-column: 1; }',
     '.rating-option:hover { border-color: var(--accent); }',
     '.rating-option.is-selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; }',
-    '.reason-control { display: block; margin: 6px 0 0; }',
-    '.reason-label { display: block; margin: 0 0 3px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; text-transform: uppercase; }',
-    '.reason-input { display: block; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; line-height: 1.2; }',
+    '.reason-control, .notes-control { display: block; margin: 6px 0 0; }',
+    '.reason-label, .notes-label { display: block; margin: 0 0 3px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0; line-height: 1rem; text-transform: uppercase; }',
+    '.reason-input, .notes-input { display: block; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.86rem; line-height: 1.2; }',
+    '.notes-input { min-height: 72px; resize: vertical; }',
     '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
-    '.reason-input:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-color: var(--accent); }',
+    '.notes-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    '.reason-input:focus, .notes-input:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-color: var(--accent); }',
     '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
     '.empty-state { padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }',
     '@media (max-width: 560px) { main { width: min(100% - 20px, 1480px); padding-top: 18px; } .poster-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; } .card-body { padding: 11px; } }',

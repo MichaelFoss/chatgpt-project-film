@@ -799,10 +799,25 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('disabled');
     expect(html).toContain('placeholder="comma-separated reasons"');
+    expect(html).toContain('<label class="notes-control">');
+    expect(html).toContain(
+      '<span class="notes-label" id="notes-0-label">Notes</span>',
+    );
+    expect(html).toContain('<textarea class="notes-input"');
+    expect(html).toContain(
+      'data-notes-input data-title-id="manual:a&amp;b"',
+    );
+    expect(html).toContain('rows="3"');
+    expect(html).toContain(
+      'placeholder="private review notes"></textarea>',
+    );
     expect(html.indexOf('<div class="rating-control"')).toBeLessThan(
       html.indexOf('<label class="reason-control">'),
     );
     expect(html.indexOf('<label class="reason-control">')).toBeLessThan(
+      html.indexOf('<label class="notes-control">'),
+    );
+    expect(html.indexOf('<label class="notes-control">')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
     );
     expect(html).not.toContain('<output class="rating-status"');
@@ -862,6 +877,9 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'exportButton.disabled = getCurrentDraft().reactions.length === 0;',
     );
+    expect(html).not.toContain('persistNotes');
+    expect(html).not.toContain('storedReaction?.notes');
+    expect(html).not.toContain('notes:');
   });
 
   it('renders an HTML review export button near the reset button', () => {
@@ -2235,10 +2253,24 @@ describe('reaction CLI', () => {
       ),
     ).toBeGreaterThan(-1);
     expect(html.indexOf('data-reason-input')).toBeLessThan(
+      html.indexOf('data-notes-input'),
+    );
+    expect(html.indexOf('data-notes-input')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
+    );
+    expect(html).toContain('<textarea class="notes-input"');
+    expect(html).toContain('data-notes-input');
+    expect(html).toContain(
+      '.reason-control, .notes-control { display: block; margin: 6px 0 0; }',
+    );
+    expect(html).toContain(
+      '.notes-input { min-height: 72px; resize: vertical; }',
     );
     expect(html).toContain(
       '.reason-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
+    );
+    expect(html).toContain(
+      '.notes-input::placeholder { color: var(--muted); font-style: italic; opacity: 1; }',
     );
     expect(html).toContain(
       '.reason-input:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 1; }',
@@ -2323,6 +2355,9 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('setRating(control, "10")');
     expect(html).toContain('event.key === "Backspace"');
+    expect(html).not.toContain('persistNotes');
+    expect(html).not.toContain('storedReaction?.notes');
+    expect(html).not.toContain('notes:');
     expect(html).not.toContain('type="radio"');
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');
