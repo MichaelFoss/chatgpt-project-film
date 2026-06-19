@@ -47,6 +47,30 @@ authoritative state.
 - Do not manually edit generated `dist/` artifacts.
 - Add changelog entries for meaningful structural or factual updates.
 
+## Tooling Rules
+
+### Yarn 1 Validation
+
+This repository uses Yarn 1.
+
+Required validation command:
+
+```bash
+yarn run check
+```
+
+Never run:
+
+```bash
+yarn check
+```
+
+`yarn check` is a Yarn 1 built-in command and is not the repository's
+validation workflow.
+
+When a task requests validation, checks, verification, or repository
+validation, use `yarn run check`.
+
 ## Directory Rules
 
 ### `instructions/`
