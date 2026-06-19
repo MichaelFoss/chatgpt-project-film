@@ -796,7 +796,15 @@ describe('reaction CLI', () => {
     expect(html).toContain('"2": "Hated↔Disliked"');
     expect(html).not.toContain('Selected ${labels[nextRating]}');
     expect(html).not.toContain('<code>manual:a&amp;b</code>');
-    expect(html).not.toContain('localStorage');
+    expect(html).toContain('film-reaction-review-v1');
+    expect(html).toContain('localStorage.setItem(storageKey');
+    expect(html).toContain('localStorage.getItem(storageKey)');
+    expect(html).toContain('data-title-id="manual:a&amp;b"');
+    expect(html).toContain('titleId,');
+    expect(html).toContain('rating: Number(rating)');
+    expect(html).toContain(
+      'reasons: Array.isArray(existing?.reasons) ? existing.reasons : []',
+    );
     expect(html).not.toContain('Export');
   });
 
@@ -1934,6 +1942,8 @@ describe('reaction CLI', () => {
     expect(html).not.toContain('Rating for Alpha');
     expect(html).toContain('data-rating-control');
     expect(html).toContain('data-rating-name="rating-0"');
+    expect(html).toContain('data-title-id="imdb:tt001"');
+    expect(html).toContain('data-title-id="imdb:tt002"');
     expect(html).toContain('data-rating="10"');
     expect(html).toContain('10 Exceptional');
     expect(html).toContain('data-rating="9"');
@@ -1972,13 +1982,36 @@ describe('reaction CLI', () => {
       html.indexOf('data-rating="8"'),
     );
     expect(html).toContain('currentRating === rating ? "" : rating');
+    expect(html).toContain('persistRating(control, nextRating)');
+    expect(html).toContain(
+      'localStorage.setItem(storageKey, JSON.stringify(reactions))',
+    );
+    expect(html).toContain(
+      'const storedReactions = readStoredReactions();',
+    );
+    expect(html).toContain(
+      'const storedReaction = storedReactions[control.dataset.titleId];',
+    );
+    expect(html).toContain(
+      'updateRatingControl(control, String(storedRating));',
+    );
+    expect(html).toContain('localStorage.removeItem(storageKey);');
+    expect(html).toContain(
+      'window.confirm("Clear all saved HTML review ratings?")',
+    );
+    expect(html).toContain('window.location.reload();');
+    expect(html).toContain(
+      '<button class="reset-button" type="button" data-reset-review>Reset</button>',
+    );
     expect(html).toContain('setRating(control, "10")');
     expect(html).toContain('event.key === "Backspace"');
     expect(html).not.toContain('type="radio"');
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');
-    expect(html).not.toContain('localStorage');
     expect(html).not.toContain('Export');
+    expect(html).not.toContain('Draft');
+    expect(html).not.toContain('createTitleReactionEvent');
+    expect(html).not.toContain('appendTitleReactionEvents');
     expect(html).not.toContain('Gamma (2003)');
     await expect(
       fs.readFile(
