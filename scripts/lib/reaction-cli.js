@@ -1316,6 +1316,7 @@ function formatHtmlReasonInput(item, index) {
     `data-reason-input data-title-id="${escapeHtml(item.canonicalId)}"`,
     `id="${escapeHtml(inputId)}"`,
     'inputmode="text" autocomplete="off"',
+    'disabled',
     'placeholder="comma-separated reasons">',
     '</label>',
   ].join('\n');
@@ -1402,13 +1403,13 @@ export function createReactionReviewDraft(
         ? reaction.rating
         : null;
 
-      if (!titleId || (rating === null && reasons.length === 0)) {
+      if (!titleId || rating === null) {
         return null;
       }
 
       return {
         titleId,
-        ...(rating === null ? {} : { rating }),
+        rating,
         reasons,
       };
     })
@@ -1524,6 +1525,13 @@ export function renderReactionReviewHtml(items) {
     '    });',
     '  };',
     '  const formatReasons = (reasons) => Array.isArray(reasons) ? reasons.join(", ") : "";',
+    '  const updateReasonInputDisabledState = (titleId, rating) => {',
+    '    document.querySelectorAll("[data-reason-input]").forEach((input) => {',
+    '      if (input.dataset.titleId === titleId) {',
+    '        input.disabled = !validRatings.has(rating);',
+    '      }',
+    '    });',
+    '  };',
     '  const persistRating = (control, rating) => {',
     '    const titleId = control.dataset.titleId;',
     '    if (!titleId) {',
@@ -1594,6 +1602,7 @@ export function renderReactionReviewHtml(items) {
     '    const nextRating = currentRating === rating ? "" : rating;',
     '    updateRatingControl(control, nextRating);',
     '    persistRating(control, nextRating);',
+    '    updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
     '  };',
     '  const storedReactions = readStoredReactions();',
     '  document.querySelectorAll("[data-rating-control]").forEach((control) => {',
@@ -1601,6 +1610,7 @@ export function renderReactionReviewHtml(items) {
     '    const storedRating = storedReaction?.rating;',
     '    if (Number.isInteger(storedRating) && validRatings.has(String(storedRating))) {',
     '      updateRatingControl(control, String(storedRating));',
+    '      updateReasonInputDisabledState(control.dataset.titleId, String(storedRating));',
     '    }',
     '    control.querySelectorAll("[data-rating]").forEach((button) => {',
     '      button.addEventListener("click", () => setRating(control, button.dataset.rating));',
@@ -1621,6 +1631,7 @@ export function renderReactionReviewHtml(items) {
     '  document.querySelectorAll("[data-reason-input]").forEach((input) => {',
     '    const storedReaction = storedReactions[input.dataset.titleId];',
     '    input.value = formatReasons(storedReaction?.reasons);',
+    '    input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
     '    input.addEventListener("input", () => persistReasons(input));',
     '    input.addEventListener("change", () => persistReasons(input, { syncValue: true }));',
     '    input.addEventListener("blur", () => persistReasons(input, { syncValue: true }));',

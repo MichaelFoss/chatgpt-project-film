@@ -797,11 +797,12 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'data-reason-input data-title-id="manual:a&amp;b"',
     );
+    expect(html).toContain('disabled');
     expect(html).toContain('placeholder="comma-separated reasons"');
-    expect(html.indexOf('data-rating-control')).toBeLessThan(
-      html.indexOf('data-reason-input'),
+    expect(html.indexOf('<div class="rating-control"')).toBeLessThan(
+      html.indexOf('<label class="reason-control">'),
     );
-    expect(html.indexOf('data-reason-input')).toBeLessThan(
+    expect(html.indexOf('<label class="reason-control">')).toBeLessThan(
       html.indexOf('<dl class="metadata">'),
     );
     expect(html).not.toContain('<output class="rating-status"');
@@ -833,6 +834,21 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain(
       'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain(
+      'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
+    );
+    expect(html).toContain(
+      'const updateReasonInputDisabledState = (titleId, rating) => {',
+    );
+    expect(html).toContain(
+      'input.disabled = !validRatings.has(rating);',
+    );
+    expect(html).toContain(
+      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+    );
+    expect(html).toContain(
+      'updateReasonInputDisabledState(control.dataset.titleId, String(storedRating));',
     );
     expect(html).toContain('rating: existing.rating,');
     expect(html).toContain('reasons,');
@@ -911,7 +927,7 @@ describe('reaction CLI', () => {
     expect(Array.isArray(draft.reactions[0].reasons)).toBe(true);
   });
 
-  it('excludes empty, unreacted, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
+  it('excludes empty, unreacted, reasons-only, invalid-rating, and placeholder LocalStorage records from HTML review exports', () => {
     const draft = createReactionReviewDraft(
       {
         empty: {},
@@ -929,6 +945,11 @@ describe('reaction CLI', () => {
           titleId: 'imdb:tt005',
           reasons: ['surreal'],
         },
+        validRatedEmptyReasons: {
+          titleId: 'imdb:tt006',
+          rating: 8,
+          reasons: [],
+        },
       },
       { generatedAt: '2026-06-18T12:00:00.000Z' },
     );
@@ -937,11 +958,94 @@ describe('reaction CLI', () => {
     expect(draft.titleCount).toBe(1);
     expect(draft.reactions).toEqual([
       {
-        titleId: 'imdb:tt005',
-        reasons: ['surreal'],
+        titleId: 'imdb:tt006',
+        rating: 8,
+        reasons: [],
       },
     ]);
-    expect(draft.reactions[0]).not.toHaveProperty('rating');
+  });
+
+  it('exports only valid rated HTML review reactions', () => {
+    const draft = createReactionReviewDraft({
+      reasonsOnly: {
+        titleId: 'imdb:tt001',
+        reasons: ['slow'],
+      },
+      unratedEmpty: {
+        titleId: 'imdb:tt002',
+        reasons: [],
+      },
+      empty: {},
+      ratedWithReasons: {
+        titleId: 'imdb:tt003',
+        rating: 9,
+        reasons: [' Sci-Fi ', 'action'],
+      },
+      ratedWithEmptyReasons: {
+        titleId: 'imdb:tt004',
+        rating: 6,
+        reasons: [],
+      },
+    });
+
+    expect(draft.reactions).toEqual([
+      {
+        titleId: 'imdb:tt003',
+        rating: 9,
+        reasons: ['sci-fi', 'action'],
+      },
+      {
+        titleId: 'imdb:tt004',
+        rating: 6,
+        reasons: [],
+      },
+    ]);
+  });
+
+  it('keeps HTML review reason inputs visible but disabled until a rating exists', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain('<label class="reason-control">');
+    expect(html).toContain('class="reason-input" type="text"');
+    expect(html).toContain('disabled');
+    expect(html).toContain(
+      'input.value = formatReasons(storedReaction?.reasons);',
+    );
+    expect(html).toContain(
+      'input.disabled = !(Number.isInteger(storedReaction?.rating) && validRatings.has(String(storedReaction.rating)));',
+    );
+  });
+
+  it('enables HTML review reason editing when a rating is selected', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain(
+      'input.disabled = !validRatings.has(rating);',
+    );
+    expect(html).toContain(
+      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+    );
+    expect(html).toContain('persistRating(control, nextRating)');
+  });
+
+  it('disables HTML review reason editing after rating removal without clearing reasons', () => {
+    const html = renderReactionReviewHtml([
+      testCatalog()['imdb:tt001'],
+    ]);
+
+    expect(html).toContain('currentRating === rating ? "" : rating');
+    expect(html).toContain(
+      'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
+    );
+    expect(html).toContain(
+      'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
+    );
+    expect(html).toContain('reasons: existingReasons,');
+    expect(html).not.toContain('input.value = "";');
   });
 
   it('normalizes HTML review reason input using reaction conventions', () => {
