@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   formatReactionValidationReport,
+  hasNormalizedReasonValues,
   validateReactionProjection,
   validateReactionProjectionFromFiles,
 } from '../../scripts/reaction-validate.js';
@@ -208,6 +209,20 @@ describe('reaction validation command', () => {
         reasons: ['MCU', 'mcu', 'CGI', 'Hans Zimmer'],
       },
     ]);
+  });
+
+  it('validates normalized reason arrays for reuse by draft import', () => {
+    expect(
+      hasNormalizedReasonValues(['great atmosphere', 'soundtrack']),
+    ).toBe(true);
+    expect(hasNormalizedReasonValues([])).toBe(false);
+    expect(hasNormalizedReasonValues([], { allowEmpty: true })).toBe(
+      true,
+    );
+    expect(hasNormalizedReasonValues(['Great Atmosphere'])).toBe(false);
+    expect(
+      hasNormalizedReasonValues(['soundtrack', 'soundtrack']),
+    ).toBe(false);
   });
 
   it('reports invalid reasons values', () => {

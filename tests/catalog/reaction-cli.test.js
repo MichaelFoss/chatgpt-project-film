@@ -827,10 +827,10 @@ describe('reaction CLI', () => {
     expect(html).toContain('const normalizeReasons = (value) => {');
     expect(html).toContain('reason.trim().toLowerCase()');
     expect(html).toContain(
-      'input.addEventListener("input", () => persistReasons(input));',
+      'input.addEventListener("input", () => { persistReasons(input); updateExportButtonState(); });',
     );
     expect(html).toContain(
-      'input.addEventListener("change", () => persistReasons(input, { syncValue: true }));',
+      'input.addEventListener("change", () => { persistReasons(input, { syncValue: true }); updateExportButtonState(); });',
     );
     expect(html).toContain(
       'input.value = formatReasons(storedReaction?.reasons);',
@@ -854,7 +854,13 @@ describe('reaction CLI', () => {
     expect(html).toContain('reasons,');
     expect(html).not.toContain('rating: null');
     expect(html).toContain(
-      '<button class="action-button" type="button" data-export-review>Export</button>',
+      '<button class="action-button" type="button" data-export-review disabled>Export</button>',
+    );
+    expect(html).toContain(
+      'const getCurrentDraft = () => createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
+    );
+    expect(html).toContain(
+      'exportButton.disabled = getCurrentDraft().reactions.length === 0;',
     );
   });
 
@@ -866,8 +872,11 @@ describe('reaction CLI', () => {
     expect(html).toContain('data-export-review');
     expect(html).toContain('const reviewTitleCount = 1;');
     expect(html).toContain(
-      'createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount })',
+      'const getCurrentDraft = () => createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
     );
+    expect(html).toContain('updateExportButtonState();');
+    expect(html).toContain('const draft = getCurrentDraft();');
+    expect(html).toContain('if (draft.reactions.length === 0) {');
     expect(html).toContain('new Blob');
     expect(html).toContain('URL.createObjectURL(blob)');
     expect(html).toContain(
@@ -1042,6 +1051,9 @@ describe('reaction CLI', () => {
       'updateReasonInputDisabledState(control.dataset.titleId, nextRating);',
     );
     expect(html).toContain(
+      'input.disabled = !validRatings.has(rating);',
+    );
+    expect(html).toContain(
       'const existingReasons = Array.isArray(reactions[titleId]?.reasons) ? reactions[titleId].reasons : [];',
     );
     expect(html).toContain('reasons: existingReasons,');
@@ -1076,6 +1088,7 @@ describe('reaction CLI', () => {
     expect(html).toContain(
       'localStorage.setItem(storageKey, JSON.stringify(reactions))',
     );
+    expect(html).toContain('updateExportButtonState();');
     expect(html).toContain(
       'const storedReaction = storedReactions[input.dataset.titleId];',
     );
@@ -2296,7 +2309,7 @@ describe('reaction CLI', () => {
     );
     expect(html).toContain('window.location.reload();');
     expect(html).toContain(
-      '<button class="action-button" type="button" data-export-review>Export</button>',
+      '<button class="action-button" type="button" data-export-review disabled>Export</button>',
     );
     expect(html).toContain(
       '<button class="action-button" type="button" data-reset-review>Reset</button>',
@@ -2307,8 +2320,9 @@ describe('reaction CLI', () => {
     expect(html).not.toContain('This plot summary must not appear.');
     expect(html).not.toContain('imdb.com/title');
     expect(html).toContain(
-      'createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount })',
+      'const getCurrentDraft = () => createReactionReviewDraft(readStoredReactions(), { titleCount: reviewTitleCount });',
     );
+    expect(html).toContain('const draft = getCurrentDraft();');
     expect(html).toContain('new Blob');
     expect(html).toContain('URL.createObjectURL(blob)');
     expect(html).not.toContain('createTitleReactionEvent');

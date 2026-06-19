@@ -40,7 +40,22 @@ function hasRecordField(record, fieldName) {
   );
 }
 
-function hasNormalizedReasonValues(reasons) {
+export function hasNormalizedReasonValues(
+  reasons,
+  { allowEmpty = false } = {},
+) {
+  if (!Array.isArray(reasons)) {
+    return false;
+  }
+
+  if (reasons.length === 0) {
+    return allowEmpty;
+  }
+
+  return hasNormalizedNonEmptyReasonValues(reasons);
+}
+
+function hasNormalizedNonEmptyReasonValues(reasons) {
   if (reasons.length === 0) {
     return false;
   }
@@ -163,10 +178,7 @@ export function validateReactionProjection({
     if (hasRecordField(record, 'reasons')) {
       const reasons = getRecordField(record, 'reasons');
 
-      if (
-        !Array.isArray(reasons) ||
-        !hasNormalizedReasonValues(reasons)
-      ) {
+      if (!hasNormalizedReasonValues(reasons)) {
         problems.invalidReasons.push({ key, reasons });
         invalidRecordKeys.add(key);
       }
