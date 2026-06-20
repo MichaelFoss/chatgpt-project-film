@@ -50,3 +50,8 @@
 {"eventId":"be9e9a00-5508-43e7-a624-27d94c24c2b5","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt7144666","rating":7,"reasons":["supernatural","creepy"]}
 {"eventId":"429ba647-4108-484d-bfd4-8e46288876db","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt1446714","rating":9,"reasons":["alien"]}
 {"eventId":"c2580c34-7bf1-4cab-8d96-3f90469309c5","type":"title.reaction.updated","occurredAt":"2026-06-19T23:29:47.262Z","canonicalId":"imdb:tt5442430","rating":7,"reasons":["alien"]}
+{"eventId":"808346df-63f8-4199-a248-f099e83c2c37","type":"title.reaction.updated","occurredAt":"2026-06-20T00:39:51.752Z","canonicalId":"imdb:tt5073642","rating":10,"reasons":["trippy","sci-fi"]}
+{"eventId":"13acd5ec-201b-4a5d-a5c7-6c9b6d8369dd","type":"title.reaction.updated","occurredAt":"2026-06-20T00:39:51.752Z","canonicalId":"imdb:tt1285016","rating":9}
+{"eventId":"9f481112-35fe-4a3d-9ead-26281afaba6c","type":"title.reaction.updated","occurredAt":"2026-06-20T00:39:51.752Z","canonicalId":"imdb:tt0398286","rating":9,"reasons":["comical"]}
+{"eventId":"4e891ab2-f2ad-4b9b-ab3b-5c30da4de55f","type":"title.reaction.updated","occurredAt":"2026-06-20T00:39:51.752Z","canonicalId":"imdb:tt1231277","rating":10,"reasons":["time travel","dark"]}
+{"eventId":"b4e9eb0c-cb1c-4e4d-b646-188b69b44981","type":"title.reaction.updated","occurredAt":"2026-06-20T00:39:51.752Z","canonicalId":"imdb:tt0884328","rating":10,"reasons":["terrifying","monster"]}

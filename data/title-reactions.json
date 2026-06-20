@@ -88,6 +88,13 @@
     "updatedAt": "2026-06-19T23:12:11.405Z",
     "rating": 8
   },
+  "imdb:tt0398286": {
+    "canonicalId": "imdb:tt0398286",
+    "eventIds": ["9f481112-35fe-4a3d-9ead-26281afaba6c"],
+    "updatedAt": "2026-06-20T00:39:51.752Z",
+    "rating": 9,
+    "reasons": ["comical"]
+  },
   "imdb:tt0401729": {
     "canonicalId": "imdb:tt0401729",
     "eventIds": ["18bd293b-2230-492b-b756-8ae31737f2ae"],
@@ -123,6 +130,13 @@
     "rating": 8,
     "reasons": ["superhero", "origin"]
   },
+  "imdb:tt0884328": {
+    "canonicalId": "imdb:tt0884328",
+    "eventIds": ["b4e9eb0c-cb1c-4e4d-b646-188b69b44981"],
+    "updatedAt": "2026-06-20T00:39:51.752Z",
+    "rating": 10,
+    "reasons": ["terrifying", "monster"]
+  },
   "imdb:tt11858890": {
     "canonicalId": "imdb:tt11858890",
     "eventIds": ["46880044-ae3d-467d-baf5-1d3f7b596556"],
@@ -130,12 +144,25 @@
     "rating": 5,
     "reasons": ["overrated"]
   },
+  "imdb:tt1231277": {
+    "canonicalId": "imdb:tt1231277",
+    "eventIds": ["4e891ab2-f2ad-4b9b-ab3b-5c30da4de55f"],
+    "updatedAt": "2026-06-20T00:39:51.752Z",
+    "rating": 10,
+    "reasons": ["time travel", "dark"]
+  },
   "imdb:tt1253863": {
     "canonicalId": "imdb:tt1253863",
     "eventIds": ["037b5681-3bb8-4f35-a4e6-45d591e0f2f2"],
     "updatedAt": "2026-06-19T23:12:11.405Z",
     "rating": 8,
     "reasons": ["underdog", "artistic"]
+  },
+  "imdb:tt1285016": {
+    "canonicalId": "imdb:tt1285016",
+    "eventIds": ["13acd5ec-201b-4a5d-a5c7-6c9b6d8369dd"],
+    "updatedAt": "2026-06-20T00:39:51.752Z",
+    "rating": 9
   },
   "imdb:tt1431045": {
     "canonicalId": "imdb:tt1431045",
@@ -303,6 +330,13 @@
     "updatedAt": "2026-06-19T23:12:11.405Z",
     "rating": 9,
     "reasons": ["terrifying"]
+  },
+  "imdb:tt5073642": {
+    "canonicalId": "imdb:tt5073642",
+    "eventIds": ["808346df-63f8-4199-a248-f099e83c2c37"],
+    "updatedAt": "2026-06-20T00:39:51.752Z",
+    "rating": 10,
+    "reasons": ["trippy", "sci-fi"]
   },
   "imdb:tt5442430": {
     "canonicalId": "imdb:tt5442430",
